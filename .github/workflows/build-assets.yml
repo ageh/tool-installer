@@ -1,0 +1,61 @@
+name: Build assets and attach to release
+
+on:
+  release:
+    types:
+      - created
+
+jobs:
+  build_assets:
+    name: Build release assets
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        goos: [linux, windows]
+        goarch: [amd64]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+         fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.20.4'
+
+      - name: Build release asset
+        id: build
+        shell: bash
+        run: |
+          executable_name="tooli"
+          if [ "${{ matrix.goos }}" == "windows" ]; then
+            executable_name="tooli.exe"
+          fi
+          GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -o $executable_name -ldflags="-s -w" .
+          echo "executable_name=$executable_name" >> "$GITHUB_OUTPUT"
+
+      - name: Create release asset
+        id: archive
+        shell: bash
+        run: |
+          filename="tool-installer-${{ github.event.release.tag_name }}-${{ matrix.goarch }}-${{ matrix.goos }}"
+          if [ "${{ matrix.goos }}" == "windows" ]; then
+            filename="${filename}.zip"
+            zip $filename "${{ steps.build.outputs.executable_name }}" README.md LICENSE LICENSE-THIRD-PARTY CHANGELOG.md
+          else
+            filename="${filename}.tar.gz"
+            tar czf $filename "${{ steps.build.outputs.executable_name }}" README.md LICENSE LICENSE-THIRD-PARTY CHANGELOG.md
+          fi
+          echo "asset_name=$filename" >> "$GITHUB_OUTPUT"
+
+      - name: Upload release asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_name: ${{ steps.archive.outputs.asset_name }}
+          asset_path: ${{ steps.archive.outputs.asset_name }}
+          asset_content_type: "application/octet-stream"
