@@ -46,7 +46,7 @@ func replaceTildePath(path string) string {
 func GetConfig(path string) (Configuration, error) {
 	var config Configuration
 
-	bytes, err := os.ReadFile(path)
+	bytes, err := os.ReadFile(replaceTildePath(path))
 	if err != nil {
 		return config, err
 	}
