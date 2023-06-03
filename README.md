@@ -72,10 +72,11 @@ Since GitHub's API is subject to rate limits, you should create a [personal acce
 
 ## Commands
 
-tool-installer has only two commands:
+tool-installer has only three commands:
 
 1. `install`
 2. `create-config`
+3. `list`
 
 ### `install`
 
@@ -92,6 +93,10 @@ The `timeout` parameter's default value should work fine for most tools on norma
 ### `create-config`
 
 The `create-config` command creates a valid configuration for tool-installer, containing some commonly used tools. It only takes a single parameter, `--path PATH` (default `~/.config/tool-installer/config.json`), which can be used to specify where tool-installer should write the generated configuration file to. If the specified path already exists, tool-installer will ask you if you want to overwrite that file.
+
+### `list`
+
+The `list` command lists the tools specified in the configuration, sorted by tool name.
 
 ## FAQ
 
