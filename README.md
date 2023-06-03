@@ -34,7 +34,8 @@ The configuration for tool-installer is a simple JSON file with the following st
 			"owner": "owner1",
 			"repository": "repo1",
 			"linux_asset": "x86_64-unknown-linux-musl.tar.gz",
-			"windows_asset": "x86_64-pc-windows-msvc.zip"
+			"windows_asset": "x86_64-pc-windows-msvc.zip",
+			"description": "Very cool tool"
 		},
 		"tool2": {
 			"binaries": [
@@ -46,7 +47,8 @@ The configuration for tool-installer is a simple JSON file with the following st
 			"owner": "owner2",
 			"repository": "repo2",
 			"linux_asset": "x86_64-unknown-linux-musl.tar.gz",
-			"windows_asset": "x86_64-pc-windows-msvc.zip"
+			"windows_asset": "x86_64-pc-windows-msvc.zip",
+			"description": "A tool to do stuff"
 		}
 	}
 }
@@ -61,6 +63,7 @@ To change the installation directory, set the value of `install_dir` to a differ
 - `binaries`: A list of structs where each struct has these entries:
 	- `name`: Name of the file to extract
 	- `rename_to`: The name which the file should have after extraction, if left empty the file is not renamed. Do _not_ include the `.exe` file ending.
+- `description`: A (short) description of what the tool does
 
 ### Default configuration
 

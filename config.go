@@ -22,6 +22,7 @@ type Tool struct {
 	Repository   string   `json:"repository"`
 	LinuxAsset   string   `json:"linux_asset"`
 	WindowsAsset string   `json:"windows_asset"`
+	Description  string   `json:"description"`
 }
 
 type Configuration struct {
@@ -73,7 +74,8 @@ const defaultConfiguration = `{
 			"owner": "ogham",
 			"repository": "exa",
 			"linux_asset": "linux-x86_64-musl-v0.10.1.zip",
-			"windows_asset": ""
+			"windows_asset": "",
+			"description": "Better ls"
 		},
 		"delta": {
 			"binaries": [
@@ -85,7 +87,8 @@ const defaultConfiguration = `{
 			"owner": "dandavison",
 			"repository": "delta",
 			"linux_asset": "x86_64-unknown-linux-musl.tar.gz",
-			"windows_asset": "x86_64-pc-windows-msvc.zip"
+			"windows_asset": "x86_64-pc-windows-msvc.zip",
+			"description": "Diff tool"
 		},
 		"dust": {
 			"binaries": [
@@ -97,7 +100,8 @@ const defaultConfiguration = `{
 			"owner": "bootandy",
 			"repository": "dust",
 			"linux_asset": "x86_64-unknown-linux-musl.tar.gz",
-			"windows_asset": "x86_64-pc-windows-msvc.zip"
+			"windows_asset": "x86_64-pc-windows-msvc.zip",
+			"description": "Disk usage tool"
 		},
 		"fzf": {
 			"binaries": [
@@ -109,7 +113,8 @@ const defaultConfiguration = `{
 			"owner": "junegunn",
 			"repository": "fzf",
 			"linux_asset": "linux_amd64.tar.gz",
-			"windows_asset": "windows_amd64.zip"
+			"windows_asset": "windows_amd64.zip",
+			"description": "Fuzzy finder"
 		},
 		"hexyl": {
 			"binaries": [
@@ -121,7 +126,8 @@ const defaultConfiguration = `{
 			"owner": "sharkdp",
 			"repository": "hexyl",
 			"linux_asset": "x86_64-unknown-linux-musl.tar.gz",
-			"windows_asset": "x86_64-pc-windows-msvc.zip"
+			"windows_asset": "x86_64-pc-windows-msvc.zip",
+			"description": "Hex-viewer"
 		},
 		"hyperfine": {
 			"binaries": [
@@ -133,7 +139,8 @@ const defaultConfiguration = `{
 			"owner": "sharkdp",
 			"repository": "hyperfine",
 			"linux_asset": "x86_64-unknown-linux-musl.tar.gz",
-			"windows_asset": "x86_64-pc-windows-msvc.zip"
+			"windows_asset": "x86_64-pc-windows-msvc.zip",
+			"description": "Benchmark tool"
 		},
 		"micro": {
 			"binaries": [
@@ -145,7 +152,8 @@ const defaultConfiguration = `{
 			"owner": "zyedidia",
 			"repository": "micro",
 			"linux_asset": "linux64.tar.gz",
-			"windows_asset": "win64.zip"
+			"windows_asset": "win64.zip",
+			"description": "Command-line editor"
 		},
 		"ripgrep": {
 			"binaries": [
@@ -157,7 +165,8 @@ const defaultConfiguration = `{
 			"owner": "burntsushi",
 			"repository": "ripgrep",
 			"linux_asset": "x86_64-unknown-linux-musl.tar.gz",
-			"windows_asset": "x86_64-pc-windows-msvc.zip"
+			"windows_asset": "x86_64-pc-windows-msvc.zip",
+			"description": "Better grep"
 		},
 		"sd": {
 			"binaries": [
@@ -169,7 +178,8 @@ const defaultConfiguration = `{
 			"owner": "chmln",
 			"repository": "sd",
 			"linux_asset": "x86_64-unknown-linux-musl",
-			"windows_asset": ""
+			"windows_asset": "",
+			"description": "Better find"
 		},
 		"starship": {
 			"binaries": [
@@ -181,7 +191,8 @@ const defaultConfiguration = `{
 			"owner": "starship",
 			"repository": "starship",
 			"linux_asset": "x86_64-unknown-linux-musl.tar.gz",
-			"windows_asset": "x86_64-pc-windows-msvc.zip"
+			"windows_asset": "x86_64-pc-windows-msvc.zip",
+			"description": "Cross-shell custom prompt"
 		},
 		"tealdeer": {
 			"binaries": [
@@ -193,7 +204,8 @@ const defaultConfiguration = `{
 			"owner": "dbrgn",
 			"repository": "tealdeer",
 			"linux_asset": "tealdeer-linux-x86_64-musl",
-			"windows_asset": "windows-x86_64-msvc.exe"
+			"windows_asset": "windows-x86_64-msvc.exe",
+			"description": "Command-line cheatsheets"
 		},
 		"tokei": {
 			"binaries": [
@@ -205,7 +217,8 @@ const defaultConfiguration = `{
 			"owner": "XAMPPRocky",
 			"repository": "tokei",
 			"linux_asset": "x86_64-unknown-linux-musl.tar.gz",
-			"windows_asset": "x86_64-pc-windows-msvc.exe"
+			"windows_asset": "x86_64-pc-windows-msvc.exe",
+			"description": "Code line counting tool"
 		}
 	}
 }`

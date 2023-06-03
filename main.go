@@ -9,7 +9,7 @@ import (
 	"sort"
 )
 
-const version = "1.1.0"
+const version = "1.2.0"
 const fullVersion = "tooli " + version
 const userAgent = "ageh/tool-installer-" + version
 const helpText = "tool-installer " + version + `
@@ -45,8 +45,9 @@ func makeOutputDirectory(path *string) error {
 }
 
 type TableEntry struct {
-	Name string
-	Link string
+	Name        string
+	Link        string
+	Description string
 }
 
 type ByName []TableEntry
@@ -82,25 +83,27 @@ func listTools(configLocation *string) {
 	// Minimum sizes based on header line
 	nameSize := 4
 	linkSize := 16
+	descriptionSize := 11
 
 	tmp := make([]TableEntry, len(config.Tools))
 
 	i := 0
 	for k, v := range config.Tools {
-		tmp[i] = TableEntry{Name: k, Link: fmt.Sprintf("%s/%s", v.Owner, v.Repository)}
+		tmp[i] = TableEntry{Name: k, Link: fmt.Sprintf("%s/%s", v.Owner, v.Repository), Description: v.Description}
 
 		nameSize = max(nameSize, len(k))
 		linkSize = max(linkSize, len(tmp[i].Link))
+		descriptionSize = max(descriptionSize, len(v.Description))
 
 		i++
 	}
 
 	sort.Sort(ByName(tmp))
 
-	fmt.Printf("%-*s    %-*s\n\n", nameSize, "Name", linkSize, "Owner/Repository")
-	
+	fmt.Printf("%-*s    %-*s    %-*s\n\n", nameSize, "Name", linkSize, "Owner/Repository", descriptionSize, "Description")
+
 	for _, j := range tmp {
-		fmt.Printf("%-*s    %-*s\n", nameSize, j.Name, linkSize, j.Link)
+		fmt.Printf("%-*s    %-*s    %-*s\n", nameSize, j.Name, linkSize, j.Link, descriptionSize, j.Description)
 	}
 }
 
