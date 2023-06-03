@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/user"
 	"path/filepath"
+	"runtime"
 	"strings"
 )
 
@@ -28,6 +29,14 @@ type Tool struct {
 type Configuration struct {
 	InstallationDirectory string          `json:"install_dir"`
 	Tools                 map[string]Tool `json:"tools"`
+}
+
+func addExeSuffix(fileName string) string {
+	if !strings.HasSuffix(fileName, ".exe") {
+		return fileName + ".exe"
+	}
+
+	return fileName
 }
 
 func replaceTildePath(path string) string {
@@ -57,6 +66,17 @@ func GetConfig(path string) (Configuration, error) {
 	}
 
 	config.InstallationDirectory = replaceTildePath(config.InstallationDirectory)
+
+	if runtime.GOOS == "windows" {
+		for k, v := range config.Tools {
+			for i, b := range v.Binaries {
+				config.Tools[k].Binaries[i].Name = addExeSuffix(b.Name)
+				if b.RenameTo != "" {
+					config.Tools[k].Binaries[i].RenameTo = addExeSuffix(b.RenameTo)
+				}
+			}
+		}
+	}
 
 	return config, err
 }

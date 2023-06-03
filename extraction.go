@@ -18,34 +18,23 @@ import (
 )
 
 func getRenameTarget(fullName string, binaries []Binary) string {
-	fileName := path.Base(fullName)
-
-	if runtime.GOOS == "windows" {
-		if !strings.HasSuffix(fileName, ".exe") {
-			fileName = fileName + ".exe"
-		}
+	if strings.HasSuffix(fullName, "/") {
+		return ""
 	}
 
-	res := ""
+	fileName := path.Base(fullName)
 
 	for _, binary := range binaries {
 		if fileName == binary.Name {
 			if binary.RenameTo != "" {
-				res = binary.RenameTo
-
-				if runtime.GOOS == "windows" && !strings.HasSuffix(res, ".exe") {
-					res = res + ".exe"
-				}
-
-				break
+				return binary.RenameTo
 			} else {
-				res = fileName
-				break
+				return fileName
 			}
 		}
 	}
 
-	return res
+	return ""
 }
 
 func extractFilesZip(rawData []byte, binaries []Binary, outputPath *string) error {
