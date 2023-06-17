@@ -123,6 +123,19 @@ const defaultConfiguration = `{
 			"windows_asset": "x86_64-pc-windows-msvc.zip",
 			"description": "Disk usage tool"
 		},
+		"fd": {
+			"binaries": [
+				{
+					"name": "fd",
+					"rename_to": ""
+				}
+			],
+			"owner": "sharkdp",
+			"repository": "fd",
+			"linux_asset": "x86_64-unknown-linux-musl.tar.gz",
+			"windows_asset": "x86_64-pc-windows-msvc.zip",
+			"description": "Better find"
+		},
 		"fzf": {
 			"binaries": [
 				{
@@ -199,7 +212,7 @@ const defaultConfiguration = `{
 			"repository": "sd",
 			"linux_asset": "x86_64-unknown-linux-musl",
 			"windows_asset": "",
-			"description": "Better find"
+			"description": "Better sed"
 		},
 		"starship": {
 			"binaries": [
