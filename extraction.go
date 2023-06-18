@@ -13,7 +13,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"runtime"
 	"strings"
 )
 
@@ -135,16 +134,12 @@ func extractFilesTarGz(rawData []byte, binaries []Binary, outputPath *string) er
 
 func extractFilesRaw(rawData []byte, binaries []Binary, outputPath *string) error {
 	if len(binaries) != 1 {
-		return errors.New("Invalid number of binaries provided")
+		return errors.New("Invalid number of binaries provided. Non-archive type assets can only be one binary.")
 	}
 
 	fileName := binaries[0].Name
-	if runtime.GOOS == "windows" {
-		fileName = fileName + ".exe"
-	}
-
-	if fileName == "" {
-		return errors.New("Invalid filename, cannot be blank")
+	if binaries[0].RenameTo != "" {
+		fileName = binaries[0].RenameTo
 	}
 
 	filePath := filepath.Join(*outputPath, fileName)
