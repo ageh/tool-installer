@@ -40,6 +40,12 @@ func printHelp() {
 	fmt.Println(helpText)
 }
 
+func printConfigError(err error) {
+	fmt.Printf("Error: Could not load configuration: %v.\n", err)
+	fmt.Println("Check if the configuration file is valid.")
+	fmt.Println("You can generate a new configuration file with 'tooli create-config'.")
+}
+
 func makeOutputDirectory(path *string) error {
 	return os.MkdirAll(*path, 0755)
 }
@@ -74,9 +80,7 @@ func max(a int, b int) int {
 func listTools(configLocation *string) {
 	config, err := GetConfig(*configLocation)
 	if err != nil {
-		fmt.Printf("Error: Could not load configuration: %v\n", err)
-		fmt.Println("Check if the configuration file is valid.")
-		fmt.Println("You can generate a new configuration file with `tooli create-config`")
+		printConfigError(err)
 		os.Exit(1)
 	}
 
@@ -110,9 +114,7 @@ func listTools(configLocation *string) {
 func installTools(configLocation *string, installOnly *string, downloadTimeout int) {
 	config, err := GetConfig(*configLocation)
 	if err != nil {
-		fmt.Printf("Error: Could not load configuration: %v\n", err)
-		fmt.Println("Check if the configuration file is valid.")
-		fmt.Println("You can generate a new configuration file with `tooli create-config`")
+		printConfigError(err)
 		os.Exit(1)
 	}
 
@@ -125,6 +127,7 @@ func installTools(configLocation *string, installOnly *string, downloadTimeout i
 	downloader := newDownloader(downloadTimeout)
 
 	if *installOnly != "" {
+		fmt.Printf("Installing tool '%s'.\n", *installOnly)
 		err = downloader.downloadTool(*installOnly, &config)
 		if err != nil {
 			fmt.Println("Error:", err)
@@ -132,7 +135,7 @@ func installTools(configLocation *string, installOnly *string, downloadTimeout i
 		}
 	} else {
 		for k, _ := range config.Tools {
-			fmt.Printf("Installing tool %s\n", k)
+			fmt.Printf("Installing tool '%s'.\n", k)
 			err = downloader.downloadTool(k, &config)
 			if err != nil {
 				fmt.Println("Error:", err)

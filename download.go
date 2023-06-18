@@ -125,7 +125,7 @@ func (client *Downloader) downloadTool(name string, config *Configuration) error
 
 	tool, found := config.Tools[name]
 	if !found {
-		return errors.New(fmt.Sprintf("Tool '%s' not found in config", name))
+		return errors.New(fmt.Sprintf("Tool '%s' not found in configuration.", name))
 	}
 
 	release, err := client.downloadRelease(tool.Owner, tool.Repository)
@@ -144,7 +144,7 @@ func (client *Downloader) downloadTool(name string, config *Configuration) error
 	}
 
 	if asset == "" {
-		return errors.New("No asset name provided for the current platform")
+		return errors.New("No asset name provided for the current platform.")
 	}
 
 	var res []Asset

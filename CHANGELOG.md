@@ -4,6 +4,21 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Added
+
+- `fd` tool was added to the default configuration
+
+### Changed
+
+- Improved user-facing messages
+
+### Fixed
+
+- Assets that are not archives are now named correctly
+- Description of `sd` in the default configuration
+
 ## [1.2.2] - 2023-06-03
 
 ### Fixed
