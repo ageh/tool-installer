@@ -9,7 +9,7 @@ import (
 	"sort"
 )
 
-const version = "1.2.2"
+const version = "1.2.3"
 const fullVersion = "tooli " + version
 const userAgent = "ageh/tool-installer-" + version
 const helpText = "tool-installer " + version + `
