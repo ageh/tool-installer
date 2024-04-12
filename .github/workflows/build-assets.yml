@@ -33,7 +33,7 @@ jobs:
           if [ "${{ matrix.goos }}" == "windows" ]; then
             executable_name="tooli.exe"
           fi
-          GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -o $executable_name -ldflags="-s -w" .
+          GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -o $executable_name -ldflags="-s -w" ./cmd/tool-installer/
           echo "executable_name=$executable_name" >> "$GITHUB_OUTPUT"
 
       - name: Create release asset
