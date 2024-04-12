@@ -84,19 +84,6 @@ func GetConfig(path string) (Configuration, error) {
 const defaultConfiguration = `{
 	"install_dir": "~/.local/bin",
 	"tools": {
-		"exa": {
-			"binaries": [
-				{
-					"name": "exa",
-					"rename_to": ""
-				}
-			],
-			"owner": "ogham",
-			"repository": "exa",
-			"linux_asset": "linux-x86_64-musl-v0.10.1.zip",
-			"windows_asset": "",
-			"description": "Better ls"
-		},
 		"delta": {
 			"binaries": [
 				{
@@ -122,6 +109,19 @@ const defaultConfiguration = `{
 			"linux_asset": "x86_64-unknown-linux-musl.tar.gz",
 			"windows_asset": "x86_64-pc-windows-msvc.zip",
 			"description": "Disk usage tool"
+		},
+		"eza": {
+			"binaries": [
+				{
+					"name": "eza",
+					"rename_to": ""
+				}
+			],
+			"owner": "eza-community",
+			"repository": "eza",
+			"linux_asset": "x86_64-unknown-linux-musl.tar.gz",
+			"windows_asset": "x86_64-pc-windows-gnu.zip",
+			"description": "Better ls (replacement of exa which is unmaintained)"
 		},
 		"fd": {
 			"binaries": [
