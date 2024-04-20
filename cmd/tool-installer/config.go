@@ -84,6 +84,19 @@ func GetConfig(path string) (Configuration, error) {
 const defaultConfiguration = `{
 	"install_dir": "~/.local/bin",
 	"tools": {
+		"bat": {
+			"binaries": [
+				{
+					"name": "bat",
+					"rename_to": ""
+				}
+			],
+			"owner": "sharkdp",
+			"repository": "bat",
+			"linux_asset": "x86_64-unknown-linux-musl.tar.gz",
+			"windows_asset": "x86_64-pc-windows-msvc.zip",
+			"description": "Better cat"
+		},
 		"delta": {
 			"binaries": [
 				{
