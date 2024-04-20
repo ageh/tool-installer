@@ -36,6 +36,8 @@ For more information about a specific command, try 'tooli <command> --help'.
 
 const defaultConfigLocation = "~/.config/tool-installer/config.json"
 
+const maxShortListDescriptionLength = 50
+
 func printHelp() {
 	fmt.Println(helpText)
 }
@@ -77,7 +79,7 @@ func max(a int, b int) int {
 	return a
 }
 
-func listTools(configLocation *string) {
+func listTools(configLocation *string, shortList bool) {
 	config, err := GetConfig(*configLocation)
 	if err != nil {
 		printConfigError(err)
@@ -104,10 +106,23 @@ func listTools(configLocation *string) {
 
 	sort.Sort(ByName(tmp))
 
-	fmt.Printf("%-*s    %-*s    %-*s\n\n", nameSize, "Name", linkSize, "Owner/Repository", descriptionSize, "Description")
-
-	for _, j := range tmp {
-		fmt.Printf("%-*s    %-*s    %-*s\n", nameSize, j.Name, linkSize, j.Link, descriptionSize, j.Description)
+	if shortList {
+		descriptionSize = min(descriptionSize, maxShortListDescriptionLength)
+		fmt.Printf("%-*s    %-*s\n\n", nameSize, "Name", descriptionSize, "Description")
+		
+		for _, j := range tmp {
+			extra := ""
+			if len(j.Description) > maxShortListDescriptionLength {
+				extra = "..."
+			}
+			fmt.Printf("%-*s    %.*s%s\n", nameSize, j.Name, descriptionSize, j.Description, extra)
+		}
+	} else {	
+		fmt.Printf("%-*s    %-*s    %-*s\n\n", nameSize, "Name", linkSize, "Owner/Repository", descriptionSize, "Description")
+		
+		for _, j := range tmp {
+			fmt.Printf("%-*s    %-*s    %-*s\n", nameSize, j.Name, linkSize, j.Link, descriptionSize, j.Description)
+		}
 	}
 }
 
@@ -162,6 +177,7 @@ func main() {
 
 	listCommand := flag.NewFlagSet("list", flag.ExitOnError)
 	listConfigLocation := listCommand.String("config", defaultConfigLocation, "Location of the configuration file")
+	listShort := listCommand.Bool("short", false, "Short listing only")
 
 	switch command {
 	case "-v", "--version":
@@ -173,7 +189,7 @@ func main() {
 		installTools(configLocation, installOnly, *downloadTimeout)
 	case "list":
 		listCommand.Parse(os.Args[2:])
-		listTools(listConfigLocation)
+		listTools(listConfigLocation, *listShort)
 	case "create-config":
 		configCommand.Parse(os.Args[2:])
 		err := writeDefaultConfiguration(defaultConfigFileName)
