@@ -67,7 +67,7 @@ To change the installation directory, set the value of `install_dir` to a differ
 
 ### Default configuration
 
-The default configuration, which contains some commonly used tools, can be generated with `tooli create-config --path /path/to/config.json`. The `--path` option defaults to `~/.config/tool-installer/`
+The default configuration, which contains some commonly used tools, can be generated with `tooli create-config --path /path/to/config.json`. The `--path` option defaults to `${XDG_CONFIG_HOME}/tool-installer/config.json`.
 
 ### Acess Token
 
@@ -91,7 +91,10 @@ The `install` command is tool-installer's primary command and used to install to
 
 The `timeout` parameter's default value should work fine for most tools on normal internet connection speeds. Increase it if you have a very large tool to download or a slow connection.
 
-**Note:** tool-installer does not do any caching or version checks, it will always download the latest version.
+**Notes:**
+
+- tool-installer will always get the latest release from GitHub, version fixing is intentionally not supported.
+- The installed version is cached at `${XDG_CACHE_HOME}/tool-installer/tool-versions.json`. If no newer version is available on GitHub releases, tool-installer will skip the tool if an attempt to install it again is made. If you uninstall a tool by deleting the binary, make sure to also remove the entry from the cache file.
 
 ### `create-config`
 
@@ -100,6 +103,8 @@ The `create-config` command creates a valid configuration for tool-installer, co
 ### `list`
 
 The `list` command lists the tools specified in the configuration, sorted by tool name.
+
+A `--short` option is available, limiting the description to 50 characters and omitting the repository owner's name.
 
 ## FAQ
 
