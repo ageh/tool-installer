@@ -42,7 +42,7 @@ func printConfigError(err error) {
 }
 
 func listTools(configLocation *string, shortList bool) {
-	config, err := GetConfig(*configLocation)
+	config, err := getConfig(*configLocation)
 	if err != nil {
 		printConfigError(err)
 		os.Exit(1)
@@ -93,7 +93,7 @@ func makeOutputDirectory(path *string) error {
 }
 
 func installTools(configLocation *string, installOnly *string, downloadTimeout int) {
-	config, err := GetConfig(*configLocation)
+	config, err := getConfig(*configLocation)
 	if err != nil {
 		printConfigError(err)
 		os.Exit(1)

@@ -29,7 +29,7 @@ type Configuration struct {
 	Tools                 map[string]Tool `json:"tools"`
 }
 
-func GetConfig(path string) (Configuration, error) {
+func getConfig(path string) (Configuration, error) {
 	var config Configuration
 
 	bytes, err := os.ReadFile(replaceTildePath(path))
