@@ -23,6 +23,7 @@ USAGE:
 
 COMMANDS:
     install         Installs the newest version of all tools
+    check           Checks and displays available updates
     create-config   Creates the default configuration
     list            Lists the tools in the configuration, sorted by name
 
@@ -58,6 +59,11 @@ func main() {
 	installOnly := installCommand.String("only", "", "Install only the specified tool instead of all")
 	downloadTimeout := installCommand.Int("timeout", 10, "Timeout limit for requests in seconds")
 
+	checkCommand := flag.NewFlagSet("check", flag.ExitOnError)
+	checkConfigPath := checkCommand.String("config", defaultConfigLocation, "Location of the configuration file")
+	checkAll := checkCommand.Bool("all", false, "Check all tools, not just installed ones")
+	checkTimeout := checkCommand.Int("timeout", 10, "Timeout limit for requests in seconds")
+
 	configCommand := flag.NewFlagSet("create-config", flag.ExitOnError)
 	writeConfigPath := configCommand.String("path", defaultConfigLocation, "Path of the created file")
 
@@ -82,6 +88,9 @@ func main() {
 		if err != nil {
 			fmt.Println("Error:", err)
 		}
+	case "check":
+		checkCommand.Parse((os.Args[2:]))
+		checkToolVersions(checkConfigPath, *checkAll, *checkTimeout)
 	default:
 		fmt.Printf("Error: Invalid command '%s'.\n\n", command)
 		printHelp()

@@ -75,11 +75,12 @@ Since GitHub's API is subject to rate limits, you should create a [personal acce
 
 ## Commands
 
-tool-installer has only three commands:
+tool-installer has four commands:
 
 1. `install`
 2. `create-config`
 3. `list`
+4. `check`
 
 ### `install`
 
@@ -105,6 +106,12 @@ The `create-config` command creates a valid configuration for tool-installer, co
 The `list` command lists the tools specified in the configuration, sorted by tool name.
 
 A `--short` option is available, limiting the description to 50 characters and omitting the repository owner's name.
+
+### `check`
+
+The `check` commands downloads the latest release information from GitHub and displays for which of the installed tools an update is available.
+
+By default it only checks the installed tools from the cache, but with the `--all` flag it will also obtain the latest release information from all tools listed in the configuration file.
 
 ## FAQ
 
