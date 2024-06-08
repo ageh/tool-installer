@@ -6,10 +6,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"os/user"
 	"path/filepath"
 	"runtime"
-	"strings"
 )
 
 type Binary struct {
@@ -29,27 +27,6 @@ type Tool struct {
 type Configuration struct {
 	InstallationDirectory string          `json:"install_dir"`
 	Tools                 map[string]Tool `json:"tools"`
-}
-
-func addExeSuffix(fileName string) string {
-	if !strings.HasSuffix(fileName, ".exe") {
-		return fileName + ".exe"
-	}
-
-	return fileName
-}
-
-func replaceTildePath(path string) string {
-	usr, _ := user.Current()
-	dir := usr.HomeDir
-
-	if path == "~" {
-		return dir
-	} else if strings.HasPrefix(path, "~/") {
-		return filepath.Join(dir, path[2:])
-	} else {
-		return path
-	}
 }
 
 func GetConfig(path string) (Configuration, error) {

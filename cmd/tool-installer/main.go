@@ -34,8 +34,6 @@ OPTIONS:
 For more information about a specific command, try 'tooli <command> --help'.
 `
 
-const defaultConfigLocation = "~/.config/tool-installer/config.json"
-
 const maxShortListDescriptionLength = 50
 
 func printHelp() {
@@ -109,7 +107,7 @@ func listTools(configLocation *string, shortList bool) {
 	if shortList {
 		descriptionSize = min(descriptionSize, maxShortListDescriptionLength)
 		fmt.Printf("%-*s    %-*s\n\n", nameSize, "Name", descriptionSize, "Description")
-		
+
 		for _, j := range tmp {
 			extra := ""
 			if len(j.Description) > maxShortListDescriptionLength {
@@ -117,9 +115,9 @@ func listTools(configLocation *string, shortList bool) {
 			}
 			fmt.Printf("%-*s    %.*s%s\n", nameSize, j.Name, descriptionSize, j.Description, extra)
 		}
-	} else {	
+	} else {
 		fmt.Printf("%-*s    %-*s    %-*s\n\n", nameSize, "Name", linkSize, "Owner/Repository", descriptionSize, "Description")
-		
+
 		for _, j := range tmp {
 			fmt.Printf("%-*s    %-*s    %-*s\n", nameSize, j.Name, linkSize, j.Link, descriptionSize, j.Description)
 		}
@@ -165,6 +163,12 @@ func main() {
 		os.Exit(1)
 	}
 
+	defaultConfigLocation, err := getConfigFilePath()
+	if err != nil {
+		fmt.Printf("Error obtaining default config file path: %v\n", err)
+		os.Exit(1)
+	}
+
 	command := os.Args[1]
 
 	installCommand := flag.NewFlagSet("install", flag.ExitOnError)
@@ -173,7 +177,7 @@ func main() {
 	downloadTimeout := installCommand.Int("timeout", 10, "Timeout limit for requests in seconds")
 
 	configCommand := flag.NewFlagSet("create-config", flag.ExitOnError)
-	defaultConfigFileName := configCommand.String("path", defaultConfigLocation, "Path of the created file")
+	writeConfigPath := configCommand.String("path", defaultConfigLocation, "Path of the created file")
 
 	listCommand := flag.NewFlagSet("list", flag.ExitOnError)
 	listConfigLocation := listCommand.String("config", defaultConfigLocation, "Location of the configuration file")
@@ -192,7 +196,7 @@ func main() {
 		listTools(listConfigLocation, *listShort)
 	case "create-config":
 		configCommand.Parse(os.Args[2:])
-		err := writeDefaultConfiguration(defaultConfigFileName)
+		err := writeDefaultConfiguration(writeConfigPath)
 		if err != nil {
 			fmt.Println("Error:", err)
 		}
