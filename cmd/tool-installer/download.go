@@ -124,7 +124,7 @@ func (client *Downloader) downloadAsset(url string) ([]byte, error) {
 	return result, nil
 }
 
-func (client *Downloader) downloadTool(name string, config *Configuration) error {
+func (client *Downloader) downloadTool(name string, config *Configuration, cache *Cache) error {
 
 	tool, found := config.Tools[name]
 	if !found {
@@ -135,6 +135,12 @@ func (client *Downloader) downloadTool(name string, config *Configuration) error
 	release, err := client.downloadRelease(tool.Owner, tool.Repository)
 	if err != nil {
 		return err
+	}
+
+	currentVersion, found := cache.Tools[name]
+	if found && currentVersion == release.TagName {
+		fmt.Printf("Skipping asset download for '%v' because it is already installed and up to date.", name)
+		return nil
 	}
 
 	var asset string
@@ -176,5 +182,12 @@ func (client *Downloader) downloadTool(name string, config *Configuration) error
 		return err
 	}
 
-	return extractFiles(binaryContent, &res[0], &tool, &config.InstallationDirectory)
+	err = extractFiles(binaryContent, &res[0], &tool, &config.InstallationDirectory)
+	if err != nil {
+		return err
+	}
+
+	cache.Tools[name] = release.TagName
+
+	return nil
 }

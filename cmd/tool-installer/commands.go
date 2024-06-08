@@ -105,11 +105,17 @@ func installTools(configLocation *string, installOnly *string, downloadTimeout i
 		os.Exit(1)
 	}
 
+	cache, err := getCache()
+	if err != nil {
+		fmt.Printf("Error: Could not obtain cache directory.\n")
+		os.Exit(1)
+	}
+
 	downloader := newDownloader(downloadTimeout)
 
 	if *installOnly != "" {
 		fmt.Printf("Installing tool '%s'.\n", *installOnly)
-		err = downloader.downloadTool(*installOnly, &config)
+		err = downloader.downloadTool(*installOnly, &config, &cache)
 		if err != nil {
 			fmt.Println("Error:", err)
 			os.Exit(1)
@@ -117,10 +123,12 @@ func installTools(configLocation *string, installOnly *string, downloadTimeout i
 	} else {
 		for k := range config.Tools {
 			fmt.Printf("Installing tool '%s'.\n", k)
-			err = downloader.downloadTool(k, &config)
+			err = downloader.downloadTool(k, &config, &cache)
 			if err != nil {
 				fmt.Println("Error:", err)
 			}
 		}
 	}
+
+	cache.writeCache()
 }

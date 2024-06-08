@@ -17,6 +17,23 @@ func addExeSuffix(fileName string) string {
 	return fileName
 }
 
+func getCacheFilePath() (string, error) {
+	baseDir := ""
+
+	if xdgCacheHome := os.Getenv("XDG_CACHE_HOME"); xdgCacheHome != "" {
+		baseDir = xdgCacheHome
+	} else {
+		usr, err := user.Current()
+		if err != nil {
+			return "", err
+		}
+
+		baseDir = filepath.Join(usr.HomeDir, ".cache")
+	}
+
+	return filepath.Join(baseDir, "tool-installer", "tool-versions.json"), nil
+}
+
 func getConfigFilePath() (string, error) {
 	baseDir := ""
 
