@@ -51,6 +51,7 @@ func (client *Downloader) newRequest(url string, requestFormat RequestFormat) (*
 	case rtBinary:
 		req.Header.Add("Accept", "application/octet-stream")
 	default:
+		//lint:ignore ST1005 End-user facing messages should be nice, ST1005 is not nice.
 		return nil, errors.New("Invalid request type")
 	}
 
@@ -79,7 +80,8 @@ func (client *Downloader) downloadRelease(owner string, repository string) (Rele
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return result, errors.New(fmt.Sprintf(rateLimitText, resp.StatusCode))
+		//lint:ignore ST1005 End-user facing messages should be nice, ST1005 is not nice.
+		return result, fmt.Errorf(rateLimitText, resp.StatusCode)
 	}
 
 	body, err := io.ReadAll(resp.Body)
@@ -110,7 +112,8 @@ func (client *Downloader) downloadAsset(url string) ([]byte, error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return result, errors.New(fmt.Sprintf(rateLimitText, resp.StatusCode))
+		//lint:ignore ST1005 End-user facing messages should be nice, ST1005 is not nice.
+		return result, fmt.Errorf(rateLimitText, resp.StatusCode)
 	}
 
 	result, err = io.ReadAll(resp.Body)
@@ -125,7 +128,8 @@ func (client *Downloader) downloadTool(name string, config *Configuration) error
 
 	tool, found := config.Tools[name]
 	if !found {
-		return errors.New(fmt.Sprintf("Tool '%s' not found in configuration.", name))
+		//lint:ignore ST1005 End-user facing messages should be nice, ST1005 is not nice.
+		return fmt.Errorf("Tool '%s' not found in configuration.", name)
 	}
 
 	release, err := client.downloadRelease(tool.Owner, tool.Repository)
@@ -140,10 +144,12 @@ func (client *Downloader) downloadTool(name string, config *Configuration) error
 	case "windows":
 		asset = tool.WindowsAsset
 	default:
-		return errors.New(fmt.Sprintf("The platform '%s' is not supported", os))
+		//lint:ignore ST1005 End-user facing messages should be nice, ST1005 is not nice.
+		return fmt.Errorf("The platform '%s' is not supported", os)
 	}
 
 	if asset == "" {
+		//lint:ignore ST1005 End-user facing messages should be nice, ST1005 is not nice.
 		return errors.New("No asset name provided for the current platform.")
 	}
 
@@ -155,9 +161,11 @@ func (client *Downloader) downloadTool(name string, config *Configuration) error
 	}
 
 	if len(res) == 0 {
+		//lint:ignore ST1005 End-user facing messages should be nice, ST1005 is not nice.
 		return errors.New("Could not find a matching asset. Did you forget to include one in the config?")
 	}
 	if len(res) > 1 {
+		//lint:ignore ST1005 End-user facing messages should be nice, ST1005 is not nice.
 		return errors.New("Found two or more matching assets. Please be more specific.")
 	}
 

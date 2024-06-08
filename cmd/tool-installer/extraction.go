@@ -54,10 +54,10 @@ func extractFilesZip(rawData []byte, binaries []Binary, outputPath *string) erro
 		}
 
 		fileReader, err := file.Open()
-		defer fileReader.Close()
 		if err != nil {
 			return err
 		}
+		defer fileReader.Close()
 
 		fileContent, err := io.ReadAll(fileReader)
 		if err != nil {
@@ -134,6 +134,7 @@ func extractFilesTarGz(rawData []byte, binaries []Binary, outputPath *string) er
 
 func extractFilesRaw(rawData []byte, binaries []Binary, outputPath *string) error {
 	if len(binaries) != 1 {
+		//lint:ignore ST1005 End-user facing messages should be nice, ST1005 is not nice.
 		return errors.New("Invalid number of binaries provided. Non-archive type assets can only be one binary.")
 	}
 
@@ -171,6 +172,4 @@ func extractFiles(rawData []byte, asset *Asset, tool *Tool, outputPath *string) 
 		fmt.Println("WARNING: The asset does not have a file ending. While this can be legitimate, you should probably talk to the tool author to see if he is willing to change that.")
 		return extractFilesRaw(rawData, tool.Binaries, outputPath)
 	}
-
-	return nil
 }

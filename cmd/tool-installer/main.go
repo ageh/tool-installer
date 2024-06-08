@@ -37,7 +37,7 @@ For more information about a specific command, try 'tooli <command> --help'.
 const maxShortListDescriptionLength = 50
 
 func printHelp() {
-	fmt.Println(helpText)
+	fmt.Print(helpText)
 }
 
 func printConfigError(err error) {
@@ -147,7 +147,7 @@ func installTools(configLocation *string, installOnly *string, downloadTimeout i
 			os.Exit(1)
 		}
 	} else {
-		for k, _ := range config.Tools {
+		for k := range config.Tools {
 			fmt.Printf("Installing tool '%s'.\n", k)
 			err = downloader.downloadTool(k, &config)
 			if err != nil {
