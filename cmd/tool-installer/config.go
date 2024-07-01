@@ -201,7 +201,7 @@ const defaultConfiguration = `{
 			"owner": "chmln",
 			"repository": "sd",
 			"linux_asset": "x86_64-unknown-linux-musl",
-			"windows_asset": "",
+			"windows_asset": "x86_64-pc-windows-msvc.zip",
 			"description": "Better sed"
 		},
 		"starship": {
