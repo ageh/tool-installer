@@ -22,10 +22,10 @@ USAGE:
     tooli [OPTIONS] <COMMAND>
 
 COMMANDS:
-    install         Installs the newest version of all tools
-    check           Checks and displays available updates
-    create-config   Creates the default configuration
-    list            Lists the tools in the configuration, sorted by name
+    i,  install         Installs the newest version of all tools
+    c,  check           Checks and displays available updates
+    cc, create-config   Creates the default configuration
+    l,  list            Lists the tools in the configuration, sorted by name
 
 OPTIONS:
     -h, --help      Print this help information
@@ -76,19 +76,19 @@ func main() {
 		fmt.Println(fullVersion)
 	case "-h", "--help":
 		printHelp()
-	case "install":
+	case "i", "install":
 		installCommand.Parse(os.Args[2:])
 		installTools(configLocation, installOnly, *downloadTimeout)
-	case "list":
+	case "l", "list":
 		listCommand.Parse(os.Args[2:])
 		listTools(listConfigLocation, *listShort)
-	case "create-config":
+	case "cc", "create-config":
 		configCommand.Parse(os.Args[2:])
 		err := writeDefaultConfiguration(writeConfigPath)
 		if err != nil {
 			fmt.Println("Error:", err)
 		}
-	case "check":
+	case "c", "check":
 		checkCommand.Parse((os.Args[2:]))
 		checkToolVersions(checkConfigPath, *checkAll, *checkTimeout)
 	default:
