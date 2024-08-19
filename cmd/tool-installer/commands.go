@@ -152,7 +152,7 @@ func checkToolVersions(configLocation *string, checkAll bool, downloadTimeout in
 	}
 }
 
-func listTools(configLocation *string, shortList bool) {
+func listTools(configLocation *string, longList bool) {
 	config, err := getConfig(*configLocation)
 	if err != nil {
 		printConfigError(err)
@@ -191,7 +191,13 @@ func listTools(configLocation *string, shortList bool) {
 
 	sort.Sort(ByName[TableEntry]{tmp})
 
-	if shortList {
+	if longList {
+		fmt.Printf("%-*s    %-*s    %-*s    %-*s\n\n", nameSize, "Name", linkSize, "Owner/Repository", descriptionSize, "Description", versionSize, "Version")
+
+		for _, j := range tmp {
+			fmt.Printf("%-*s    %-*s    %-*s    %-*s\n", nameSize, j.Name, linkSize, j.Link, descriptionSize, j.Description, versionSize, j.Version)
+		}
+	} else {
 		descriptionSize = min(descriptionSize, maxShortListDescriptionLength)
 		fmt.Printf("%-*s    %-*s       %-*s\n\n", nameSize, "Name", descriptionSize, "Description", versionSize, "Version")
 
@@ -202,12 +208,6 @@ func listTools(configLocation *string, shortList bool) {
 				j.Description = j.Description[:maxShortListDescriptionLength]
 			}
 			fmt.Printf("%-*s    %-*s%s    %-*s\n", nameSize, j.Name, descriptionSize, j.Description, extra, versionSize, j.Version)
-		}
-	} else {
-		fmt.Printf("%-*s    %-*s    %-*s    %-*s\n\n", nameSize, "Name", linkSize, "Owner/Repository", descriptionSize, "Description", versionSize, "Version")
-
-		for _, j := range tmp {
-			fmt.Printf("%-*s    %-*s    %-*s    %-*s\n", nameSize, j.Name, linkSize, j.Link, descriptionSize, j.Description, versionSize, j.Version)
 		}
 	}
 }

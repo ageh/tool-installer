@@ -69,7 +69,7 @@ func main() {
 
 	listCommand := flag.NewFlagSet("list", flag.ExitOnError)
 	listConfigLocation := listCommand.String("config", defaultConfigLocation, "Location of the configuration file")
-	listShort := listCommand.Bool("short", false, "Short listing only")
+	listLong := listCommand.Bool("long", false, "List long form")
 
 	switch command {
 	case "-v", "--version":
@@ -81,7 +81,7 @@ func main() {
 		installTools(configLocation, installOnly, *downloadTimeout)
 	case "l", "list":
 		listCommand.Parse(os.Args[2:])
-		listTools(listConfigLocation, *listShort)
+		listTools(listConfigLocation, *listLong)
 	case "cc", "create-config":
 		configCommand.Parse(os.Args[2:])
 		err := writeDefaultConfiguration(writeConfigPath)
