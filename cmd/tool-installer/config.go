@@ -21,6 +21,7 @@ type Tool struct {
 	Repository   string   `json:"repository"`
 	LinuxAsset   string   `json:"linux_asset"`
 	WindowsAsset string   `json:"windows_asset"`
+	AssetPrefix  string   `json:"asset_prefix,omitempty"`
 	Description  string   `json:"description"`
 }
 

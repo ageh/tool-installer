@@ -162,7 +162,11 @@ func (client *Downloader) downloadTool(name string, config *Configuration, cache
 	var res []Asset
 	for _, a := range release.Assets {
 		if strings.HasSuffix(a.Name, asset) {
-			res = append(res, a)
+			if tool.AssetPrefix == "" {
+				res = append(res, a)
+			} else if strings.HasPrefix(a.Name, tool.AssetPrefix) {
+				res = append(res, a)
+			}
 		}
 	}
 
