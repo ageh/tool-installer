@@ -2,7 +2,7 @@
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
-tool-installer (tooli) is a tool to quickly download binaries from GitHub release pages and install them into a folder.
+tool-installer (executable name: `tooli`) is a tool to quickly download binaries from GitHub release pages and install them into a folder.
 
 I wrote tool-installer to automate downloading a bunch of tools from GitHub release pages because obviously having to do that manually when setting up a new computer is tedious. It always installs the latest version and can therefore also update existing tools.
 
@@ -58,12 +58,14 @@ To change the installation directory, set the value of `install_dir` to a differ
 
 - `owner`: Name of the GitHub account under which the repository is located
 - `repository`: Name of the repository
-- `linux_asset`: The name of the asset to download on Linux, leave empty if the tool does not support Linux
-- `windows_asset`: The name of the asset to download on Windows, leave empty if the tool does not support Windows
+- `linux_asset`: The suffix of the name of the asset to download on Linux, leave empty if the tool does not support Linux
+- `windows_asset`: The suffix of the name of the asset to download on Windows, leave empty if the tool does not support Windows
 - `binaries`: A list of structs where each struct has these entries:
 	- `name`: Name of the file to extract
 	- `rename_to`: The name which the file should have after extraction, if left empty the file is not renamed. Do _not_ include the `.exe` file ending.
 - `description`: A (short) description of what the tool does
+
+Additionally, a tool can have an entry `"asset_prefix"`. You should only set this if the suffix is not sufficient to uniquely identify the asset, e.g. when putting tools that have multiple possible binaries, for example [Hugo](https://github.com/gohugoio/hugo), in your configuration.
 
 ### Default configuration
 
@@ -77,10 +79,10 @@ Since GitHub's API is subject to rate limits, you should create a [personal acce
 
 tool-installer has four commands:
 
-1. `install`
-2. `create-config`
-3. `list`
-4. `check`
+1. `install` (`i`)
+2. `create-config` (`cc`)
+3. `list`  (`l`)
+4. `check` (`c`)
 
 ### `install`
 
@@ -105,7 +107,7 @@ The `create-config` command creates a valid configuration for tool-installer, co
 
 The `list` command lists the tools specified in the configuration, sorted by tool name.
 
-A `--short` option is available, limiting the description to 50 characters and omitting the repository owner's name.
+A `--long` option is available to display everything, by default the description is limited to 50 characters and the repository is omitted.
 
 ### `check`
 
