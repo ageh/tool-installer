@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.0] - 2024-08-21
+
+### Added
+
+- Windows binary for `sd` in default config
+- Short forms for commands (e.g. `l` for `list`)
+- An _optional_ `asset_prefix` entry in the config for tools that provide multiple possible binaries
+
+### Changed
+
+- `list` command now defaults to short form
+
 ## [1.4.0] - 2024-06-08
 
 ### Added
