@@ -44,6 +44,10 @@ Examples:
 
 tooli list
 tooli list long`
+const updateHelp = `Updates all installed tools to their latest version.
+
+Examples:
+tooli update`
 
 type TableEntry struct {
 	Name        string
@@ -106,17 +110,14 @@ func getCommandHelp(command string) string {
 		return listHelp
 	case "h", "help":
 		return helpHelp
+	case "u", "update":
+		return updateHelp
 	default:
 		return fmt.Sprintf("Error: '%s' is not a valid command", command)
 	}
 }
 
-func getOutdatedTools(config Configuration, checkAll bool, downloadTimeout int) ([]VersionTableEntry, error) {
-	cache, err := getCache()
-	if err != nil {
-		return []VersionTableEntry{}, err
-	}
-
+func getOutdatedTools(config Configuration, checkAll bool, downloadTimeout int, cache Cache) ([]VersionTableEntry, error) {
 	downloader := newDownloader(downloadTimeout)
 
 	var nTools int
@@ -174,7 +175,12 @@ func getOutdatedTools(config Configuration, checkAll bool, downloadTimeout int) 
 }
 
 func checkToolVersions(config Configuration, checkAll bool, downloadTimeout int) error {
-	results, err := getOutdatedTools(config, checkAll, downloadTimeout)
+	cache, err := getCache()
+	if err != nil {
+		return err
+	}
+
+	results, err := getOutdatedTools(config, checkAll, downloadTimeout, cache)
 	if err != nil {
 		return err
 	}
@@ -333,6 +339,55 @@ func installTools(config Configuration, tools []string, downloadTimeout int) err
 			if err != nil {
 				fmt.Println("Error:", err)
 			}
+		}
+	}
+
+	err = cache.writeCache()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func updateTools(config Configuration, downloadTimeout int) error {
+	cache, err := getCache()
+	if err != nil {
+		return err
+	}
+
+	outdated, err := getOutdatedTools(config, false, downloadTimeout, cache)
+	if err != nil {
+		return err
+	}
+
+	err = makeOutputDirectory(config.InstallationDirectory)
+	if err != nil {
+		return err
+	}
+
+	downloader := newDownloader(downloadTimeout)
+	for _, t := range outdated {
+		name := t.Name
+
+		fmt.Printf("Installing tool '%s'.\n", name)
+		tool, found := config.Tools[name]
+		if !found {
+			fmt.Printf("Error: tool '%s' not found in configuration\n", name)
+			continue
+		}
+
+		currentVersion := cache.Tools[name]
+
+		result, err := downloader.downloadTool(tool, currentVersion)
+		if err != nil {
+			fmt.Println("Error:", err)
+			continue
+		}
+
+		err = installFiles(name, tool.Binaries, result, config.InstallationDirectory, &cache)
+		if err != nil {
+			fmt.Println("Error:", err)
 		}
 	}
 

@@ -28,6 +28,7 @@ COMMANDS:
     cc, create-config   Creates the default configuration
     h,  help            Shows the help for the program or given command
     l,  list            Lists the tools in the configuration, sorted by name
+    u,  update          Updates the installed tools to the latest version
 
 OPTIONS:
     -h, --help      Print this help information
@@ -141,6 +142,8 @@ func run() int {
 	case "c", "check":
 		checkAll := hasArguments && args.commandArguments[0] == "all"
 		err = checkToolVersions(config, checkAll, args.requestTimeout)
+	case "u", "update":
+		err = updateTools(config, args.requestTimeout)
 	default:
 		fmt.Printf("Error: Invalid command '%s'.\n\n", args.command)
 		printHelp()
