@@ -3,6 +3,7 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"os"
@@ -19,19 +20,22 @@ all your favourite binaries from GitHub at once.
 Project home page: https://github.com/ageh/tool-installer
 
 USAGE:
-    tooli [OPTIONS] <COMMAND>
+    tooli [OPTIONS] <COMMAND> [COMMAND_ARGS...]
 
 COMMANDS:
-    i,  install         Installs the newest version of all tools
+    i,  install         Installs the newest version of all or the selected tools
     c,  check           Checks and displays available updates
     cc, create-config   Creates the default configuration
+    h,  help            Shows the help for the program or given command
     l,  list            Lists the tools in the configuration, sorted by name
 
 OPTIONS:
     -h, --help      Print this help information
-    -v, --version   Print version information
+    -v, --version   Print the version of tool-installer
+    -c, --config    Specify from where to read the configuration (default: ~/.config/tool-installer/config.json)
+    -t, --timeout   Timeout for requests to GitHub in seconds (default: 10)
 
-For more information about a specific command, try 'tooli <command> --help'.
+For more information about a specific command, try 'tooli help <command>'.
 `
 
 const maxShortListDescriptionLength = 50
@@ -40,62 +44,117 @@ func printHelp() {
 	fmt.Print(helpText)
 }
 
-func main() {
-	if len(os.Args) < 2 {
-		printHelp()
-		os.Exit(1)
-	}
+func printConfigError(err error) {
+	fmt.Printf("Error: could not load configuration: '%v'\n", err)
+	fmt.Println("Check if the configuration file is valid.")
+	fmt.Println("You can generate a new configuration file with 'tooli create-config'.")
+}
 
+type Arguments struct {
+	commandArguments []string
+	command          string
+	configPath       string
+	requestTimeout   int
+	showHelp         bool
+	showVersion      bool
+}
+
+func (args *Arguments) hasCommandArguments() bool {
+	return len(args.commandArguments) > 0
+}
+
+func parseArguments() (Arguments, error) {
+	var result Arguments
 	defaultConfigLocation, err := getConfigFilePath()
 	if err != nil {
-		fmt.Printf("Error obtaining default config file path: %v\n", err)
-		os.Exit(1)
+		return result, err
 	}
 
-	command := os.Args[1]
+	flag.StringVar(&result.configPath, "config", defaultConfigLocation, "Location of the configuration file")
+	flag.BoolVar(&result.showHelp, "help", false, "Show program help")
+	flag.BoolVar(&result.showVersion, "version", false, "Show program version")
+	flag.IntVar(&result.requestTimeout, "timeout", 10, "Timeout for requests to GitHub")
 
-	installCommand := flag.NewFlagSet("install", flag.ExitOnError)
-	configLocation := installCommand.String("config", defaultConfigLocation, "Location of the configuration file")
-	installOnly := installCommand.String("only", "", "Install only the specified tool instead of all")
-	downloadTimeout := installCommand.Int("timeout", 10, "Timeout limit for requests in seconds")
+	// Override by default existing -h to produce the same effect as --help
+	flag.Usage = printHelp
 
-	checkCommand := flag.NewFlagSet("check", flag.ExitOnError)
-	checkConfigPath := checkCommand.String("config", defaultConfigLocation, "Location of the configuration file")
-	checkAll := checkCommand.Bool("all", false, "Check all tools, not just installed ones")
-	checkTimeout := checkCommand.Int("timeout", 10, "Timeout limit for requests in seconds")
+	flag.Parse()
 
-	configCommand := flag.NewFlagSet("create-config", flag.ExitOnError)
-	writeConfigPath := configCommand.String("path", defaultConfigLocation, "Path of the created file")
+	if result.showHelp || result.showVersion {
+		return result, nil
+	}
 
-	listCommand := flag.NewFlagSet("list", flag.ExitOnError)
-	listConfigLocation := listCommand.String("config", defaultConfigLocation, "Location of the configuration file")
-	listLong := listCommand.Bool("long", false, "List long form")
+	args := flag.Args()
+	if len(args) < 1 {
+		return result, errors.New("missing command")
+	}
 
-	switch command {
-	case "-v", "--version":
+	result.command = args[0]
+	result.commandArguments = args[1:]
+
+	return result, nil
+}
+
+func run() int {
+	args, err := parseArguments()
+	if err != nil {
+		fmt.Printf("Error: %v", err)
+		return 1
+	}
+
+	if args.showHelp {
+		printHelp()
+		return 0
+	}
+
+	if args.showVersion {
 		fmt.Println(fullVersion)
-	case "-h", "--help":
-		printHelp()
-	case "i", "install":
-		installCommand.Parse(os.Args[2:])
-		installTools(configLocation, installOnly, *downloadTimeout)
-	case "l", "list":
-		listCommand.Parse(os.Args[2:])
-		listTools(listConfigLocation, *listLong)
-	case "cc", "create-config":
-		configCommand.Parse(os.Args[2:])
-		err := writeDefaultConfiguration(writeConfigPath)
-		if err != nil {
-			fmt.Println("Error:", err)
-		}
-	case "c", "check":
-		checkCommand.Parse((os.Args[2:]))
-		checkToolVersions(checkConfigPath, *checkAll, *checkTimeout)
-	default:
-		fmt.Printf("Error: Invalid command '%s'.\n\n", command)
-		printHelp()
-		os.Exit(1)
+		return 0
 	}
 
-	os.Exit(0)
+	config, err := getConfig(args.configPath)
+	if err != nil {
+		printConfigError(err)
+		return 1
+	}
+
+	hasArguments := args.hasCommandArguments()
+
+	switch args.command {
+	case "h", "help":
+		if hasArguments {
+			fmt.Println(getCommandHelp(args.commandArguments[0]))
+		} else {
+			printHelp()
+		}
+	case "i", "install":
+		err = installTools(config, args.commandArguments, args.requestTimeout)
+	case "l", "list":
+		listLong := hasArguments && args.commandArguments[0] == "long"
+		err = listTools(config, listLong)
+	case "cc", "create-config":
+		configWritePath := args.configPath
+		if hasArguments {
+			configWritePath = args.commandArguments[0]
+		}
+		err = writeDefaultConfiguration(configWritePath)
+	case "c", "check":
+		checkAll := hasArguments && args.commandArguments[0] == "all"
+		err = checkToolVersions(config, checkAll, args.requestTimeout)
+	default:
+		fmt.Printf("Error: Invalid command '%s'.\n\n", args.command)
+		printHelp()
+		return 1
+	}
+
+	if err != nil {
+		fmt.Println("Error:", err)
+		return 1
+	}
+
+	return 0
+}
+
+func main() {
+	os.Exit(run())
 }

@@ -247,26 +247,38 @@ const defaultConfiguration = `{
 	}
 }`
 
-func writeDefaultConfiguration(path *string) error {
-	filePath := replaceTildePath(*path)
+const configurationWritingError = "error writing configuration to file: %w"
+
+func writeDefaultConfiguration(path string) error {
+	filePath := replaceTildePath(path)
 	dirName := filepath.Dir(filePath)
 
 	err := os.MkdirAll(dirName, 0755)
 	if err != nil {
-		return err
+		return fmt.Errorf(configurationWritingError, err)
 	}
 
 	_, err = os.Stat(filePath)
 	if err == nil {
 		fmt.Print("A file already exists at that location. Overwrite? [y/N]")
 		var input string
-		fmt.Scan(&input)
-		if input != "" && (input[0] == 121 || input[0] == 89) {
-			return os.WriteFile(filePath, []byte(defaultConfiguration), 0644)
+		_, err := fmt.Scan(&input)
+		if err != nil {
+			return fmt.Errorf(configurationWritingError, err)
 		}
 
-		return nil
+		if input == "y" || input == "Y" {
+			err = os.WriteFile(filePath, []byte(defaultConfiguration), 0644)
+			if err != nil {
+				return fmt.Errorf(configurationWritingError, err)
+			}
+		}
 	} else {
-		return os.WriteFile(filePath, []byte(defaultConfiguration), 0644)
+		err = os.WriteFile(filePath, []byte(defaultConfiguration), 0644)
+		if err != nil {
+			return fmt.Errorf(configurationWritingError, err)
+		}
 	}
+
+	return nil
 }

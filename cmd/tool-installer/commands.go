@@ -8,6 +8,43 @@ import (
 	"sort"
 )
 
+const checkHelp = `Checks the configured tools for version updates.
+
+By default only the currently installed tools are check, to change this pass 'all' as an argument to the command.
+
+Examples:
+
+tooli check
+tooli check all`
+const createConfigHelp = `Creates the default configuration.
+
+By default the configuration is written to '~/.config/tool-installer/config.json',
+but this can be changed by passing a different path as an argument.
+
+Examples:
+
+tooli create-config
+tooli create-config test.json`
+const helpHelp = `Shows the help for the program or command.
+
+Examples:
+tooli help
+tooli help install`
+const installHelp = `Installs tools. If no arguments are provided, it installs all tools in the configuration.
+Installs only the named tools if provided with a space separated list of tools to install.
+
+Examples
+
+tooli install
+tooli install ripgrep
+tooli install ripgrep eza bat fd`
+const listHelp = `Lists the tools present in the configuration.
+
+Examples:
+
+tooli list
+tooli list long`
+
 type TableEntry struct {
 	Name        string
 	Link        string
@@ -57,23 +94,27 @@ func max(a int, b int) int {
 	return a
 }
 
-func printConfigError(err error) {
-	fmt.Printf("Error: Could not load configuration: %v.\n", err)
-	fmt.Println("Check if the configuration file is valid.")
-	fmt.Println("You can generate a new configuration file with 'tooli create-config'.")
+func getCommandHelp(command string) string {
+	switch command {
+	case "c", "check":
+		return checkHelp
+	case "cc", "create-config":
+		return createConfigHelp
+	case "i", "install":
+		return installHelp
+	case "l", "list":
+		return listHelp
+	case "h", "help":
+		return helpHelp
+	default:
+		return fmt.Sprintf("Error: '%s' is not a valid command", command)
+	}
 }
 
-func checkToolVersions(configLocation *string, checkAll bool, downloadTimeout int) {
-	config, err := getConfig(*configLocation)
-	if err != nil {
-		printConfigError(err)
-		os.Exit(1)
-	}
-
+func getOutdatedTools(config Configuration, checkAll bool, downloadTimeout int) ([]VersionTableEntry, error) {
 	cache, err := getCache()
 	if err != nil {
-		fmt.Printf("Error: Failed to obtain cache. Message: %v", err)
-		os.Exit(1)
+		return []VersionTableEntry{}, err
 	}
 
 	downloader := newDownloader(downloadTimeout)
@@ -87,28 +128,20 @@ func checkToolVersions(configLocation *string, checkAll bool, downloadTimeout in
 
 	tmp := make([]VersionTableEntry, nTools)
 
-	nameSize := 4
-	installedSize := 9
-	availableSize := 9
-
 	if checkAll {
 		i := 0
-		for k, v := range config.Tools {
-			release, err := downloader.downloadRelease(v.Owner, v.Repository)
+		for name, tool := range config.Tools {
+			release, err := downloader.downloadRelease(tool.Owner, tool.Repository)
 			if err != nil {
-				fmt.Printf("Error obtaining latest release of tool '%v'. Message: %v\n", k, err)
+				fmt.Printf("Error: failed to obtain latest release of tool '%s': %v\n", name, err)
 				continue
 			}
 
-			tmp[i] = VersionTableEntry{Name: k, Installed: "", Available: release.TagName}
+			tmp[i] = VersionTableEntry{Name: name, Installed: "", Available: release.TagName}
 
-			if current, found := cache.Tools[k]; found {
+			if current, found := cache.Tools[name]; found {
 				tmp[i].Installed = current
 			}
-
-			nameSize = max(nameSize, len(k))
-			installedSize = max(installedSize, len(tmp[i].Installed))
-			availableSize = max(availableSize, len(tmp[i].Available))
 
 			i++
 		}
@@ -118,15 +151,11 @@ func checkToolVersions(configLocation *string, checkAll bool, downloadTimeout in
 			tool := config.Tools[name]
 			release, err := downloader.downloadRelease(tool.Owner, tool.Repository)
 			if err != nil {
-				fmt.Printf("Error obtaining latest release of tool '%v'. Message: %v\n", name, err)
+				fmt.Printf("Error: failed to obtain latest release of tool '%s': %v\n", name, err)
 				continue
 			}
 
 			tmp[i] = VersionTableEntry{Name: name, Installed: version, Available: release.TagName}
-
-			nameSize = max(nameSize, len(name))
-			installedSize = max(installedSize, len(tmp[i].Installed))
-			availableSize = max(availableSize, len(tmp[i].Available))
 
 			i++
 		}
@@ -141,28 +170,42 @@ func checkToolVersions(configLocation *string, checkAll bool, downloadTimeout in
 		}
 	}
 
+	return results, nil
+}
+
+func checkToolVersions(config Configuration, checkAll bool, downloadTimeout int) error {
+	results, err := getOutdatedTools(config, checkAll, downloadTimeout)
+	if err != nil {
+		return err
+	}
+
+	nameSize := 4
+	installedSize := 9
+	availableSize := 9
+
+	for _, r := range results {
+		nameSize = max(nameSize, len(r.Name))
+		installedSize = max(installedSize, len(r.Installed))
+		availableSize = max(availableSize, len(r.Available))
+	}
+
 	if len(results) > 0 {
 		fmt.Printf("%-*s    %-*s    %-*s\n\n", nameSize, "Name", installedSize, "Installed", availableSize, "Available")
 
-		for _, j := range results {
-			fmt.Printf("%-*s    %-*s    %-*s\n", nameSize, j.Name, installedSize, j.Installed, availableSize, j.Available)
+		for _, e := range results {
+			fmt.Printf("%-*s    %-*s    %-*s\n", nameSize, e.Name, installedSize, e.Installed, availableSize, e.Available)
 		}
 	} else {
 		fmt.Println("All tools are up to date.")
 	}
+
+	return nil
 }
 
-func listTools(configLocation *string, longList bool) {
-	config, err := getConfig(*configLocation)
-	if err != nil {
-		printConfigError(err)
-		os.Exit(1)
-	}
-
+func listTools(config Configuration, longList bool) error {
 	cache, err := getCache()
 	if err != nil {
-		fmt.Printf("Error: Failed to obtain cache. Message: %v", err)
-		os.Exit(1)
+		return err
 	}
 
 	// Minimum sizes based on header line
@@ -210,49 +253,93 @@ func listTools(configLocation *string, longList bool) {
 			fmt.Printf("%-*s    %-*s%s    %-*s\n", nameSize, j.Name, descriptionSize, j.Description, extra, versionSize, j.Version)
 		}
 	}
+
+	return nil
 }
 
-func makeOutputDirectory(path *string) error {
-	return os.MkdirAll(*path, 0755)
-}
-
-func installTools(configLocation *string, installOnly *string, downloadTimeout int) {
-	config, err := getConfig(*configLocation)
+func makeOutputDirectory(path string) error {
+	err := os.MkdirAll(path, 0755)
 	if err != nil {
-		printConfigError(err)
-		os.Exit(1)
+		return fmt.Errorf("error creating output directory ('%s'): %w", path, err)
 	}
 
-	err = makeOutputDirectory(&config.InstallationDirectory)
+	return nil
+}
+
+func installFiles(name string, binaries []Binary, result DownloadResult, installationDirectory string, cache *Cache) error {
+	err := extractFiles(result.data, result.assetName, binaries, installationDirectory)
 	if err != nil {
-		fmt.Printf("Error: Could not create output directory %v.\n", config.InstallationDirectory)
-		os.Exit(1)
+		return fmt.Errorf("error during tool installation: %w", err)
+	}
+
+	cache.Tools[name] = result.tagName
+
+	return nil
+}
+
+func installTools(config Configuration, tools []string, downloadTimeout int) error {
+	err := makeOutputDirectory(config.InstallationDirectory)
+	if err != nil {
+		return err
 	}
 
 	cache, err := getCache()
 	if err != nil {
-		fmt.Printf("Error: Could not obtain cache directory.\n")
-		os.Exit(1)
+		return err
 	}
 
 	downloader := newDownloader(downloadTimeout)
 
-	if *installOnly != "" {
-		fmt.Printf("Installing tool '%s'.\n", *installOnly)
-		err = downloader.downloadTool(*installOnly, &config, &cache)
-		if err != nil {
-			fmt.Println("Error:", err)
-			os.Exit(1)
+	if len(tools) > 0 {
+		for _, name := range tools {
+			fmt.Printf("Installing tool '%s'.\n", name)
+			tool, found := config.Tools[name]
+			if !found {
+				fmt.Printf("Error: tool '%s' not found in configuration\n", name)
+				continue
+			}
+
+			currentVersion := cache.Tools[name]
+
+			result, err := downloader.downloadTool(tool, currentVersion)
+			if err != nil {
+				fmt.Println("Error:", err)
+				continue
+			}
+
+			err = installFiles(name, tool.Binaries, result, config.InstallationDirectory, &cache)
+			if err != nil {
+				fmt.Println("Error:", err)
+			}
 		}
 	} else {
-		for k := range config.Tools {
-			fmt.Printf("Installing tool '%s'.\n", k)
-			err = downloader.downloadTool(k, &config, &cache)
+		for name, tool := range config.Tools {
+			fmt.Printf("Installing tool '%s'.\n", name)
+
+			currentVersion := cache.Tools[name]
+
+			result, err := downloader.downloadTool(tool, currentVersion)
+			if err != nil {
+				fmt.Println("Error:", err)
+				continue
+			}
+
+			if result.updated {
+				fmt.Printf("Info: skipping download for '%v' because it is already installed and up to date", name)
+				continue
+			}
+
+			err = installFiles(name, tool.Binaries, result, config.InstallationDirectory, &cache)
 			if err != nil {
 				fmt.Println("Error:", err)
 			}
 		}
 	}
 
-	cache.writeCache()
+	err = cache.writeCache()
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
