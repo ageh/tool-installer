@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"sort"
+	"sync"
 )
 
 const checkHelp = `Checks the configured tools for version updates.
@@ -120,58 +121,52 @@ func getCommandHelp(command string) string {
 func getOutdatedTools(config Configuration, checkAll bool, downloadTimeout int, cache Cache) ([]VersionTableEntry, error) {
 	downloader := newDownloader(downloadTimeout)
 
-	var nTools int
+	var tools map[string]Tool
 	if checkAll {
-		nTools = len(config.Tools)
+		tools = config.Tools
 	} else {
-		nTools = len(cache.Tools)
+		tools = make(map[string]Tool, len(cache.Tools))
+		for name := range cache.Tools {
+			tools[name] = config.Tools[name]
+		}
 	}
 
-	tmp := make([]VersionTableEntry, nTools)
+	var wg sync.WaitGroup
 
-	if checkAll {
-		i := 0
-		for name, tool := range config.Tools {
+	results := make(chan VersionTableEntry, len(tools))
+
+	for name, tool := range tools {
+		wg.Add(1)
+
+		go func() {
+			defer wg.Done()
+
 			release, err := downloader.downloadRelease(tool.Owner, tool.Repository)
 			if err != nil {
 				fmt.Printf("Error: failed to obtain latest release of tool '%s': %v\n", name, err)
-				continue
+				return
 			}
 
-			tmp[i] = VersionTableEntry{Name: name, Installed: "", Available: release.TagName}
+			results <- VersionTableEntry{Name: name, Installed: cache.Tools[name], Available: release.TagName}
+		}()
+	}
 
-			if current, found := cache.Tools[name]; found {
-				tmp[i].Installed = current
-			}
+	go func() {
+		wg.Wait()
+		close(results)
+	}()
 
-			i++
-		}
-	} else {
-		i := 0
-		for name, version := range cache.Tools {
-			tool := config.Tools[name]
-			release, err := downloader.downloadRelease(tool.Owner, tool.Repository)
-			if err != nil {
-				fmt.Printf("Error: failed to obtain latest release of tool '%s': %v\n", name, err)
-				continue
-			}
+	result := make([]VersionTableEntry, 0)
 
-			tmp[i] = VersionTableEntry{Name: name, Installed: version, Available: release.TagName}
-
-			i++
+	for r := range results {
+		if r.Installed != r.Available {
+			result = append(result, r)
 		}
 	}
 
-	sort.Sort(ByName[VersionTableEntry]{tmp})
+	sort.Sort(ByName[VersionTableEntry]{result})
 
-	results := make([]VersionTableEntry, 0)
-	for _, entry := range tmp {
-		if entry.Installed != entry.Available {
-			results = append(results, entry)
-		}
-	}
-
-	return results, nil
+	return result, nil
 }
 
 func checkToolVersions(config Configuration, checkAll bool, downloadTimeout int) error {
@@ -272,15 +267,18 @@ func makeOutputDirectory(path string) error {
 	return nil
 }
 
-func installFiles(name string, binaries []Binary, result DownloadResult, installationDirectory string, cache *Cache) error {
+func installFiles(binaries []Binary, result DownloadResult, installationDirectory string) (string, error) {
 	err := extractFiles(result.data, result.assetName, binaries, installationDirectory)
 	if err != nil {
-		return fmt.Errorf("error during tool installation: %w", err)
+		return "", fmt.Errorf("error during tool installation: %w", err)
 	}
 
-	cache.Tools[name] = result.tagName
+	return result.tagName, nil
+}
 
-	return nil
+type ToolVersion struct {
+	name    string
+	version string
 }
 
 func installTools(config Configuration, tools []string, downloadTimeout int) error {
@@ -296,50 +294,62 @@ func installTools(config Configuration, tools []string, downloadTimeout int) err
 
 	downloader := newDownloader(downloadTimeout)
 
+	var toInstall map[string]Tool
+
 	if len(tools) > 0 {
+		toInstall = make(map[string]Tool, len(tools))
 		for _, name := range tools {
-			fmt.Printf("Installing tool '%s'.\n", name)
 			tool, found := config.Tools[name]
 			if !found {
 				fmt.Printf("Error: tool '%s' not found in configuration\n", name)
 				continue
 			}
 
-			currentVersion := cache.Tools[name]
-
-			result, err := downloader.downloadTool(tool, currentVersion)
-			if err != nil {
-				fmt.Println("Error:", err)
-				continue
-			}
-
-			err = installFiles(name, tool.Binaries, result, config.InstallationDirectory, &cache)
-			if err != nil {
-				fmt.Println("Error:", err)
-			}
+			toInstall[name] = tool
 		}
 	} else {
-		for name, tool := range config.Tools {
-			fmt.Printf("Installing tool '%s'.\n", name)
+		toInstall = config.Tools
+	}
+
+	var wg sync.WaitGroup
+
+	results := make(chan ToolVersion, len(toInstall))
+
+	for name, tool := range toInstall {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
 
 			currentVersion := cache.Tools[name]
 
 			result, err := downloader.downloadTool(tool, currentVersion)
 			if err != nil {
 				fmt.Println("Error:", err)
-				continue
+				return
 			}
 
 			if result.updated {
-				fmt.Printf("Info: skipping download for '%v' because it is already installed and up to date", name)
-				continue
+				fmt.Printf("Info: skipping download for '%v' because it is already installed and up to date\n", name)
+				return
 			}
 
-			err = installFiles(name, tool.Binaries, result, config.InstallationDirectory, &cache)
+			installedVersion, err := installFiles(tool.Binaries, result, config.InstallationDirectory)
 			if err != nil {
 				fmt.Println("Error:", err)
+				return
 			}
-		}
+
+			results <- ToolVersion{name: name, version: installedVersion}
+		}()
+	}
+
+	go func() {
+		wg.Wait()
+		close(results)
+	}()
+
+	for result := range results {
+		cache.Tools[result.name] = result.version
 	}
 
 	err = cache.writeCache()
@@ -361,40 +371,10 @@ func updateTools(config Configuration, downloadTimeout int) error {
 		return err
 	}
 
-	err = makeOutputDirectory(config.InstallationDirectory)
-	if err != nil {
-		return err
+	tools := make([]string, len(outdated))
+	for i, tmp := range outdated {
+		tools[i] = tmp.Name
 	}
 
-	downloader := newDownloader(downloadTimeout)
-	for _, t := range outdated {
-		name := t.Name
-
-		fmt.Printf("Installing tool '%s'.\n", name)
-		tool, found := config.Tools[name]
-		if !found {
-			fmt.Printf("Error: tool '%s' not found in configuration\n", name)
-			continue
-		}
-
-		currentVersion := cache.Tools[name]
-
-		result, err := downloader.downloadTool(tool, currentVersion)
-		if err != nil {
-			fmt.Println("Error:", err)
-			continue
-		}
-
-		err = installFiles(name, tool.Binaries, result, config.InstallationDirectory, &cache)
-		if err != nil {
-			fmt.Println("Error:", err)
-		}
-	}
-
-	err = cache.writeCache()
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return installTools(config, tools, downloadTimeout)
 }
