@@ -72,9 +72,12 @@ func parseArguments() (Arguments, error) {
 	}
 
 	flag.StringVar(&result.configPath, "config", defaultConfigLocation, "Location of the configuration file")
+	flag.StringVar(&result.configPath, "c", defaultConfigLocation, "Location of the configuration file")
 	flag.BoolVar(&result.showHelp, "help", false, "Show program help")
 	flag.BoolVar(&result.showVersion, "version", false, "Show program version")
+	flag.BoolVar(&result.showVersion, "v", false, "Show program version")
 	flag.IntVar(&result.requestTimeout, "timeout", 10, "Timeout for requests to GitHub")
+	flag.IntVar(&result.requestTimeout, "t", 10, "Timeout for requests to GitHub")
 
 	// Override by default existing -h to produce the same effect as --help
 	flag.Usage = printHelp
