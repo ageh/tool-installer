@@ -24,10 +24,12 @@ USAGE:
 
 COMMANDS:
     i,  install         Installs the newest version of all or the selected tools
+    a,  add             Adds a new tool to the configuration
     c,  check           Checks and displays available updates
     cc, create-config   Creates the default configuration
     h,  help            Shows the help for the program or given command
     l,  list            Lists the tools in the configuration, sorted by name
+    r,  remove          Removes tools from the configuration
     u,  update          Updates the installed tools to the latest version
 
 OPTIONS:
@@ -155,6 +157,12 @@ You can generate a new configuration file with 'tooli create-config'`, err)
 	}
 
 	switch args.command {
+	case "a", "add":
+		if !hasArguments {
+			err = errors.New("name of the tool needs to be provided as an argument")
+		} else {
+			err = addTool(&config, args.commandArguments[0], args.configPath)
+		}
 	case "c", "check":
 		checkAll := hasArguments && args.commandArguments[0] == "all"
 		err = checkToolVersions(config, checkAll, args.requestTimeout)
@@ -163,6 +171,8 @@ You can generate a new configuration file with 'tooli create-config'`, err)
 	case "l", "list":
 		listLong := hasArguments && args.commandArguments[0] == "long"
 		err = listTools(config, listLong)
+	case "r", "remove":
+		err = removeTools(&config, args.commandArguments, args.configPath)
 	case "u", "update":
 		err = updateTools(config, args.requestTimeout)
 	default:

@@ -3,12 +3,20 @@
 package main
 
 import (
+	"bufio"
+	"errors"
 	"fmt"
 	"os"
 	"sort"
+	"strings"
 	"sync"
 )
 
+const addHelp = `Adds a tool to the configuration by prompting the necessary values from the user.
+
+Examples:
+tooli add ripgrep
+tooli add bat`
 const checkHelp = `Checks the configured tools for version updates.
 
 By default only the currently installed tools are check, to change this pass 'all' as an argument to the command.
@@ -45,6 +53,11 @@ Examples:
 
 tooli list
 tooli list long`
+const removeHelp = `Removes one or more tools from the configuration.
+
+Examples:
+tooli remove ripgrep
+tooli remove ripgrep bat micro`
 const updateHelp = `Updates all installed tools to their latest version.
 
 Examples:
@@ -101,6 +114,8 @@ func max(a int, b int) int {
 
 func getCommandHelp(command string) string {
 	switch command {
+	case "a", "add":
+		return addHelp
 	case "c", "check":
 		return checkHelp
 	case "cc", "create-config":
@@ -111,6 +126,8 @@ func getCommandHelp(command string) string {
 		return installHelp
 	case "l", "list":
 		return listHelp
+	case "r", "remove":
+		return removeHelp
 	case "u", "update":
 		return updateHelp
 	default:
@@ -377,4 +394,105 @@ func updateTools(config Configuration, downloadTimeout int) error {
 	}
 
 	return installTools(config, tools, downloadTimeout)
+}
+
+func prompt(text string) string {
+	fmt.Print(text)
+	reader := bufio.NewReader(os.Stdin)
+	input, err := reader.ReadString('\n')
+	if err != nil {
+		fmt.Printf("Error reading input: %v\n", err)
+		return ""
+	}
+
+	return strings.TrimSpace(input)
+}
+
+func promptNonEmpty(text string) string {
+	fmt.Print(text)
+
+	for {
+		reader := bufio.NewReader(os.Stdin)
+		input, err := reader.ReadString('\n')
+		if err != nil {
+			fmt.Printf("Error reading input: %v\n", err)
+			return ""
+		}
+
+		result := strings.TrimSpace(input)
+
+		if result != "" {
+			return result
+		}
+
+		fmt.Print("Input must not be empty. Please try again: ")
+	}
+}
+
+func promptForBinary() (Binary, bool) {
+	binary := prompt("Binary name: ")
+	rename := prompt("Rename binary to (leave empty if no rename): ")
+
+	if binary == "" {
+		return Binary{}, false
+	}
+
+	return Binary{Name: binary, RenameTo: rename}, true
+}
+
+func addTool(config *Configuration, name string, configPath string) error {
+	_, found := config.Tools[name]
+	if found {
+		return errors.New("an entry for this tool already exists. If you want to modify it, please edit the configuration file")
+	}
+
+	fmt.Printf("Creating configuration entry for %s:\n", name)
+
+	description := promptNonEmpty("Short description: ")
+	owner := promptNonEmpty("GitHub user/org: ")
+	repo := promptNonEmpty("Repository name: ")
+
+	windows := prompt("Windows asset name: ")
+	linux := prompt("Linux asset name: ")
+
+	prefix := prompt("Asset prefix (leave empty if not needed): ")
+
+	binary := promptNonEmpty("Binary name: ")
+	rename := prompt("Rename binary to (leave empty if no rename): ")
+
+	furtherEntries := prompt("Does this tool have more binaries? [y/N]: ")
+
+	binaries := []Binary{{Name: binary, RenameTo: rename}}
+
+	if furtherEntries == "y" || furtherEntries == "Y" {
+		for {
+			binary, ok := promptForBinary()
+
+			if !ok {
+				break
+			}
+
+			binaries = append(binaries, binary)
+		}
+	}
+
+	config.Tools[name] = Tool{
+		Binaries:     binaries,
+		Owner:        owner,
+		Repository:   repo,
+		LinuxAsset:   linux,
+		WindowsAsset: windows,
+		AssetPrefix:  prefix,
+		Description:  description,
+	}
+
+	return config.save(configPath, false)
+}
+
+func removeTools(config *Configuration, tools []string, configPath string) error {
+	for _, t := range tools {
+		delete(config.Tools, t)
+	}
+
+	return config.save(configPath, false)
 }
