@@ -105,12 +105,12 @@ func getCommandHelp(command string) string {
 		return checkHelp
 	case "cc", "create-config":
 		return createConfigHelp
+	case "h", "help":
+		return helpHelp
 	case "i", "install":
 		return installHelp
 	case "l", "list":
 		return listHelp
-	case "h", "help":
-		return helpHelp
 	case "u", "update":
 		return updateHelp
 	default:

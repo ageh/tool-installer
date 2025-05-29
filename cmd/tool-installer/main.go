@@ -155,14 +155,14 @@ You can generate a new configuration file with 'tooli create-config'`, err)
 	}
 
 	switch args.command {
+	case "c", "check":
+		checkAll := hasArguments && args.commandArguments[0] == "all"
+		err = checkToolVersions(config, checkAll, args.requestTimeout)
 	case "i", "install":
 		err = installTools(config, args.commandArguments, args.requestTimeout)
 	case "l", "list":
 		listLong := hasArguments && args.commandArguments[0] == "long"
 		err = listTools(config, listLong)
-	case "c", "check":
-		checkAll := hasArguments && args.commandArguments[0] == "all"
-		err = checkToolVersions(config, checkAll, args.requestTimeout)
 	case "u", "update":
 		err = updateTools(config, args.requestTimeout)
 	default:
