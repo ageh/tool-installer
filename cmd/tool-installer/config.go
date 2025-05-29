@@ -66,11 +66,41 @@ func readConfiguration(path string) (Configuration, error) {
 	return parseConfiguration(bytes)
 }
 
-func (config *Configuration) save(file *os.File) error {
+func (config *Configuration) save(path string, promptOverride bool) error {
+	filePath := replaceTildePath(path)
+	dirName := filepath.Dir(filePath)
+
+	err := os.MkdirAll(dirName, 0755)
+	if err != nil {
+		return fmt.Errorf("failed to create the directory for configuration writing: %w", err)
+	}
+
+	_, err = os.Stat(filePath)
+	if err == nil && promptOverride {
+		fmt.Print("A file already exists at that location. Overwrite? [y/N]")
+		var input string
+		_, err := fmt.Scan(&input)
+		if err != nil {
+			return fmt.Errorf("failed to read user input: %w", err)
+		}
+
+		if input != "y" && input != "Y" {
+			return nil
+		}
+	} else if !errors.Is(err, fs.ErrNotExist) {
+		return fmt.Errorf("error when checking if target file already exists: %w", err)
+	}
+
+	file, err := os.Create(filePath)
+	if err != nil {
+		return fmt.Errorf("error creating configuration file: %w", err)
+	}
+	defer file.Close()
+
 	encoder := json.NewEncoder(file)
 	encoder.SetIndent("", "\t")
 
-	err := encoder.Encode(config)
+	err = encoder.Encode(config)
 	if err != nil {
 		return fmt.Errorf("error writing configuration to file: %w", err)
 	}
@@ -273,43 +303,12 @@ func writeDefaultConfiguration(path string) error {
 		return fmt.Errorf("failed to parse default configuration: %w", err)
 	}
 
-	filePath := replaceTildePath(path)
-	dirName := filepath.Dir(filePath)
-
-	err = os.MkdirAll(dirName, 0755)
-	if err != nil {
-		return fmt.Errorf("failed to create the directory to write the configuration to: %w", err)
-	}
-
-	_, err = os.Stat(filePath)
-	if err == nil {
-		fmt.Print("A file already exists at that location. Overwrite? [y/N]")
-		var input string
-		_, err := fmt.Scan(&input)
-		if err != nil {
-			return fmt.Errorf("failed to read user input: %w", err)
-		}
-
-		if input != "y" && input != "Y" {
-			fmt.Println("Aborting configuration creation")
-			return nil
-		}
-	} else if !errors.Is(err, fs.ErrNotExist) {
-		return fmt.Errorf("error checking if target file already exists: %w", err)
-	}
-
-	file, err := os.Create(filePath)
-	if err != nil {
-		return fmt.Errorf("error creating configuration file: %w", err)
-	}
-	defer file.Close()
-
-	err = defaultConfig.save(file)
+	err = defaultConfig.save(path, true)
 	if err != nil {
 		return fmt.Errorf("error creating configuration file: %w", err)
 	}
 
-	fmt.Printf("Created default configuration: '%s'\n", filePath)
+	fmt.Printf("Created default configuration: '%s'\n", path)
 
 	return nil
 }
