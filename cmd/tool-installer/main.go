@@ -45,12 +45,6 @@ func printHelp() {
 	fmt.Print(helpText)
 }
 
-func printConfigError(err error) {
-	fmt.Printf("Error: could not load configuration: '%v'\n", err)
-	fmt.Println("Check if the configuration file is valid.")
-	fmt.Println("You can generate a new configuration file with 'tooli create-config'.")
-}
-
 type Arguments struct {
 	commandArguments []string
 	command          string
@@ -99,68 +93,74 @@ func parseArguments() (Arguments, error) {
 	return result, nil
 }
 
-func run() int {
+func run() error {
 	args, err := parseArguments()
 	if err != nil {
-		fmt.Printf("Error: %v", err)
-		return 1
+		return err
 	}
 
 	if args.showHelp {
 		printHelp()
-		return 0
+		return nil
 	}
 
 	if args.showVersion {
 		fmt.Println(fullVersion)
-		return 0
-	}
-
-	config, err := getConfig(args.configPath)
-	if err != nil {
-		printConfigError(err)
-		return 1
+		return nil
 	}
 
 	hasArguments := args.hasCommandArguments()
 
-	switch args.command {
-	case "h", "help":
+	if args.command == "h" || args.command == "help" {
 		if hasArguments {
 			fmt.Println(getCommandHelp(args.commandArguments[0]))
 		} else {
 			printHelp()
 		}
+
+		return nil
+	}
+
+	if args.command == "cc" || args.command == "create-config" {
+		configWritePath := args.configPath
+		if hasArguments {
+			configWritePath = args.commandArguments[0]
+		}
+		return writeDefaultConfiguration(configWritePath)
+	}
+
+	config, err := readConfiguration(args.configPath)
+	if err != nil {
+		return fmt.Errorf(`could not load configuration: '%w'
+Check if the configuration file exists and is valid.
+You can generate a new configuration file with 'tooli create-config'`, err)
+	}
+
+	switch args.command {
 	case "i", "install":
 		err = installTools(config, args.commandArguments, args.requestTimeout)
 	case "l", "list":
 		listLong := hasArguments && args.commandArguments[0] == "long"
 		err = listTools(config, listLong)
-	case "cc", "create-config":
-		configWritePath := args.configPath
-		if hasArguments {
-			configWritePath = args.commandArguments[0]
-		}
-		err = writeDefaultConfiguration(configWritePath)
 	case "c", "check":
 		checkAll := hasArguments && args.commandArguments[0] == "all"
 		err = checkToolVersions(config, checkAll, args.requestTimeout)
 	case "u", "update":
 		err = updateTools(config, args.requestTimeout)
 	default:
-		fmt.Printf("Error: Invalid command '%s'.\n\n", args.command)
-		printHelp()
-		return 1
+		err = fmt.Errorf("invalid command '%s'", args.command)
 	}
 
-	if err != nil {
-		fmt.Println("Error:", err)
-		return 1
-	}
-
-	return 0
+	return err
 }
 
 func main() {
-	os.Exit(run())
+	err := run()
+	if err != nil {
+		fmt.Printf("Error: %v.\n\n", err)
+		fmt.Println("See `tooli help` for instructions.")
+		os.Exit(1)
+	}
+
+	os.Exit(0)
 }

@@ -4,10 +4,13 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"runtime"
+	"unsafe"
 )
 
 type Binary struct {
@@ -30,17 +33,12 @@ type Configuration struct {
 	Tools                 map[string]Tool `json:"tools"`
 }
 
-func getConfig(path string) (Configuration, error) {
+func parseConfiguration(input []byte) (Configuration, error) {
 	var config Configuration
 
-	bytes, err := os.ReadFile(replaceTildePath(path))
+	err := json.Unmarshal(input, &config)
 	if err != nil {
-		return config, err
-	}
-
-	err = json.Unmarshal(bytes, &config)
-	if err != nil {
-		return config, err
+		return config, fmt.Errorf("failed to parse configuration: %w", err)
 	}
 
 	config.InstallationDirectory = replaceTildePath(config.InstallationDirectory)
@@ -56,7 +54,28 @@ func getConfig(path string) (Configuration, error) {
 		}
 	}
 
-	return config, err
+	return config, nil
+}
+
+func readConfiguration(path string) (Configuration, error) {
+	bytes, err := os.ReadFile(replaceTildePath(path))
+	if err != nil {
+		return Configuration{}, err
+	}
+
+	return parseConfiguration(bytes)
+}
+
+func (config *Configuration) save(file *os.File) error {
+	encoder := json.NewEncoder(file)
+	encoder.SetIndent("", "\t")
+
+	err := encoder.Encode(config)
+	if err != nil {
+		return fmt.Errorf("error writing configuration to file: %w", err)
+	}
+
+	return nil
 }
 
 const defaultConfiguration = `{
@@ -247,15 +266,19 @@ const defaultConfiguration = `{
 	}
 }`
 
-const configurationWritingError = "error writing configuration to file: %w"
-
 func writeDefaultConfiguration(path string) error {
+	tmp := unsafe.Slice(unsafe.StringData(defaultConfiguration), len(defaultConfiguration))
+	defaultConfig, err := parseConfiguration(tmp)
+	if err != nil {
+		return fmt.Errorf("failed to parse default configuration: %w", err)
+	}
+
 	filePath := replaceTildePath(path)
 	dirName := filepath.Dir(filePath)
 
-	err := os.MkdirAll(dirName, 0755)
+	err = os.MkdirAll(dirName, 0755)
 	if err != nil {
-		return fmt.Errorf(configurationWritingError, err)
+		return fmt.Errorf("failed to create the directory to write the configuration to: %w", err)
 	}
 
 	_, err = os.Stat(filePath)
@@ -264,21 +287,29 @@ func writeDefaultConfiguration(path string) error {
 		var input string
 		_, err := fmt.Scan(&input)
 		if err != nil {
-			return fmt.Errorf(configurationWritingError, err)
+			return fmt.Errorf("failed to read user input: %w", err)
 		}
 
-		if input == "y" || input == "Y" {
-			err = os.WriteFile(filePath, []byte(defaultConfiguration), 0644)
-			if err != nil {
-				return fmt.Errorf(configurationWritingError, err)
-			}
+		if input != "y" && input != "Y" {
+			fmt.Println("Aborting configuration creation")
+			return nil
 		}
-	} else {
-		err = os.WriteFile(filePath, []byte(defaultConfiguration), 0644)
-		if err != nil {
-			return fmt.Errorf(configurationWritingError, err)
-		}
+	} else if !errors.Is(err, fs.ErrNotExist) {
+		return fmt.Errorf("error checking if target file already exists: %w", err)
 	}
+
+	file, err := os.Create(filePath)
+	if err != nil {
+		return fmt.Errorf("error creating configuration file: %w", err)
+	}
+	defer file.Close()
+
+	err = defaultConfig.save(file)
+	if err != nil {
+		return fmt.Errorf("error creating configuration file: %w", err)
+	}
+
+	fmt.Printf("Created default configuration: '%s'\n", filePath)
 
 	return nil
 }
