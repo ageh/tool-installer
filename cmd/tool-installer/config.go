@@ -10,12 +10,27 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"unsafe"
 )
 
 type Binary struct {
 	Name     string `json:"name"`
 	RenameTo string `json:"rename_to"`
+}
+
+func (binary *Binary) MarshalJSON() ([]byte, error) {
+	if binary == nil {
+		return []byte("null"), nil
+	}
+
+	return json.Marshal(&struct {
+		Name     string `json:"name"`
+		RenameTo string `json:"rename_to"`
+	}{
+		Name:     strings.TrimSuffix(binary.Name, ".exe"),
+		RenameTo: strings.TrimSuffix(binary.RenameTo, ".exe"),
+	})
 }
 
 type Tool struct {
@@ -76,16 +91,18 @@ func (config *Configuration) save(path string, promptOverride bool) error {
 	}
 
 	_, err = os.Stat(filePath)
-	if err == nil && promptOverride {
-		fmt.Print("A file already exists at that location. Overwrite? [y/N]")
-		var input string
-		_, err := fmt.Scan(&input)
-		if err != nil {
-			return fmt.Errorf("failed to read user input: %w", err)
-		}
+	if err == nil {
+		if promptOverride {
+			fmt.Print("A file already exists at that location. Overwrite? [y/N]")
+			var input string
+			_, err := fmt.Scan(&input)
+			if err != nil {
+				return fmt.Errorf("failed to read user input: %w", err)
+			}
 
-		if input != "y" && input != "Y" {
-			return nil
+			if input != "y" && input != "Y" {
+				return nil
+			}
 		}
 	} else if !errors.Is(err, fs.ErrNotExist) {
 		return fmt.Errorf("error when checking if target file already exists: %w", err)
