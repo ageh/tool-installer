@@ -7,10 +7,10 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"runtime/debug"
 )
 
 const version = "1.5.0"
-const fullVersion = "tooli " + version
 const userAgent = "ageh/tool-installer-" + version
 const helpText = "tool-installer " + version + `
 
@@ -40,6 +40,24 @@ For more information about a specific command, try 'tooli help <command>'.
 `
 
 const maxShortListDescriptionLength = 50
+
+func getFullVersion() string {
+	revision := "No VCS info available"
+	timeStamp := "No VCS info available"
+
+	info, ok := debug.ReadBuildInfo()
+	if ok {
+		for _, setting := range info.Settings {
+			if setting.Key == "vcs.revision" {
+				revision = setting.Value
+			} else if setting.Key == "vcs.time" {
+				timeStamp = setting.Value
+			}
+		}
+	}
+
+	return fmt.Sprintf("tool-installer (tooli)\nVersion: %s\nCommit hash: %s\nCompiled at: %s", version, revision, timeStamp)
+}
 
 func printHelp() {
 	fmt.Print(helpText)
@@ -105,7 +123,7 @@ func run() error {
 	}
 
 	if args.showVersion {
-		fmt.Println(fullVersion)
+		fmt.Println(getFullVersion())
 		return nil
 	}
 
