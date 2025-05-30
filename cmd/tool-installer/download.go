@@ -153,8 +153,14 @@ func (client *Downloader) downloadTool(tool Tool, currentVersion string) (Downlo
 		return result, errors.New("no asset name provided for the current platform")
 	}
 
+	checksumRegex, _ := regexp.Compile(`(?i)\.(sha256(sum)?|sha512(sum)?|sha1(sum)?|md5(sum)?|checksums\.txt)$`)
+
 	var res []Asset
 	for _, a := range release.Assets {
+		if checksumRegex.MatchString(a.Name) {
+			continue
+		}
+
 		matched, _ := regexp.MatchString(asset, a.Name)
 		if matched {
 			res = append(res, a)
