@@ -154,19 +154,6 @@ const defaultConfiguration = `{
 			"windows_asset": "x86_64-pc-windows-msvc.zip",
 			"description": "Diff tool"
 		},
-		"dust": {
-			"binaries": [
-				{
-					"name": "dust",
-					"rename_to": ""
-				}
-			],
-			"owner": "bootandy",
-			"repository": "dust",
-			"linux_asset": "x86_64-unknown-linux-musl.tar.gz",
-			"windows_asset": "x86_64-pc-windows-msvc.zip",
-			"description": "Disk usage tool"
-		},
 		"eza": {
 			"binaries": [
 				{
@@ -192,32 +179,6 @@ const defaultConfiguration = `{
 			"linux_asset": "x86_64-unknown-linux-musl.tar.gz",
 			"windows_asset": "x86_64-pc-windows-msvc.zip",
 			"description": "Better find"
-		},
-		"fzf": {
-			"binaries": [
-				{
-					"name": "fzf",
-					"rename_to": ""
-				}
-			],
-			"owner": "junegunn",
-			"repository": "fzf",
-			"linux_asset": "linux_amd64.tar.gz",
-			"windows_asset": "windows_amd64.zip",
-			"description": "Fuzzy finder"
-		},
-		"hexyl": {
-			"binaries": [
-				{
-					"name": "hexyl",
-					"rename_to": ""
-				}
-			],
-			"owner": "sharkdp",
-			"repository": "hexyl",
-			"linux_asset": "x86_64-unknown-linux-musl.tar.gz",
-			"windows_asset": "x86_64-pc-windows-msvc.zip",
-			"description": "Hex-viewer"
 		},
 		"hyperfine": {
 			"binaries": [
