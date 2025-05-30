@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"sort"
 	"strings"
 	"sync"
@@ -366,7 +367,7 @@ func installTools(config Configuration, tools []string, downloadTimeout int) err
 	}()
 
 	for result := range results {
-		cache.Tools[result.name] = result.version
+		cache.add(result.name, result.version)
 	}
 
 	err = cache.writeCache()
@@ -490,9 +491,42 @@ func addTool(config *Configuration, name string, configPath string) error {
 }
 
 func removeTools(config *Configuration, tools []string, configPath string) error {
-	for _, t := range tools {
-		delete(config.Tools, t)
+	cache, err := getCache()
+	if err != nil {
+		return err
 	}
 
-	return config.save(configPath, false)
+	dir := config.InstallationDirectory
+
+	for _, name := range tools {
+
+		tool, found := config.Tools[name]
+		if !found {
+			continue
+		}
+
+		for _, binary := range tool.Binaries {
+			n := binary.Name
+			if binary.RenameTo != "" {
+				n = binary.RenameTo
+			}
+
+			path := filepath.Join(dir, n)
+			err = os.Remove(path)
+			if err != nil {
+				fmt.Printf("Failed to remove binary '%s' for tool '%s'.", n, name)
+			}
+		}
+
+		delete(config.Tools, name)
+
+		cache.remove(name)
+	}
+
+	err = config.save(configPath, false)
+	if err != nil {
+		return err
+	}
+
+	return cache.writeCache()
 }

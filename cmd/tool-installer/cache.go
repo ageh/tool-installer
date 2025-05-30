@@ -13,6 +13,14 @@ type Cache struct {
 	Tools map[string]string `json:"tools"`
 }
 
+func (cache *Cache) add(tool string, version string) {
+	cache.Tools[tool] = version
+}
+
+func (cache *Cache) remove(tool string) {
+	delete(cache.Tools, tool)
+}
+
 func (cache *Cache) writeCache() error {
 	errMessage := "error writing to cache: %w"
 
