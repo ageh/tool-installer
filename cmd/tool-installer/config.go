@@ -9,6 +9,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"strings"
 	"unsafe"
@@ -39,7 +40,6 @@ type Tool struct {
 	Repository   string   `json:"repository"`
 	LinuxAsset   string   `json:"linux_asset"`
 	WindowsAsset string   `json:"windows_asset"`
-	AssetPrefix  string   `json:"asset_prefix,omitempty"`
 	Description  string   `json:"description"`
 }
 
@@ -59,11 +59,20 @@ func parseConfiguration(input []byte) (Configuration, error) {
 	config.InstallationDirectory = replaceTildePath(config.InstallationDirectory)
 
 	if runtime.GOOS == "windows" {
-		for k, v := range config.Tools {
-			for i, b := range v.Binaries {
-				config.Tools[k].Binaries[i].Name = addExeSuffix(b.Name)
+		for name, tool := range config.Tools {
+			_, err := regexp.Compile(tool.WindowsAsset)
+			if err != nil {
+				return config, fmt.Errorf("error in Windows asset regex for tool '%s': %w", name, err)
+			}
+			_, err = regexp.Compile(tool.LinuxAsset)
+			if err != nil {
+				return config, fmt.Errorf("error in Linux asset regex for tool '%s': %w", name, err)
+			}
+
+			for i, b := range tool.Binaries {
+				config.Tools[name].Binaries[i].Name = addExeSuffix(b.Name)
 				if b.RenameTo != "" {
-					config.Tools[k].Binaries[i].RenameTo = addExeSuffix(b.RenameTo)
+					config.Tools[name].Binaries[i].RenameTo = addExeSuffix(b.RenameTo)
 				}
 			}
 		}
@@ -137,8 +146,8 @@ const defaultConfiguration = `{
 			],
 			"owner": "sharkdp",
 			"repository": "bat",
-			"linux_asset": "x86_64-unknown-linux-musl.tar.gz",
-			"windows_asset": "x86_64-pc-windows-msvc.zip",
+			"linux_asset": "x86_64-unknown-linux-musl\\.tar\\.gz$",
+			"windows_asset": "x86_64-pc-windows-msvc\\.zip$",
 			"description": "Better cat"
 		},
 		"delta": {
@@ -150,8 +159,8 @@ const defaultConfiguration = `{
 			],
 			"owner": "dandavison",
 			"repository": "delta",
-			"linux_asset": "x86_64-unknown-linux-musl.tar.gz",
-			"windows_asset": "x86_64-pc-windows-msvc.zip",
+			"linux_asset": "x86_64-unknown-linux-musl\\.tar\\.gz$",
+			"windows_asset": "x86_64-pc-windows-msvc\\.zip$",
 			"description": "Diff tool"
 		},
 		"eza": {
@@ -163,8 +172,8 @@ const defaultConfiguration = `{
 			],
 			"owner": "eza-community",
 			"repository": "eza",
-			"linux_asset": "x86_64-unknown-linux-musl.tar.gz",
-			"windows_asset": "x86_64-pc-windows-gnu.zip",
+			"linux_asset": "x86_64-unknown-linux-musl\\.tar\\.gz$",
+			"windows_asset": "x86_64-pc-windows-gnu\\.zip$",
 			"description": "Better ls (replacement of exa which is unmaintained)"
 		},
 		"fd": {
@@ -176,8 +185,8 @@ const defaultConfiguration = `{
 			],
 			"owner": "sharkdp",
 			"repository": "fd",
-			"linux_asset": "x86_64-unknown-linux-musl.tar.gz",
-			"windows_asset": "x86_64-pc-windows-msvc.zip",
+			"linux_asset": "x86_64-unknown-linux-musl\\.tar\\.gz$",
+			"windows_asset": "x86_64-pc-windows-msvc\\.zip$",
 			"description": "Better find"
 		},
 		"hyperfine": {
@@ -189,8 +198,8 @@ const defaultConfiguration = `{
 			],
 			"owner": "sharkdp",
 			"repository": "hyperfine",
-			"linux_asset": "x86_64-unknown-linux-musl.tar.gz",
-			"windows_asset": "x86_64-pc-windows-msvc.zip",
+			"linux_asset": "x86_64-unknown-linux-musl\\.tar\\.gz$",
+			"windows_asset": "x86_64-pc-windows-msvc\\.zip$",
 			"description": "Benchmark tool"
 		},
 		"micro": {
@@ -202,8 +211,8 @@ const defaultConfiguration = `{
 			],
 			"owner": "zyedidia",
 			"repository": "micro",
-			"linux_asset": "linux64.tar.gz",
-			"windows_asset": "win64.zip",
+			"linux_asset": "linux64\\.tar\\.gz$",
+			"windows_asset": "win64\\.zip$",
 			"description": "Command-line editor"
 		},
 		"ripgrep": {
@@ -215,8 +224,8 @@ const defaultConfiguration = `{
 			],
 			"owner": "burntsushi",
 			"repository": "ripgrep",
-			"linux_asset": "x86_64-unknown-linux-musl.tar.gz",
-			"windows_asset": "x86_64-pc-windows-msvc.zip",
+			"linux_asset": "x86_64-unknown-linux-musl\\.tar\\.gz$",
+			"windows_asset": "x86_64-pc-windows-msvc\\.zip$",
 			"description": "Better grep"
 		},
 		"sd": {
@@ -228,8 +237,8 @@ const defaultConfiguration = `{
 			],
 			"owner": "chmln",
 			"repository": "sd",
-			"linux_asset": "x86_64-unknown-linux-musl",
-			"windows_asset": "x86_64-pc-windows-msvc.zip",
+			"linux_asset": "x86_64-unknown-linux-musl\\.tar\\.gz$",
+			"windows_asset": "x86_64-pc-windows-msvc\\.zip$",
 			"description": "Better sed"
 		},
 		"starship": {
@@ -241,8 +250,8 @@ const defaultConfiguration = `{
 			],
 			"owner": "starship",
 			"repository": "starship",
-			"linux_asset": "x86_64-unknown-linux-musl.tar.gz",
-			"windows_asset": "x86_64-pc-windows-msvc.zip",
+			"linux_asset": "x86_64-unknown-linux-musl\\.tar\\.gz$",
+			"windows_asset": "x86_64-pc-windows-msvc\\.zip$",
 			"description": "Cross-shell custom prompt"
 		},
 		"tealdeer": {
@@ -254,8 +263,8 @@ const defaultConfiguration = `{
 			],
 			"owner": "dbrgn",
 			"repository": "tealdeer",
-			"linux_asset": "tealdeer-linux-x86_64-musl",
-			"windows_asset": "windows-x86_64-msvc.exe",
+			"linux_asset": "tealdeer-linux-x86_64-musl$",
+			"windows_asset": "windows-x86_64-msvc.exe$",
 			"description": "Command-line cheatsheets"
 		},
 		"tokei": {
@@ -267,8 +276,8 @@ const defaultConfiguration = `{
 			],
 			"owner": "XAMPPRocky",
 			"repository": "tokei",
-			"linux_asset": "x86_64-unknown-linux-musl.tar.gz",
-			"windows_asset": "x86_64-pc-windows-msvc.exe",
+			"linux_asset": "x86_64-unknown-linux-musl\\.tar\\.gz$",
+			"windows_asset": "x86_64-pc-windows-msvc.exe$",
 			"description": "Code line counting tool"
 		}
 	}

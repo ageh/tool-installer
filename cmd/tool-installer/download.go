@@ -9,8 +9,8 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"regexp"
 	"runtime"
-	"strings"
 	"time"
 )
 
@@ -155,7 +155,8 @@ func (client *Downloader) downloadTool(tool Tool, currentVersion string) (Downlo
 
 	var res []Asset
 	for _, a := range release.Assets {
-		if strings.HasSuffix(a.Name, asset) && strings.HasPrefix(a.Name, tool.AssetPrefix) {
+		matched, _ := regexp.MatchString(asset, a.Name)
+		if matched {
 			res = append(res, a)
 		}
 	}

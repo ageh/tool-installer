@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
 	"sync"
@@ -411,9 +412,9 @@ func prompt(text string) string {
 
 func promptNonEmpty(text string) string {
 	fmt.Print(text)
+	reader := bufio.NewReader(os.Stdin)
 
 	for {
-		reader := bufio.NewReader(os.Stdin)
 		input, err := reader.ReadString('\n')
 		if err != nil {
 			fmt.Printf("Error reading input: %v\n", err)
@@ -427,6 +428,28 @@ func promptNonEmpty(text string) string {
 		}
 
 		fmt.Print("Input must not be empty. Please try again: ")
+	}
+}
+
+func promptRegex(text string) string {
+	fmt.Print(text)
+	reader := bufio.NewReader(os.Stdin)
+
+	for {
+		input, err := reader.ReadString('\n')
+		if err != nil {
+			fmt.Printf("Error reading input: %v\n", err)
+			return ""
+		}
+
+		result := strings.TrimSpace(input)
+
+		_, err = regexp.Compile(result)
+		if err == nil {
+			return result
+		}
+
+		fmt.Print("Input must be a valid regular expression. Please try again: ")
 	}
 }
 
@@ -453,10 +476,8 @@ func addTool(config *Configuration, name string, configPath string) error {
 	owner := promptNonEmpty("GitHub user/org: ")
 	repo := promptNonEmpty("Repository name: ")
 
-	windows := prompt("Windows asset name: ")
-	linux := prompt("Linux asset name: ")
-
-	prefix := prompt("Asset prefix (leave empty if not needed): ")
+	windows := promptRegex("Windows asset name (regex): ")
+	linux := promptRegex("Linux asset name (regex): ")
 
 	binary := promptNonEmpty("Binary name: ")
 	rename := prompt("Rename binary to (leave empty if no rename): ")
@@ -483,7 +504,6 @@ func addTool(config *Configuration, name string, configPath string) error {
 		Repository:   repo,
 		LinuxAsset:   linux,
 		WindowsAsset: windows,
-		AssetPrefix:  prefix,
 		Description:  description,
 	}
 
