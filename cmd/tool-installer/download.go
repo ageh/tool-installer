@@ -9,14 +9,21 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"regexp"
 	"runtime"
-	"strings"
 	"time"
 )
 
 type Downloader struct {
 	client      http.Client
 	githubToken string
+}
+
+type DownloadResult struct {
+	data      []byte
+	assetName string
+	tagName   string
+	updated   bool
 }
 
 type RequestFormat int
@@ -26,10 +33,10 @@ const (
 	rtBinary
 )
 
-const rateLimitText = `Error: Got non-OK status code '%v'.
+const userAgent = "ageh/tool-installer-" + version
+const rateLimitText = `got non-OK status code '%v'.
 
-This most likely means that you hit Github's API rate limit. To increase the number of requests you can make, set the 'GITHUB_TOKEN' environment variable.
-`
+This most likely means that you hit Github's API rate limit. To increase the number of requests you can make, set the 'GITHUB_TOKEN' environment variable`
 
 func newDownloader(timeoutSeconds int) Downloader {
 	githubToken := os.Getenv("GITHUB_TOKEN")
@@ -51,8 +58,7 @@ func (client *Downloader) newRequest(url string, requestFormat RequestFormat) (*
 	case rtBinary:
 		req.Header.Add("Accept", "application/octet-stream")
 	default:
-		//lint:ignore ST1005 End-user facing messages should be nice, ST1005 is not nice.
-		return nil, errors.New("Invalid request type")
+		return nil, errors.New("invalid request type")
 	}
 
 	req.Header.Add("User-Agent", userAgent)
@@ -80,7 +86,6 @@ func (client *Downloader) downloadRelease(owner string, repository string) (Rele
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		//lint:ignore ST1005 End-user facing messages should be nice, ST1005 is not nice.
 		return result, fmt.Errorf(rateLimitText, resp.StatusCode)
 	}
 
@@ -112,7 +117,6 @@ func (client *Downloader) downloadAsset(url string) ([]byte, error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		//lint:ignore ST1005 End-user facing messages should be nice, ST1005 is not nice.
 		return result, fmt.Errorf(rateLimitText, resp.StatusCode)
 	}
 
@@ -124,23 +128,16 @@ func (client *Downloader) downloadAsset(url string) ([]byte, error) {
 	return result, nil
 }
 
-func (client *Downloader) downloadTool(name string, config *Configuration, cache *Cache) error {
-
-	tool, found := config.Tools[name]
-	if !found {
-		//lint:ignore ST1005 End-user facing messages should be nice, ST1005 is not nice.
-		return fmt.Errorf("Tool '%s' not found in configuration.", name)
-	}
-
+func (client *Downloader) downloadTool(tool Tool, currentVersion string) (DownloadResult, error) {
+	var result DownloadResult
 	release, err := client.downloadRelease(tool.Owner, tool.Repository)
 	if err != nil {
-		return err
+		return result, err
 	}
 
-	currentVersion, found := cache.Tools[name]
-	if found && currentVersion == release.TagName {
-		fmt.Printf("Skipping asset download for '%v' because it is already installed and up to date.", name)
-		return nil
+	if currentVersion == release.TagName {
+		result.updated = true
+		return result, nil
 	}
 
 	var asset string
@@ -150,48 +147,44 @@ func (client *Downloader) downloadTool(name string, config *Configuration, cache
 	case "windows":
 		asset = tool.WindowsAsset
 	default:
-		//lint:ignore ST1005 End-user facing messages should be nice, ST1005 is not nice.
-		return fmt.Errorf("The platform '%s' is not supported", os)
+		return result, fmt.Errorf("the platform '%s' is not supported", os)
 	}
 
 	if asset == "" {
-		//lint:ignore ST1005 End-user facing messages should be nice, ST1005 is not nice.
-		return errors.New("No asset name provided for the current platform.")
+		return result, errors.New("no asset name provided for the current platform")
 	}
+
+	checksumRegex, _ := regexp.Compile(`(?i)\.(sha256(sum)?|sha512(sum)?|sha1(sum)?|md5(sum)?|checksums\.txt)$`)
 
 	var res []Asset
 	for _, a := range release.Assets {
-		if strings.HasSuffix(a.Name, asset) {
-			if tool.AssetPrefix == "" {
-				res = append(res, a)
-			} else if strings.HasPrefix(a.Name, tool.AssetPrefix) {
-				res = append(res, a)
-			}
+		if checksumRegex.MatchString(a.Name) {
+			continue
+		}
+
+		matched, _ := regexp.MatchString(asset, a.Name)
+		if matched {
+			res = append(res, a)
 		}
 	}
 
 	if len(res) == 0 {
-		//lint:ignore ST1005 End-user facing messages should be nice, ST1005 is not nice.
-		return errors.New("Could not find a matching asset. Did you forget to include one in the config?")
+		return result, errors.New("could not find a matching asset. Did you forget to include one in the config?")
 	}
 	if len(res) > 1 {
-		//lint:ignore ST1005 End-user facing messages should be nice, ST1005 is not nice.
-		return errors.New("Found two or more matching assets. Please be more specific.")
+		return result, errors.New("found two or more matching assets. Please be more specific")
 	}
 
 	assetUrl := fmt.Sprintf("https://api.github.com/repos/%s/%s/releases/assets/%d", tool.Owner, tool.Repository, res[0].Id)
 
 	binaryContent, err := client.downloadAsset(assetUrl)
 	if err != nil {
-		return err
+		return result, err
 	}
 
-	err = extractFiles(binaryContent, &res[0], &tool, &config.InstallationDirectory)
-	if err != nil {
-		return err
-	}
+	result.data = binaryContent
+	result.assetName = res[0].Name
+	result.tagName = release.TagName
 
-	cache.Tools[name] = release.TagName
-
-	return nil
+	return result, nil
 }

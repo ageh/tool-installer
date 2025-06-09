@@ -36,7 +36,7 @@ func getRenameTarget(fullName string, binaries []Binary) string {
 	return ""
 }
 
-func extractFilesZip(rawData []byte, binaries []Binary, outputPath *string) error {
+func extractFilesZip(rawData []byte, binaries []Binary, outputPath string) error {
 	byteReader := bytes.NewReader(rawData)
 
 	zipReader, err := zip.NewReader(byteReader, int64(len(rawData)))
@@ -64,7 +64,7 @@ func extractFilesZip(rawData []byte, binaries []Binary, outputPath *string) erro
 			return err
 		}
 
-		filePath := filepath.Join(*outputPath, fileName)
+		filePath := filepath.Join(outputPath, fileName)
 
 		err = os.WriteFile(filePath, fileContent, 0755)
 		if err != nil {
@@ -80,7 +80,7 @@ func extractFilesZip(rawData []byte, binaries []Binary, outputPath *string) erro
 	return nil
 }
 
-func extractFilesTarGz(rawData []byte, binaries []Binary, outputPath *string) error {
+func extractFilesTarGz(rawData []byte, binaries []Binary, outputPath string) error {
 	byteReader := bytes.NewReader(rawData)
 
 	gzipReader, err := gzip.NewReader(byteReader)
@@ -108,7 +108,7 @@ func extractFilesTarGz(rawData []byte, binaries []Binary, outputPath *string) er
 			continue
 		}
 
-		filePath := filepath.Join(*outputPath, fileName)
+		filePath := filepath.Join(outputPath, fileName)
 
 		file, err := os.Create(filePath)
 		if err != nil {
@@ -132,10 +132,9 @@ func extractFilesTarGz(rawData []byte, binaries []Binary, outputPath *string) er
 	return nil
 }
 
-func extractFilesRaw(rawData []byte, binaries []Binary, outputPath *string) error {
+func extractFilesRaw(rawData []byte, binaries []Binary, outputPath string) error {
 	if len(binaries) != 1 {
-		//lint:ignore ST1005 End-user facing messages should be nice, ST1005 is not nice.
-		return errors.New("Invalid number of binaries provided. Non-archive type assets can only be one binary.")
+		return errors.New("invalid number of binaries provided. Non-archive type assets can only be one binary")
 	}
 
 	fileName := binaries[0].Name
@@ -143,7 +142,7 @@ func extractFilesRaw(rawData []byte, binaries []Binary, outputPath *string) erro
 		fileName = binaries[0].RenameTo
 	}
 
-	filePath := filepath.Join(*outputPath, fileName)
+	filePath := filepath.Join(outputPath, fileName)
 
 	file, err := os.Create(filePath)
 	if err != nil {
@@ -163,13 +162,13 @@ func extractFilesRaw(rawData []byte, binaries []Binary, outputPath *string) erro
 	return nil
 }
 
-func extractFiles(rawData []byte, asset *Asset, tool *Tool, outputPath *string) error {
-	if strings.HasSuffix(asset.Name, ".tar.gz") {
-		return extractFilesTarGz(rawData, tool.Binaries, outputPath)
-	} else if strings.HasSuffix(asset.Name, ".zip") {
-		return extractFilesZip(rawData, tool.Binaries, outputPath)
+func extractFiles(rawData []byte, assetName string, binaries []Binary, outputPath string) error {
+	if strings.HasSuffix(assetName, ".tar.gz") {
+		return extractFilesTarGz(rawData, binaries, outputPath)
+	} else if strings.HasSuffix(assetName, ".zip") {
+		return extractFilesZip(rawData, binaries, outputPath)
 	} else {
-		fmt.Println("WARNING: The asset does not have a file ending. While this can be legitimate, you should probably talk to the tool author to see if he is willing to change that.")
-		return extractFilesRaw(rawData, tool.Binaries, outputPath)
+		fmt.Println("Warning: The asset does not have a file ending. While this can be legitimate, you should probably talk to the tool author to see if he is willing to change that.")
+		return extractFilesRaw(rawData, binaries, outputPath)
 	}
 }
