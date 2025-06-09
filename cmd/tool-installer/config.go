@@ -56,8 +56,6 @@ func parseConfiguration(input []byte) (Configuration, error) {
 		return config, fmt.Errorf("failed to parse configuration: %w", err)
 	}
 
-	config.InstallationDirectory = replaceTildePath(config.InstallationDirectory)
-
 	if runtime.GOOS == "windows" {
 		for name, tool := range config.Tools {
 			_, err := regexp.Compile(tool.WindowsAsset)
