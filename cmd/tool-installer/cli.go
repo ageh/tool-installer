@@ -9,7 +9,7 @@ import (
 	"runtime/debug"
 )
 
-const version = "1.5.0"
+const version = "2.0.0"
 
 const helpText = `tool-installer (tooli) provides an easy way to download
 all your favourite binaries from GitHub at once.
