@@ -3,6 +3,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"os/user"
 	"path/filepath"
@@ -62,4 +63,13 @@ func replaceTildePath(path string) string {
 	} else {
 		return path
 	}
+}
+
+func makeOutputDirectory(path string) error {
+	err := os.MkdirAll(path, 0755)
+	if err != nil {
+		return fmt.Errorf("error creating output directory ('%s'): %w", path, err)
+	}
+
+	return nil
 }

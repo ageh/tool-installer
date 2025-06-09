@@ -35,7 +35,7 @@ OPTIONS:
     -c, --config    Specify from where to read the configuration (default: ~/.config/tool-installer/config.json)
     -t, --timeout   Timeout for requests to GitHub in seconds (default: 10)
 
-For more information about a specific command, try 'tooli help <command>'.
+Use 'tooli help <command>' for more information on a specific command.
 `
 
 const addHelp = `Adds a tool to the configuration by prompting the necessary values from the user.
@@ -225,32 +225,26 @@ func run() error {
 		return writeDefaultConfiguration(configWritePath)
 	}
 
-	config, err := readConfiguration(args.configPath)
+	app, err := newApp(args.configPath, args.requestTimeout)
 	if err != nil {
-		return fmt.Errorf(`could not load configuration: '%w'
-Check if the configuration file exists and is valid.
-You can generate a new configuration file with 'tooli create-config'`, err)
+		return err
 	}
 
 	switch args.command {
 	case "a", "add":
-		if !hasArguments {
-			err = errors.New("name of the tool needs to be provided as an argument")
-		} else {
-			err = addTool(&config, args.commandArguments[0], args.configPath)
-		}
+		err = app.addTool()
 	case "c", "check":
 		checkAll := hasArguments && args.commandArguments[0] == "all"
-		err = checkToolVersions(config, checkAll, args.requestTimeout)
+		err = app.checkToolVersions(checkAll)
 	case "i", "install":
-		err = installTools(config, args.commandArguments, args.requestTimeout)
+		err = app.installTools(args.commandArguments)
 	case "l", "list":
 		listLong := hasArguments && args.commandArguments[0] == "long"
-		err = listTools(config, listLong)
+		err = app.listTools(listLong)
 	case "r", "remove":
-		err = removeTools(&config, args.commandArguments, args.configPath)
+		err = app.removeTools(args.commandArguments)
 	case "u", "update":
-		err = updateTools(config, args.requestTimeout)
+		err = app.updateTools()
 	default:
 		err = fmt.Errorf("invalid command '%s'", args.command)
 	}
