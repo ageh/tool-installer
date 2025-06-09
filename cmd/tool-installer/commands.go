@@ -14,57 +14,6 @@ import (
 	"sync"
 )
 
-const addHelp = `Adds a tool to the configuration by prompting the necessary values from the user.
-
-Examples:
-tooli add ripgrep
-tooli add bat`
-const checkHelp = `Checks the configured tools for version updates.
-
-By default only the currently installed tools are check, to change this pass 'all' as an argument to the command.
-
-Examples:
-
-tooli check
-tooli check all`
-const createConfigHelp = `Creates the default configuration.
-
-By default the configuration is written to '~/.config/tool-installer/config.json',
-but this can be changed by passing a different path as an argument.
-
-Examples:
-
-tooli create-config
-tooli create-config test.json`
-const helpHelp = `Shows the help for the program or command.
-
-Examples:
-tooli help
-tooli help install`
-const installHelp = `Installs tools. If no arguments are provided, it installs all tools in the configuration.
-Installs only the named tools if provided with a space separated list of tools to install.
-
-Examples
-
-tooli install
-tooli install ripgrep
-tooli install ripgrep eza bat fd`
-const listHelp = `Lists the tools present in the configuration.
-
-Examples:
-
-tooli list
-tooli list long`
-const removeHelp = `Removes one or more tools from the configuration.
-
-Examples:
-tooli remove ripgrep
-tooli remove ripgrep bat micro`
-const updateHelp = `Updates all installed tools to their latest version.
-
-Examples:
-tooli update`
-
 type ToolInfo struct {
 	Name        string
 	Link        string
@@ -105,29 +54,6 @@ func (array ByName[T]) Less(i int, j int) bool {
 
 func (array ByName[T]) Swap(i int, j int) {
 	array.data[i], array.data[j] = array.data[j], array.data[i]
-}
-
-func getCommandHelp(command string) string {
-	switch command {
-	case "a", "add":
-		return addHelp
-	case "c", "check":
-		return checkHelp
-	case "cc", "create-config":
-		return createConfigHelp
-	case "h", "help":
-		return helpHelp
-	case "i", "install":
-		return installHelp
-	case "l", "list":
-		return listHelp
-	case "r", "remove":
-		return removeHelp
-	case "u", "update":
-		return updateHelp
-	default:
-		return fmt.Sprintf("Error: '%s' is not a valid command", command)
-	}
 }
 
 func getOutdatedTools(config Configuration, checkAll bool, downloadTimeout int, cache Cache) ([]ToolVersionInfo, error) {

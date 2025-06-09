@@ -33,6 +33,7 @@ const (
 	rtBinary
 )
 
+const userAgent = "ageh/tool-installer-" + version
 const rateLimitText = `got non-OK status code '%v'.
 
 This most likely means that you hit Github's API rate limit. To increase the number of requests you can make, set the 'GITHUB_TOKEN' environment variable`
