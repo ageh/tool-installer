@@ -41,8 +41,6 @@ OPTIONS:
 For more information about a specific command, try 'tooli help <command>'.
 `
 
-const maxShortListDescriptionLength = 50
-
 func getFullVersion() string {
 	revision := "No VCS info available"
 	timeStamp := "No VCS info available"

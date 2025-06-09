@@ -65,24 +65,24 @@ const updateHelp = `Updates all installed tools to their latest version.
 Examples:
 tooli update`
 
-type TableEntry struct {
+type ToolInfo struct {
 	Name        string
 	Link        string
 	Description string
 	Version     string
 }
 
-func (t TableEntry) GetName() string {
+func (t ToolInfo) GetName() string {
 	return t.Name
 }
 
-type VersionTableEntry struct {
+type ToolVersionInfo struct {
 	Name      string
 	Installed string
 	Available string
 }
 
-func (v VersionTableEntry) GetName() string {
+func (v ToolVersionInfo) GetName() string {
 	return v.Name
 }
 
@@ -105,13 +105,6 @@ func (array ByName[T]) Less(i int, j int) bool {
 
 func (array ByName[T]) Swap(i int, j int) {
 	array.data[i], array.data[j] = array.data[j], array.data[i]
-}
-
-func max(a int, b int) int {
-	if a < b {
-		return b
-	}
-	return a
 }
 
 func getCommandHelp(command string) string {
@@ -137,7 +130,7 @@ func getCommandHelp(command string) string {
 	}
 }
 
-func getOutdatedTools(config Configuration, checkAll bool, downloadTimeout int, cache Cache) ([]VersionTableEntry, error) {
+func getOutdatedTools(config Configuration, checkAll bool, downloadTimeout int, cache Cache) ([]ToolVersionInfo, error) {
 	downloader := newDownloader(downloadTimeout)
 
 	var tools map[string]Tool
@@ -152,7 +145,7 @@ func getOutdatedTools(config Configuration, checkAll bool, downloadTimeout int, 
 
 	var wg sync.WaitGroup
 
-	results := make(chan VersionTableEntry, len(tools))
+	results := make(chan ToolVersionInfo, len(tools))
 
 	for name, tool := range tools {
 		wg.Add(1)
@@ -166,7 +159,7 @@ func getOutdatedTools(config Configuration, checkAll bool, downloadTimeout int, 
 				return
 			}
 
-			results <- VersionTableEntry{Name: name, Installed: cache.Tools[name], Available: release.TagName}
+			results <- ToolVersionInfo{Name: name, Installed: cache.Tools[name], Available: release.TagName}
 		}()
 	}
 
@@ -175,7 +168,7 @@ func getOutdatedTools(config Configuration, checkAll bool, downloadTimeout int, 
 		close(results)
 	}()
 
-	result := make([]VersionTableEntry, 0)
+	result := make([]ToolVersionInfo, 0)
 
 	for r := range results {
 		if r.Installed != r.Available {
@@ -183,7 +176,7 @@ func getOutdatedTools(config Configuration, checkAll bool, downloadTimeout int, 
 		}
 	}
 
-	sort.Sort(ByName[VersionTableEntry]{result})
+	sort.Sort(ByName[ToolVersionInfo]{result})
 
 	return result, nil
 }
@@ -199,22 +192,14 @@ func checkToolVersions(config Configuration, checkAll bool, downloadTimeout int)
 		return err
 	}
 
-	nameSize := 4
-	installedSize := 9
-	availableSize := 9
-
-	for _, r := range results {
-		nameSize = max(nameSize, len(r.Name))
-		installedSize = max(installedSize, len(r.Installed))
-		availableSize = max(availableSize, len(r.Available))
-	}
+	table := newTableBuilder([]string{"Name", "Installed", "Available"})
 
 	if len(results) > 0 {
-		fmt.Printf("%-*s    %-*s    %-*s\n\n", nameSize, "Name", installedSize, "Installed", availableSize, "Available")
-
 		for _, e := range results {
-			fmt.Printf("%-*s    %-*s    %-*s\n", nameSize, e.Name, installedSize, e.Installed, availableSize, e.Available)
+			table.addRow([]string{e.Name, e.Installed, e.Available})
 		}
+
+		fmt.Print(table.build())
 	} else {
 		fmt.Println("All tools are up to date.")
 	}
@@ -228,50 +213,37 @@ func listTools(config Configuration, longList bool) error {
 		return err
 	}
 
-	// Minimum sizes based on header line
-	nameSize := 4
-	linkSize := 16
-	descriptionSize := 11
-	versionSize := 7
-
-	tmp := make([]TableEntry, len(config.Tools))
+	tmp := make([]ToolInfo, len(config.Tools))
 
 	i := 0
 	for k, v := range config.Tools {
-		tmp[i] = TableEntry{Name: k, Link: fmt.Sprintf("%s/%s", v.Owner, v.Repository), Description: v.Description, Version: ""}
+		tmp[i] = ToolInfo{Name: k, Link: fmt.Sprintf("%s/%s", v.Owner, v.Repository), Description: v.Description, Version: ""}
 
 		if version, found := cache.Tools[k]; found {
 			tmp[i].Version = version
 		}
 
-		nameSize = max(nameSize, len(k))
-		linkSize = max(linkSize, len(tmp[i].Link))
-		descriptionSize = max(descriptionSize, len(v.Description))
-		versionSize = max(versionSize, len(tmp[i].Version))
-
 		i++
 	}
 
-	sort.Sort(ByName[TableEntry]{tmp})
+	sort.Sort(ByName[ToolInfo]{tmp})
 
 	if longList {
-		fmt.Printf("%-*s    %-*s    %-*s    %-*s\n\n", nameSize, "Name", linkSize, "Owner/Repository", descriptionSize, "Description", versionSize, "Version")
+		builder := newTableBuilder([]string{"Name", "Source", "Version", "Description"})
 
-		for _, j := range tmp {
-			fmt.Printf("%-*s    %-*s    %-*s    %-*s\n", nameSize, j.Name, linkSize, j.Link, descriptionSize, j.Description, versionSize, j.Version)
+		for _, row := range tmp {
+			builder.addRow([]string{row.Name, row.Link, row.Version, row.Description})
 		}
+
+		fmt.Print(builder.build())
 	} else {
-		descriptionSize = min(descriptionSize, maxShortListDescriptionLength)
-		fmt.Printf("%-*s    %-*s       %-*s\n\n", nameSize, "Name", descriptionSize, "Description", versionSize, "Version")
+		builder := newTableBuilderWithLimits([]string{"Name", "Version", "Description"}, map[int]int{2: 50})
 
-		for _, j := range tmp {
-			extra := "   "
-			if len(j.Description) > maxShortListDescriptionLength {
-				extra = "..."
-				j.Description = j.Description[:maxShortListDescriptionLength]
-			}
-			fmt.Printf("%-*s    %-*s%s    %-*s\n", nameSize, j.Name, descriptionSize, j.Description, extra, versionSize, j.Version)
+		for _, row := range tmp {
+			builder.addRow([]string{row.Name, row.Version, row.Description})
 		}
+
+		fmt.Print(builder.build())
 	}
 
 	return nil
@@ -293,11 +265,6 @@ func installFiles(binaries []Binary, result DownloadResult, installationDirector
 	}
 
 	return result.tagName, nil
-}
-
-type ToolVersion struct {
-	name    string
-	version string
 }
 
 func installTools(config Configuration, tools []string, downloadTimeout int) error {
@@ -332,7 +299,7 @@ func installTools(config Configuration, tools []string, downloadTimeout int) err
 
 	var wg sync.WaitGroup
 
-	results := make(chan ToolVersion, len(toInstall))
+	results := make(chan ToolVersionInfo, len(toInstall))
 
 	for name, tool := range toInstall {
 		wg.Add(1)
@@ -358,7 +325,7 @@ func installTools(config Configuration, tools []string, downloadTimeout int) err
 				return
 			}
 
-			results <- ToolVersion{name: name, version: installedVersion}
+			results <- ToolVersionInfo{Name: name, Installed: installedVersion}
 		}()
 	}
 
@@ -368,7 +335,7 @@ func installTools(config Configuration, tools []string, downloadTimeout int) err
 	}()
 
 	for result := range results {
-		cache.add(result.name, result.version)
+		cache.add(result.Name, result.Installed)
 	}
 
 	err = cache.writeCache()
