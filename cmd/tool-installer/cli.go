@@ -23,10 +23,11 @@ COMMANDS:
     i,  install         Installs the newest version of all or the selected tools
     a,  add             Adds a new tool to the configuration
     c,  check           Checks and displays available updates
+    d,  delete          Uninstalls one or more tools but keeps the config entry
     cc, create-config   Creates the default configuration
     h,  help            Shows the help for the program or given command
     l,  list            Lists the tools in the configuration, sorted by name
-    r,  remove          Removes tools from the configuration
+    r,  remove          Uninstalls one or more tools and removes the config entries
     u,  update          Updates the installed tools to the latest version
 
 OPTIONS:
@@ -43,6 +44,7 @@ const addHelp = `Adds a tool to the configuration by prompting the necessary val
 Examples:
 tooli add ripgrep
 tooli add bat`
+
 const checkHelp = `Checks the configured tools for version updates.
 
 By default only the currently installed tools are check, to change this pass 'all' as an argument to the command.
@@ -51,6 +53,7 @@ Examples:
 
 tooli check
 tooli check all`
+
 const createConfigHelp = `Creates the default configuration.
 
 By default the configuration is written to '~/.config/tool-installer/config.json',
@@ -60,11 +63,22 @@ Examples:
 
 tooli create-config
 tooli create-config test.json`
+
+const deleteHelp = `Uninstalls one or more tools.
+
+Removes the binaries but keeps the configuration entry. To also remove the entry, use the 'remove' command.
+
+
+Examples:
+tooli delete ripgrep
+tooli delete ripgrep bat micro`
+
 const helpHelp = `Shows the help for the program or command.
 
 Examples:
 tooli help
 tooli help install`
+
 const installHelp = `Installs tools. If no arguments are provided, it installs all tools in the configuration.
 Installs only the named tools if provided with a space separated list of tools to install.
 
@@ -73,17 +87,23 @@ Examples
 tooli install
 tooli install ripgrep
 tooli install ripgrep eza bat fd`
+
 const listHelp = `Lists the tools present in the configuration.
 
 Examples:
 
 tooli list
 tooli list long`
-const removeHelp = `Removes one or more tools from the configuration.
+
+const removeHelp = `Uninstalls one or more tools.
+
+WARNING: This command also removes the configuration entry.
+To only uninstall the binaries but keep the configuration entry, use the 'delete' command.
 
 Examples:
 tooli remove ripgrep
 tooli remove ripgrep bat micro`
+
 const updateHelp = `Updates all installed tools to their latest version.
 
 Examples:
@@ -97,6 +117,8 @@ func getCommandHelp(command string) string {
 		return checkHelp
 	case "cc", "create-config":
 		return createConfigHelp
+	case "d", "delete":
+		return deleteHelp
 	case "h", "help":
 		return helpHelp
 	case "i", "install":
@@ -236,13 +258,15 @@ func run() error {
 	case "c", "check":
 		checkAll := hasArguments && args.commandArguments[0] == "all"
 		err = app.checkToolVersions(checkAll)
+	case "d", "delete":
+		err = app.removeTools(args.commandArguments, false)
 	case "i", "install":
 		err = app.installTools(args.commandArguments)
 	case "l", "list":
 		listLong := hasArguments && args.commandArguments[0] == "long"
 		err = app.listTools(listLong)
 	case "r", "remove":
-		err = app.removeTools(args.commandArguments)
+		err = app.removeTools(args.commandArguments, true)
 	case "u", "update":
 		err = app.updateTools()
 	default:

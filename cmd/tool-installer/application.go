@@ -269,7 +269,7 @@ func (app *App) listTools(longList bool) error {
 	return nil
 }
 
-func (app *App) removeTools(tools []string) error {
+func (app *App) removeTools(tools []string, removeFromConfig bool) error {
 	toolDirectory := replaceTildePath(app.config.InstallationDirectory)
 
 	for _, name := range tools {
@@ -288,18 +288,22 @@ func (app *App) removeTools(tools []string) error {
 			path := filepath.Join(toolDirectory, n)
 			err := os.Remove(path)
 			if err != nil {
-				fmt.Printf("Failed to remove binary '%s' for tool '%s'.", n, name)
+				fmt.Printf("Failed to remove binary '%s' for tool '%s'.\n", n, name)
 			}
 		}
-
-		delete(app.config.Tools, name)
 
 		app.cache.remove(name)
 	}
 
-	err := app.config.save(app.configLocation, false)
-	if err != nil {
-		return err
+	if removeFromConfig {
+		for _, name := range tools {
+			delete(app.config.Tools, name)
+		}
+
+		err := app.config.save(app.configLocation, false)
+		if err != nil {
+			return err
+		}
 	}
 
 	return app.cache.writeCache()
