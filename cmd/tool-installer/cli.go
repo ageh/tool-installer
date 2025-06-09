@@ -259,14 +259,22 @@ func run() error {
 		checkAll := hasArguments && args.commandArguments[0] == "all"
 		err = app.checkToolVersions(checkAll)
 	case "d", "delete":
-		err = app.removeTools(args.commandArguments, false)
+		if !hasArguments {
+			err = fmt.Errorf("you need to provide at least one tool name as argument to 'delete'")
+		} else {
+			err = app.removeTools(args.commandArguments, false)
+		}
 	case "i", "install":
 		err = app.installTools(args.commandArguments)
 	case "l", "list":
 		listLong := hasArguments && args.commandArguments[0] == "long"
 		err = app.listTools(listLong)
 	case "r", "remove":
-		err = app.removeTools(args.commandArguments, true)
+		if !hasArguments {
+			err = fmt.Errorf("you need to provide at least one tool name as argument to 'remove'")
+		} else {
+			err = app.removeTools(args.commandArguments, true)
+		}
 	case "u", "update":
 		err = app.updateTools()
 	default:
