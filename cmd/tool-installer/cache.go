@@ -51,27 +51,25 @@ func (cache *Cache) writeCache() error {
 func getCache() (Cache, error) {
 	result := Cache{Tools: make(map[string]string)}
 
-	errMessage := "error obtaining cache: %w"
-
 	filePath, err := getCacheFilePath()
 	if err != nil {
-		return result, fmt.Errorf(errMessage, err)
+		return result, fmt.Errorf("error getting cache path: %w", err)
 	}
 
 	if _, err := os.Stat(filePath); os.IsNotExist(err) {
 		return result, nil
 	} else if err != nil {
-		return result, fmt.Errorf(errMessage, err)
+		return result, fmt.Errorf("error getting cache file stats: %w", err)
 	}
 
 	bytes, err := os.ReadFile(replaceTildePath(filePath))
 	if err != nil {
-		return result, fmt.Errorf(errMessage, err)
+		return result, fmt.Errorf("error reading cache file: %w", err)
 	}
 
 	err = json.Unmarshal(bytes, &result)
 	if err != nil {
-		return result, fmt.Errorf(errMessage, err)
+		return result, fmt.Errorf("error parsing cache file: %w", err)
 	}
 
 	return result, nil
