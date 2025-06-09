@@ -4,6 +4,28 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] - 2025-06-09
+
+### Added
+
+- `help` command instead of `--help` flag on every command
+- `add` command to add a new tool without having to directly edit the configuration
+- `delete` command to uninstall the binaries of tools but keep the configuration entries
+- `remove` command to uninstall the binaries of tools and remove the configuration entries
+- `update` command as a shortcut for `check` followed by `install` for the tools needing an update
+
+### Changed
+
+- `--config` and `--timeout` are now global flags instead of having to be passed for each command
+- Downloads are now parallel
+- Printing the version now also shows the commit hash and time of compilation
+- Output tables now have borders
+- Asset names are now regular expressions to allow for better selection
+
+### Removed
+
+- Removed `dust`, `fzf`, and `hexyl` from the default configuration
+
 ## [1.5.0] - 2024-08-21
 
 ### Added
