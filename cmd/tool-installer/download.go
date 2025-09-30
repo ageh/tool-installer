@@ -3,6 +3,7 @@
 package main
 
 import (
+	"crypto/sha256"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -140,17 +141,17 @@ func (client *Downloader) downloadTool(tool Tool, currentVersion string) (Downlo
 		return result, nil
 	}
 
-	var asset string
+	var assetName string
 	switch os := runtime.GOOS; os {
 	case "linux":
-		asset = tool.LinuxAsset
+		assetName = tool.LinuxAsset
 	case "windows":
-		asset = tool.WindowsAsset
+		assetName = tool.WindowsAsset
 	default:
 		return result, fmt.Errorf("the platform '%s' is not supported", os)
 	}
 
-	if asset == "" {
+	if assetName == "" {
 		return result, errors.New("no asset name provided for the current platform")
 	}
 
@@ -162,7 +163,7 @@ func (client *Downloader) downloadTool(tool Tool, currentVersion string) (Downlo
 			continue
 		}
 
-		matched, _ := regexp.MatchString(asset, a.Name)
+		matched, _ := regexp.MatchString(assetName, a.Name)
 		if matched {
 			res = append(res, a)
 		}
@@ -175,15 +176,22 @@ func (client *Downloader) downloadTool(tool Tool, currentVersion string) (Downlo
 		return result, errors.New("found two or more matching assets. Please be more specific")
 	}
 
-	assetUrl := fmt.Sprintf("https://api.github.com/repos/%s/%s/releases/assets/%d", tool.Owner, tool.Repository, res[0].Id)
+	asset := res[0]
+
+	assetUrl := fmt.Sprintf("https://api.github.com/repos/%s/%s/releases/assets/%d", tool.Owner, tool.Repository, asset.Id)
 
 	binaryContent, err := client.downloadAsset(assetUrl)
 	if err != nil {
 		return result, err
 	}
 
+	hash := fmt.Sprintf("sha256:%x", sha256.Sum256(binaryContent))
+	if hash != asset.Digest {
+		return result, errors.New("found non-matching sha256 hash. It is possible that the download got corrupted")
+	}
+
 	result.data = binaryContent
-	result.assetName = res[0].Name
+	result.assetName = asset.Name
 	result.tagName = release.TagName
 
 	return result, nil

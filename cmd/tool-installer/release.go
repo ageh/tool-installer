@@ -40,6 +40,7 @@ type Asset struct {
 	BrowserDownloadUrl string `json:"browser_download_url"`
 	ContentType        string `json:"content_type"`
 	CreatedAt          string `json:"created_at"`
+	Digest             string `json:"digest"`
 	DownloadCount      int64  `json:"download_count"`
 	Id                 int64  `json:"id"`
 	Label              string `json:"label"`
