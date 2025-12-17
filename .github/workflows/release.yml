@@ -1,0 +1,45 @@
+on:
+  push:
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+"
+
+permissions:
+  contents: write
+
+jobs:
+  goreleaser:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: stable
+          cache: true
+
+      - name: Build release notes from CHANGELOG
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          TAG="${GITHUB_REF_NAME}"
+          VERSION="${TAG#v}"
+
+          awk -v ver="$VERSION" '
+            $0 ~ ("^##[[:space:]]+\\[" ver "\\]") { printing=1; next }
+            printing && $0 ~ "^##[[:space:]]+" { exit }
+            printing { print }
+          ' CHANGELOG.md > /tmp/release-notes.md
+          printf "\n\n---\n\n**[Full changelog](https://github.com/${GITHUB_REPOSITORY}/blob/${TAG}/CHANGELOG.md)**\n" >> /tmp/release-notes.md
+
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          version: latest
+          args: release --clean --release-notes /tmp/release-notes.md
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
