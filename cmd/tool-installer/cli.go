@@ -146,9 +146,10 @@ func getCompileInfo() CompileInfo {
 	info, ok := debug.ReadBuildInfo()
 	if ok {
 		for _, setting := range info.Settings {
-			if setting.Key == "vcs.revision" {
+			switch setting.Key {
+			case "vcs.revision":
 				revision = setting.Value
-			} else if setting.Key == "vcs.time" {
+			case "vcs.time":
 				timeStamp = setting.Value
 			}
 		}
