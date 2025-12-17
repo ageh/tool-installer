@@ -8,12 +8,18 @@ import (
 	"bytes"
 	"compress/gzip"
 	"errors"
-	"fmt"
 	"io"
 	"os"
 	"path"
 	"path/filepath"
 	"strings"
+)
+
+type AssetType int
+
+const (
+	Archive AssetType = iota
+	RawBinary
 )
 
 func getRenameTarget(fullName string, binaries []Binary) string {
@@ -162,13 +168,12 @@ func extractFilesRaw(rawData []byte, binaries []Binary, outputPath string) error
 	return nil
 }
 
-func extractFiles(rawData []byte, assetName string, binaries []Binary, outputPath string) error {
+func extractFiles(rawData []byte, assetName string, binaries []Binary, outputPath string) (AssetType, error) {
 	if strings.HasSuffix(assetName, ".tar.gz") {
-		return extractFilesTarGz(rawData, binaries, outputPath)
+		return Archive, extractFilesTarGz(rawData, binaries, outputPath)
 	} else if strings.HasSuffix(assetName, ".zip") {
-		return extractFilesZip(rawData, binaries, outputPath)
+		return Archive, extractFilesZip(rawData, binaries, outputPath)
 	} else {
-		fmt.Println("Warning: The asset does not have a file ending. While this can be legitimate, you should probably talk to the tool author to see if he is willing to change that.")
-		return extractFilesRaw(rawData, binaries, outputPath)
+		return RawBinary, extractFilesRaw(rawData, binaries, outputPath)
 	}
 }

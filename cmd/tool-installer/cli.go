@@ -253,34 +253,69 @@ func run() error {
 		return err
 	}
 
+	var commandError error
 	switch args.command {
 	case "a", "add":
-		err = app.addTool()
+		commandError = app.addTool()
 	case "c", "check":
 		checkAll := hasArguments && args.commandArguments[0] == "all"
-		err = app.checkToolVersions(checkAll)
+		commandError = app.checkToolVersions(checkAll)
 	case "d", "delete":
 		if !hasArguments {
-			err = fmt.Errorf("you need to provide at least one tool name as argument to 'delete'")
+			commandError = fmt.Errorf("you need to provide at least one tool name as argument to 'delete'")
 		} else {
-			err = app.removeTools(args.commandArguments, false)
+			messages, err := app.removeTools(args.commandArguments, false)
+			for _, m := range messages {
+				fmt.Println(m)
+			}
+			commandError = err
 		}
 	case "i", "install":
-		err = app.installTools(args.commandArguments)
+		results, err := app.installTools(args.commandArguments)
+		if err == nil {
+			for _, res := range results {
+				switch res.MessageType {
+				case Success:
+					fmt.Println(res.Message)
+				case Info:
+					fmt.Printf("Info: %s\n", res.Message)
+				case Error:
+					fmt.Printf("Error: %s\n", res.Message)
+				}
+			}
+		}
+		commandError = err
 	case "l", "list":
 		listLong := hasArguments && args.commandArguments[0] == "long"
-		err = app.listTools(listLong)
+		commandError = app.listTools(listLong)
 	case "r", "remove":
 		if !hasArguments {
-			err = fmt.Errorf("you need to provide at least one tool name as argument to 'remove'")
+			commandError = fmt.Errorf("you need to provide at least one tool name as argument to 'remove'")
 		} else {
-			err = app.removeTools(args.commandArguments, true)
+			messages, err := app.removeTools(args.commandArguments, true)
+			for _, m := range messages {
+				fmt.Println(m)
+			}
+			commandError = err
 		}
 	case "u", "update":
-		err = app.updateTools()
+		results, err := app.updateTools()
+		if err == nil {
+			for _, res := range results {
+				switch res.MessageType {
+				case Success:
+					fmt.Println(res.Message)
+				case Info:
+					fmt.Printf("Info: %s\n", res.Message)
+				case Error:
+					fmt.Printf("Error: %s\n", res.Message)
+				}
+			}
+		}
+		commandError = err
 	default:
-		err = fmt.Errorf("invalid command '%s'", args.command)
+		commandError = fmt.Errorf("invalid command '%s'", args.command)
 	}
 
-	return err
+	return commandError
 }

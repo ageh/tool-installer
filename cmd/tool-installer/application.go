@@ -22,10 +22,20 @@ func (t ToolInfo) GetName() string {
 	return t.Name
 }
 
+type MessageType int
+
+const (
+	Success MessageType = iota
+	Info
+	Error
+)
+
 type ToolVersionInfo struct {
-	Name      string
-	Installed string
-	Available string
+	Name        string
+	Installed   string
+	Available   string
+	MessageType MessageType
+	Message     string
 }
 
 func (v ToolVersionInfo) GetName() string {
@@ -154,11 +164,11 @@ func (app *App) checkToolVersions(checkAll bool) error {
 	return nil
 }
 
-func (app *App) installTools(tools []string) error {
+func (app *App) installTools(tools []string) ([]ToolVersionInfo, error) {
 	toolDirectory := replaceTildePath(app.config.InstallationDirectory)
 	err := makeOutputDirectory(toolDirectory)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	var toInstall map[string]Tool
@@ -191,22 +201,22 @@ func (app *App) installTools(tools []string) error {
 
 			result, err := app.downloader.downloadTool(tool, currentVersion)
 			if err != nil {
-				fmt.Printf("Error: failed to download '%s', %v\n", name, err)
-				return
-			}
+				results <- ToolVersionInfo{Name: name, MessageType: Error, Message: fmt.Sprintf("%s: failed to download: %v\n", name, err)}
+			} else if result.updated {
+				results <- ToolVersionInfo{Name: name, MessageType: Info, Message: fmt.Sprintf("%s: skipping download - already up to date", name)}
+			} else {
+				assetType, err := extractFiles(result.data, result.assetName, tool.Binaries, toolDirectory)
+				if err != nil {
+					results <- ToolVersionInfo{Name: name, MessageType: Error, Message: fmt.Sprintf("%s: failed to extract files: %v", name, err)}
+					return
+				}
 
-			if result.updated {
-				fmt.Printf("Info: skipping download for '%s' because it is already installed and up to date\n", name)
-				return
+				if assetType == Archive {
+					results <- ToolVersionInfo{Name: name, Installed: result.tagName, MessageType: Success, Message: fmt.Sprintf("%s: successfully installed from the downloaded archive", name)}
+				} else {
+					results <- ToolVersionInfo{Name: name, Installed: result.tagName, MessageType: Success, Message: fmt.Sprintf("%s: successfully installed from the downloaded raw binary", name)}
+				}
 			}
-
-			err = extractFiles(result.data, result.assetName, tool.Binaries, toolDirectory)
-			if err != nil {
-				fmt.Printf("Error: failed to extract files for '%s': %v\n", name, err)
-				return
-			}
-
-			results <- ToolVersionInfo{Name: name, Installed: result.tagName}
 		}()
 	}
 
@@ -215,16 +225,21 @@ func (app *App) installTools(tools []string) error {
 		close(results)
 	}()
 
-	for result := range results {
-		app.cache.add(result.Name, result.Installed)
+	result := make([]ToolVersionInfo, 0, len(toInstall))
+
+	for res := range results {
+		if res.MessageType == Success {
+			app.cache.add(res.Name, res.Installed)
+		}
+		result = append(result, res)
 	}
 
 	err = app.cache.writeCache()
 	if err != nil {
-		return err
+		return result, err
 	}
 
-	return nil
+	return result, nil
 }
 
 func (app *App) listTools(longList bool) error {
@@ -269,8 +284,10 @@ func (app *App) listTools(longList bool) error {
 	return nil
 }
 
-func (app *App) removeTools(tools []string, removeFromConfig bool) error {
+func (app *App) removeTools(tools []string, removeFromConfig bool) ([]string, error) {
 	toolDirectory := replaceTildePath(app.config.InstallationDirectory)
+
+	results := make([]string, 0)
 
 	for _, name := range tools {
 
@@ -288,7 +305,9 @@ func (app *App) removeTools(tools []string, removeFromConfig bool) error {
 			path := filepath.Join(toolDirectory, n)
 			err := os.Remove(path)
 			if err != nil {
-				fmt.Printf("Failed to remove binary '%s' for tool '%s'.\n", n, name)
+				results = append(results, fmt.Sprintf("%s: Failed to remove binary '%s'\n", name, n))
+			} else {
+				results = append(results, fmt.Sprintf("%s: Removed binary '%s'\n", name, n))
 			}
 		}
 
@@ -302,25 +321,34 @@ func (app *App) removeTools(tools []string, removeFromConfig bool) error {
 
 		err := app.config.save(app.configLocation, false)
 		if err != nil {
-			return err
+			return results, err
 		}
 	}
 
-	return app.cache.writeCache()
+	return results, app.cache.writeCache()
 }
 
-func (app *App) updateTools() error {
+func (app *App) updateTools() ([]ToolVersionInfo, error) {
 	outdated, err := app.getOutdatedTools(false)
 	if err != nil {
-		return err
+		return nil, err
 	}
+
+	results := make([]ToolVersionInfo, 0)
 
 	tools := make([]string, len(outdated))
 	for i, tmp := range outdated {
-		tools[i] = tmp.Name
+		if tmp.MessageType == Success {
+			tools[i] = tmp.Name
+		} else {
+			results = append(results, tmp)
+		}
 	}
 
-	return app.installTools(tools)
+	installResults, err := app.installTools(tools)
+	results = append(results, installResults...)
+
+	return results, err
 }
 
 func (app *App) toolsFromCache() map[string]Tool {
@@ -352,11 +380,12 @@ func (app *App) getOutdatedTools(checkAll bool) ([]ToolVersionInfo, error) {
 
 			release, err := app.downloader.downloadRelease(tool.Owner, tool.Repository)
 			if err != nil {
-				fmt.Printf("Error: failed to obtain latest release of tool '%s': %v\n", name, err)
-				return
+				shortMessage := fmt.Sprintf("Error: %v\n", err)
+				fullMessage := fmt.Sprintf("%s: failed to download release info: %v\n", name, err)
+				results <- ToolVersionInfo{Name: name, Installed: app.cache.Tools[name], Available: shortMessage, MessageType: Error, Message: fullMessage}
+			} else {
+				results <- ToolVersionInfo{Name: name, Installed: app.cache.Tools[name], Available: release.TagName, MessageType: Success}
 			}
-
-			results <- ToolVersionInfo{Name: name, Installed: app.cache.Tools[name], Available: release.TagName}
 		}()
 	}
 

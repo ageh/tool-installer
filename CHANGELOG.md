@@ -10,6 +10,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) 
 
 - Asset integrity is checked via the provided SHA256, which [GitHub now provides automatically](https://github.blog/changelog/2025-06-03-releases-now-expose-digests-for-release-assets/)
 
+### Changed
+
+- User-facing output is improved and now always shows exactly what actions have been taken on which tool
+
 ## [2.0.0] - 2025-06-09
 
 ### Added
