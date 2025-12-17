@@ -6,10 +6,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"runtime/debug"
 )
-
-const version = "2.0.0"
 
 const helpText = `tool-installer (tooli) provides an easy way to download
 all your favourite binaries from GitHub at once.
@@ -134,30 +131,6 @@ func getCommandHelp(command string) string {
 	}
 }
 
-type CompileInfo struct {
-	revision  string
-	timeStamp string
-}
-
-func getCompileInfo() CompileInfo {
-	revision := "No VCS info available"
-	timeStamp := "No VCS info available"
-
-	info, ok := debug.ReadBuildInfo()
-	if ok {
-		for _, setting := range info.Settings {
-			switch setting.Key {
-			case "vcs.revision":
-				revision = setting.Value
-			case "vcs.time":
-				timeStamp = setting.Value
-			}
-		}
-	}
-
-	return CompileInfo{revision: revision, timeStamp: timeStamp}
-}
-
 type Arguments struct {
 	commandArguments []string
 	command          string
@@ -171,9 +144,13 @@ func (args *Arguments) hasCommandArguments() bool {
 	return len(args.commandArguments) > 0
 }
 
+func versionInfo() string {
+	return fmt.Sprintf("tool-installer (tooli)\nVersion: %s\nCommit hash: %s\nCompiled at: %s\nCompiled by: %s", version, commitHash, commitDate, builtBy)
+}
+
 func printHelp() {
-	info := getCompileInfo()
-	fmt.Printf("tool-installer (tooli)\nVersion: %s\nCommit hash: %s\nCompiled at: %s\n\n%s", version, info.revision, info.timeStamp, helpText)
+	info := versionInfo()
+	fmt.Printf("%s\n\n%s", info, helpText)
 }
 
 func parseArguments() (Arguments, error) {
@@ -223,8 +200,8 @@ func run() error {
 	}
 
 	if args.showVersion {
-		info := getCompileInfo()
-		fmt.Printf("tool-installer (tooli)\nVersion: %s\nCommit hash: %s\nCompiled at: %s", version, info.revision, info.timeStamp)
+		info := versionInfo()
+		fmt.Println(info)
 		return nil
 	}
 

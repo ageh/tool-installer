@@ -34,10 +34,13 @@ const (
 	rtBinary
 )
 
-const userAgent = "ageh/tool-installer-" + version
 const rateLimitText = `got non-OK status code '%v'.
 
 This most likely means that you hit Github's API rate limit. To increase the number of requests you can make, set the 'GITHUB_TOKEN' environment variable`
+
+func createUserAgent() string {
+	return "ageh/tool-installer-" + version
+}
 
 func newDownloader(timeoutSeconds int) Downloader {
 	githubToken := os.Getenv("GITHUB_TOKEN")
@@ -62,6 +65,7 @@ func (client *Downloader) newRequest(url string, requestFormat RequestFormat) (*
 		return nil, errors.New("invalid request type")
 	}
 
+	userAgent := createUserAgent()
 	req.Header.Add("User-Agent", userAgent)
 	if client.githubToken != "" {
 		req.Header.Add("Authorization", fmt.Sprintf("token %s", client.githubToken))

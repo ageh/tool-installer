@@ -7,6 +7,13 @@ import (
 	"os"
 )
 
+var (
+	version    = "dev"
+	commitHash = "none"
+	commitDate = "unknown"
+	builtBy    = "unknown"
+)
+
 func main() {
 	err := run()
 	if err != nil {
