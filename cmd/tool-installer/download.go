@@ -186,7 +186,7 @@ func (client *Downloader) downloadTool(tool Tool, currentVersion string) (Downlo
 	}
 
 	hash := fmt.Sprintf("sha256:%x", sha256.Sum256(binaryContent))
-	if hash != asset.Digest {
+	if asset.Digest != "" && hash != asset.Digest {
 		return result, errors.New("found non-matching sha256 hash. It is possible that the download got corrupted")
 	}
 
