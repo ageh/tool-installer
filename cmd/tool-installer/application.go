@@ -193,9 +193,7 @@ func (app *App) installTools(tools []string) ([]ToolVersionInfo, error) {
 	results := make(chan ToolVersionInfo, len(toInstall))
 
 	for name, tool := range toInstall {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 
 			currentVersion := app.cache.Tools[name]
 
@@ -217,7 +215,7 @@ func (app *App) installTools(tools []string) ([]ToolVersionInfo, error) {
 					results <- ToolVersionInfo{Name: name, Installed: result.tagName, MessageType: Success, Message: fmt.Sprintf("%s: successfully installed from the downloaded raw binary", name)}
 				}
 			}
-		}()
+		})
 	}
 
 	go func() {
@@ -373,10 +371,7 @@ func (app *App) getOutdatedTools(checkAll bool) ([]ToolVersionInfo, error) {
 	results := make(chan ToolVersionInfo, len(tools))
 
 	for name, tool := range tools {
-		wg.Add(1)
-
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 
 			release, err := app.downloader.downloadRelease(tool.Owner, tool.Repository)
 			if err != nil {
@@ -386,7 +381,7 @@ func (app *App) getOutdatedTools(checkAll bool) ([]ToolVersionInfo, error) {
 			} else {
 				results <- ToolVersionInfo{Name: name, Installed: app.cache.Tools[name], Available: release.TagName, MessageType: Success}
 			}
-		}()
+		})
 	}
 
 	go func() {
