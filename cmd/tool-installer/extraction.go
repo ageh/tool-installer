@@ -63,11 +63,14 @@ func extractFilesZip(rawData []byte, binaries []Binary, outputPath string) error
 		if err != nil {
 			return err
 		}
-		defer fileReader.Close()
 
 		fileContent, err := io.ReadAll(fileReader)
+		closeErr := fileReader.Close()
 		if err != nil {
 			return err
+		}
+		if closeErr != nil {
+			return closeErr
 		}
 
 		filePath := filepath.Join(outputPath, fileName)
@@ -120,14 +123,20 @@ func extractFilesTarGz(rawData []byte, binaries []Binary, outputPath string) err
 		if err != nil {
 			return err
 		}
-		defer file.Close()
 
 		_, err = io.Copy(file, tarReader)
+		closeErr := file.Close()
 		if err != nil {
 			return err
 		}
+		if closeErr != nil {
+			return closeErr
+		}
 
-		os.Chmod(filePath, 0755)
+		err = os.Chmod(filePath, 0755)
+		if err != nil {
+			return err
+		}
 
 		extracted++
 		if extracted == toExtract {
