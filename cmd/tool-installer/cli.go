@@ -188,6 +188,12 @@ func parseArguments() (Arguments, error) {
 	return result, nil
 }
 
+func printMessages(messages []UserMessage) {
+	for _, m := range messages {
+		m.Print()
+	}
+}
+
 func run() error {
 	args, err := parseArguments()
 	if err != nil {
@@ -236,31 +242,20 @@ func run() error {
 		commandError = app.addTool()
 	case "c", "check":
 		checkAll := hasArguments && args.commandArguments[0] == "all"
-		commandError = app.checkToolVersions(checkAll)
+		messages, err := app.checkToolVersions(checkAll)
+		printMessages(messages)
+		commandError = err
 	case "d", "delete":
 		if !hasArguments {
 			commandError = fmt.Errorf("you need to provide at least one tool name as argument to 'delete'")
 		} else {
 			messages, err := app.removeTools(args.commandArguments, false)
-			for _, m := range messages {
-				fmt.Println(m)
-			}
+			printMessages(messages)
 			commandError = err
 		}
 	case "i", "install":
-		results, err := app.installTools(args.commandArguments)
-		if err == nil {
-			for _, res := range results {
-				switch res.MessageType {
-				case Success:
-					fmt.Println(res.Message)
-				case Info:
-					fmt.Printf("Info: %s\n", res.Message)
-				case Error:
-					fmt.Printf("Error: %s\n", res.Message)
-				}
-			}
-		}
+		messages, err := app.installTools(args.commandArguments)
+		printMessages(messages)
 		commandError = err
 	case "l", "list":
 		listLong := hasArguments && args.commandArguments[0] == "long"
@@ -270,25 +265,12 @@ func run() error {
 			commandError = fmt.Errorf("you need to provide at least one tool name as argument to 'remove'")
 		} else {
 			messages, err := app.removeTools(args.commandArguments, true)
-			for _, m := range messages {
-				fmt.Println(m)
-			}
+			printMessages(messages)
 			commandError = err
 		}
 	case "u", "update":
-		results, err := app.updateTools()
-		if err == nil {
-			for _, res := range results {
-				switch res.MessageType {
-				case Success:
-					fmt.Println(res.Message)
-				case Info:
-					fmt.Printf("Info: %s\n", res.Message)
-				case Error:
-					fmt.Printf("Error: %s\n", res.Message)
-				}
-			}
-		}
+		messages, err := app.updateTools()
+		printMessages(messages)
 		commandError = err
 	default:
 		commandError = fmt.Errorf("invalid command '%s'", args.command)

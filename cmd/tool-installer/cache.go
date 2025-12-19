@@ -13,6 +13,11 @@ type Cache struct {
 	Tools map[string]string `json:"tools"`
 }
 
+func (cache *Cache) contains(tool string) bool {
+	_, found := cache.Tools[tool]
+	return found
+}
+
 func (cache *Cache) add(tool string, version string) {
 	cache.Tools[tool] = version
 }

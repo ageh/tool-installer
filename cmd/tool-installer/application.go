@@ -22,20 +22,10 @@ func (t ToolInfo) GetName() string {
 	return t.Name
 }
 
-type MessageType int
-
-const (
-	Success MessageType = iota
-	Info
-	Error
-)
-
 type ToolVersionInfo struct {
-	Name        string
-	Installed   string
-	Available   string
-	MessageType MessageType
-	Message     string
+	Name      string
+	Installed string
+	Available string
 }
 
 func (v ToolVersionInfo) GetName() string {
@@ -142,17 +132,17 @@ func (app *App) addTool() error {
 	return app.config.save(app.configLocation, false)
 }
 
-func (app *App) checkToolVersions(checkAll bool) error {
-	results, err := app.getOutdatedTools(checkAll)
+func (app *App) checkToolVersions(checkAll bool) ([]UserMessage, error) {
+	messages, results, err := app.getOutdatedTools(checkAll)
 	if err != nil {
-		return fmt.Errorf("error during check for outdated versions: %w", err)
+		return messages, fmt.Errorf("error during check for outdated versions: %w", err)
 	}
 
 	table := newTableBuilder([]string{"Name", "Installed", "Available"})
 
 	if len(results) == 0 {
 		fmt.Println("All tools are up to date.")
-		return nil
+		return messages, nil
 	}
 
 	for _, e := range results {
@@ -161,10 +151,10 @@ func (app *App) checkToolVersions(checkAll bool) error {
 
 	fmt.Print(table.build())
 
-	return nil
+	return messages, nil
 }
 
-func (app *App) installTools(tools []string) ([]ToolVersionInfo, error) {
+func (app *App) installTools(tools []string) ([]UserMessage, error) {
 	toolDirectory := replaceTildePath(app.config.InstallationDirectory)
 	err := makeOutputDirectory(toolDirectory)
 	if err != nil {
@@ -173,12 +163,14 @@ func (app *App) installTools(tools []string) ([]ToolVersionInfo, error) {
 
 	var toInstall map[string]Tool
 
+	messages := make([]UserMessage, 0)
+
 	if len(tools) > 0 {
 		toInstall = make(map[string]Tool, len(tools))
 		for _, name := range tools {
 			tool, found := app.config.Tools[name]
 			if !found {
-				fmt.Printf("Error: tool '%s' not found in configuration\n", name)
+				messages = append(messages, UserMessage{Type: Error, Tool: name, Content: "tool not found in the configuration"})
 				continue
 			}
 
@@ -190,54 +182,58 @@ func (app *App) installTools(tools []string) ([]ToolVersionInfo, error) {
 
 	var wg sync.WaitGroup
 
-	results := make(chan ToolVersionInfo, len(toInstall))
+	messageChannel := make(chan UserMessage, len(toInstall))
+	versionInfoChannel := make(chan ToolVersionInfo, len(toInstall))
 
 	for name, tool := range toInstall {
 		wg.Go(func() {
-
 			currentVersion := app.cache.Tools[name]
 
 			result, err := app.downloader.downloadTool(tool, currentVersion)
 			if err != nil {
-				results <- ToolVersionInfo{Name: name, MessageType: Error, Message: fmt.Sprintf("%s: failed to download: %v\n", name, err)}
+				messageChannel <- UserMessage{Type: Error, Tool: name, Content: fmt.Sprintf("failed to download tool: %v\n", err)}
 			} else if result.updated {
-				results <- ToolVersionInfo{Name: name, MessageType: Info, Message: fmt.Sprintf("%s: skipping download - already up to date", name)}
+				messageChannel <- UserMessage{Type: Info, Tool: name, Content: "skipping download - already up to date"}
 			} else {
 				assetType, err := extractFiles(result.data, result.assetName, tool.Binaries, toolDirectory)
 				if err != nil {
-					results <- ToolVersionInfo{Name: name, MessageType: Error, Message: fmt.Sprintf("%s: failed to extract files: %v", name, err)}
+					messageChannel <- UserMessage{Type: Error, Tool: name, Content: fmt.Sprintf("failed to extract files: %v", err)}
 					return
 				}
 
+				var message string
 				if assetType == Archive {
-					results <- ToolVersionInfo{Name: name, Installed: result.tagName, MessageType: Success, Message: fmt.Sprintf("%s: successfully installed from the downloaded archive", name)}
+					message = fmt.Sprintf("successfully installed version '%s' from the downloaded archive", result.tagName)
 				} else {
-					results <- ToolVersionInfo{Name: name, Installed: result.tagName, MessageType: Success, Message: fmt.Sprintf("%s: successfully installed from the downloaded raw binary", name)}
+					message = fmt.Sprintf("successfully installed version '%s' from the downloaded raw binary", result.tagName)
 				}
+
+				messageChannel <- UserMessage{Type: Success, Tool: name, Content: message}
+				versionInfoChannel <- ToolVersionInfo{Name: name, Installed: result.tagName}
 			}
 		})
 	}
 
 	go func() {
 		wg.Wait()
-		close(results)
+		close(messageChannel)
+		close(versionInfoChannel)
 	}()
 
-	result := make([]ToolVersionInfo, 0, len(toInstall))
+	for m := range messageChannel {
+		messages = append(messages, m)
+	}
 
-	for res := range results {
-		if res.MessageType == Success {
-			app.cache.add(res.Name, res.Installed)
-		}
-		result = append(result, res)
+	for info := range versionInfoChannel {
+		app.cache.add(info.Name, info.Installed)
 	}
 
 	err = app.cache.writeCache()
 	if err != nil {
-		return result, err
+		return messages, err
 	}
 
-	return result, nil
+	return messages, nil
 }
 
 func (app *App) listTools(longList bool) error {
@@ -282,15 +278,21 @@ func (app *App) listTools(longList bool) error {
 	return nil
 }
 
-func (app *App) removeTools(tools []string, removeFromConfig bool) ([]string, error) {
+func (app *App) removeTools(tools []string, removeFromConfig bool) ([]UserMessage, error) {
 	toolDirectory := replaceTildePath(app.config.InstallationDirectory)
 
-	results := make([]string, 0)
+	results := make([]UserMessage, 0)
 
 	for _, name := range tools {
-
 		tool, found := app.config.Tools[name]
 		if !found {
+			results = append(results, UserMessage{Type: Error, Tool: name, Content: "tool not found in the configuration"})
+			continue
+		}
+
+		isInstalled := app.cache.contains(name)
+		if !isInstalled {
+			results = append(results, UserMessage{Type: Info, Tool: name, Content: "skipping uninstall - tool exists in the configuration but is not installed"})
 			continue
 		}
 
@@ -303,9 +305,9 @@ func (app *App) removeTools(tools []string, removeFromConfig bool) ([]string, er
 			path := filepath.Join(toolDirectory, n)
 			err := os.Remove(path)
 			if err != nil {
-				results = append(results, fmt.Sprintf("%s: Failed to remove binary '%s'\n", name, n))
+				results = append(results, UserMessage{Type: Error, Tool: name, Content: fmt.Sprintf("failed to remove binary '%s'", n)})
 			} else {
-				results = append(results, fmt.Sprintf("%s: Removed binary '%s'\n", name, n))
+				results = append(results, UserMessage{Type: Success, Tool: name, Content: fmt.Sprintf("successfully removed binary '%s'", n)})
 			}
 		}
 
@@ -326,27 +328,21 @@ func (app *App) removeTools(tools []string, removeFromConfig bool) ([]string, er
 	return results, app.cache.writeCache()
 }
 
-func (app *App) updateTools() ([]ToolVersionInfo, error) {
-	outdated, err := app.getOutdatedTools(false)
+func (app *App) updateTools() ([]UserMessage, error) {
+	messages, outdated, err := app.getOutdatedTools(false)
 	if err != nil {
-		return nil, err
+		return messages, err
 	}
-
-	results := make([]ToolVersionInfo, 0)
 
 	tools := make([]string, len(outdated))
 	for i, tmp := range outdated {
-		if tmp.MessageType == Success {
-			tools[i] = tmp.Name
-		} else {
-			results = append(results, tmp)
-		}
+		tools[i] = tmp.Name
 	}
 
-	installResults, err := app.installTools(tools)
-	results = append(results, installResults...)
+	installMessages, err := app.installTools(tools)
+	messages = append(messages, installMessages...)
 
-	return results, err
+	return messages, err
 }
 
 func (app *App) toolsFromCache() map[string]Tool {
@@ -358,7 +354,7 @@ func (app *App) toolsFromCache() map[string]Tool {
 	return tools
 }
 
-func (app *App) getOutdatedTools(checkAll bool) ([]ToolVersionInfo, error) {
+func (app *App) getOutdatedTools(checkAll bool) ([]UserMessage, []ToolVersionInfo, error) {
 	var tools map[string]Tool
 	if checkAll {
 		tools = app.config.Tools
@@ -369,17 +365,15 @@ func (app *App) getOutdatedTools(checkAll bool) ([]ToolVersionInfo, error) {
 	var wg sync.WaitGroup
 
 	results := make(chan ToolVersionInfo, len(tools))
+	messageChannel := make(chan UserMessage, len(tools))
 
 	for name, tool := range tools {
 		wg.Go(func() {
-
 			release, err := app.downloader.downloadRelease(tool.Owner, tool.Repository)
 			if err != nil {
-				shortMessage := fmt.Sprintf("Error: %v\n", err)
-				fullMessage := fmt.Sprintf("%s: failed to download release info: %v\n", name, err)
-				results <- ToolVersionInfo{Name: name, Installed: app.cache.Tools[name], Available: shortMessage, MessageType: Error, Message: fullMessage}
+				messageChannel <- UserMessage{Type: Error, Tool: name, Content: fmt.Sprintf("failed to download release info: %v", err)}
 			} else {
-				results <- ToolVersionInfo{Name: name, Installed: app.cache.Tools[name], Available: release.TagName, MessageType: Success}
+				results <- ToolVersionInfo{Name: name, Installed: app.cache.Tools[name], Available: release.TagName}
 			}
 		})
 	}
@@ -387,9 +381,11 @@ func (app *App) getOutdatedTools(checkAll bool) ([]ToolVersionInfo, error) {
 	go func() {
 		wg.Wait()
 		close(results)
+		close(messageChannel)
 	}()
 
 	result := make([]ToolVersionInfo, 0)
+	messages := make([]UserMessage, 0)
 
 	for r := range results {
 		if r.Installed != r.Available {
@@ -397,7 +393,11 @@ func (app *App) getOutdatedTools(checkAll bool) ([]ToolVersionInfo, error) {
 		}
 	}
 
+	for m := range messageChannel {
+		messages = append(messages, m)
+	}
+
 	sort.Sort(ByName[ToolVersionInfo]{result})
 
-	return result, nil
+	return messages, result, nil
 }
