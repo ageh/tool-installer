@@ -19,12 +19,21 @@ builds:
 archives:
   - formats: [tar.gz]
     name_template: >-
-      {{ .ProjectName }}_
-      {{- lower .Os }}_
-      {{- if eq .Arch "amd64" }}x86_64
-      {{- else if eq .Arch "386" }}i386
-      {{- else }}{{ .Arch }}{{ end }}
-      {{- if .Arm }}v{{ .Arm }}{{ end }}
+      {{- tolower .ProjectName }}-
+      {{- if eq .Arch "amd64" -}}
+      x86_64
+      {{- else if eq .Arch "386" -}}
+      i386
+      {{- else -}}
+      {{- .Arch -}}
+      {{ end }}-
+      {{- if eq .Os "windows" -}}
+      pc-windows-msvc
+      {{- else if eq .Os "linux" -}}
+      unknown-linux-gnu
+      {{- else -}}
+      {{- .Os -}}
+      {{ end }}
     format_overrides:
       - goos: windows
         formats: [zip]
