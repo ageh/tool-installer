@@ -12,7 +12,6 @@ import (
 	"regexp"
 	"runtime"
 	"strings"
-	"unsafe"
 )
 
 type Binary struct {
@@ -282,7 +281,7 @@ const defaultConfiguration = `{
 }`
 
 func writeDefaultConfiguration(path string) error {
-	tmp := unsafe.Slice(unsafe.StringData(defaultConfiguration), len(defaultConfiguration))
+	tmp := []byte(defaultConfiguration)
 	defaultConfig, err := parseConfiguration(tmp)
 	if err != nil {
 		return fmt.Errorf("failed to parse default configuration: %w", err)
