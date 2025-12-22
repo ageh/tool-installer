@@ -21,7 +21,6 @@ COMMANDS:
     a,  add             Adds a new tool to the configuration
     c,  check           Checks and displays available updates
     d,  delete          Uninstalls one or more tools but keeps the config entry
-    cc, create-config   Creates the default configuration
     h,  help            Shows the help for the program or given command
     l,  list            Lists the tools in the configuration, sorted by name
     r,  remove          Uninstalls one or more tools and removes the config entries
@@ -50,16 +49,6 @@ Examples:
 
 tooli check
 tooli check all`
-
-const createConfigHelp = `Creates the default configuration.
-
-By default the configuration is written to '~/.config/tool-installer/config.json',
-but this can be changed by passing a different path as an argument.
-
-Examples:
-
-tooli create-config
-tooli create-config test.json`
 
 const deleteHelp = `Uninstalls one or more tools.
 
@@ -112,8 +101,6 @@ func getCommandHelp(command string) string {
 		return addHelp
 	case "c", "check":
 		return checkHelp
-	case "cc", "create-config":
-		return createConfigHelp
 	case "d", "delete":
 		return deleteHelp
 	case "h", "help":
@@ -221,14 +208,6 @@ func run() error {
 		}
 
 		return nil
-	}
-
-	if args.command == "cc" || args.command == "create-config" {
-		configWritePath := args.configPath
-		if hasArguments {
-			configWritePath = args.commandArguments[0]
-		}
-		return writeDefaultConfiguration(configWritePath)
 	}
 
 	app, err := newApp(args.configPath, args.requestTimeout)

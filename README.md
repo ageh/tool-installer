@@ -9,9 +9,9 @@ I wrote tool-installer to automate downloading a bunch of tools from GitHub rele
 ## Quickstart
 
 1. Download tool-installer from the releases page
-2. Create default config: `tooli create-config`
-3. Edit the [configuration file](#configuration) if needed (add/remove tools)
-4. Run tool-installer: `tooli install`
+2. Set your [GitHub access token](#acess-token)
+3. Run `tooli list` to see which tools are configured by default and then edit the [configuration file](#configuration) if needed
+4. Run `tooli install` to install all tools or provide the ones you want as arguments
 5. Wait for all tools to be installed
 
 Please see the [usage section](#usage) for more details.
@@ -69,7 +69,7 @@ Additionally, a tool can have an entry `"asset_prefix"`. You should only set thi
 
 ### Default configuration
 
-The default configuration, which contains some commonly used tools, can be generated with `tooli create-config [/path/to/config.json]`. By default it writes to `${XDG_CONFIG_HOME}/tool-installer/config.json`.
+On the first run without a configuration file present, tool-installer will use its default configuration which includes some widely used tools such as `ripgrep` and write this configuration to the disk.
 
 ### Acess Token
 
@@ -91,12 +91,11 @@ tool-installer has the following commands (you can use the long or the short for
 1. `install` (`i`)
 2. `add` (`a`)
 3. `check` (`c`)
-4. `create-config` (`cc`)
-5. `delete` (`d`)
-6. `help` (`h`)
-7. `list`  (`l`)
-8. `remove` (`r`)
-9. `update` (`u`)
+4. `delete` (`d`)
+5. `help` (`h`)
+6. `list`  (`l`)
+7. `remove` (`r`)
+8. `update` (`u`)
 
 ### `install`
 
@@ -113,17 +112,15 @@ The `timeout` parameter's default value should work fine for most tools on norma
 
 ### `add`
 
-This command opens a prompt which allows you to enter a new tool entry to the configuration in case you do not want to edit the configuration file directly.
+This command allows you to easily add a new tool to the configuration without needing to edit the configuration file directly. It takes the name of the tool to add as an argument.
+
+If the name of the tool is one of the well-known tools baked into tool-installer, it will automatically be added to the configuration. Otherwise this command opens a prompt which allows you to enter the required information for the tool.
 
 ### `check`
 
 The `check` commands downloads the latest release information from GitHub and displays for which of the installed tools an update is available.
 
 By default it only checks the installed tools from the cache, but if you pass `all` as an argument it will also obtain the latest release information from all tools listed in the configuration file.
-
-### `create-config`
-
-The `create-config` command creates a valid configuration for tool-installer, containing some commonly used tools. It only takes a single parameter, `--path PATH` (default `~/.config/tool-installer/config.json`), which can be used to specify where tool-installer should write the generated configuration file to. If the specified path already exists, tool-installer will ask you if you want to overwrite that file.
 
 ### `delete`
 

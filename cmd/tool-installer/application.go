@@ -62,9 +62,9 @@ type App struct {
 func newApp(configPath string, timeout int) (App, error) {
 	var result App
 
-	config, err := readConfiguration(configPath)
+	config, err := readConfigurationOrCreateDefault(configPath)
 	if err != nil {
-		return result, fmt.Errorf("could not read configuration: %w", err)
+		return result, fmt.Errorf("could not obtain configuration: %w", err)
 	}
 
 	result.config = config

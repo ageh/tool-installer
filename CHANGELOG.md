@@ -19,6 +19,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) 
 
 - The examples section documentation/help for `tooli add` is now accurate as `add` now actually accepts an argument
 
+### Removed
+
+- The `create-config` command has been removed in favour of writing the default configuration to file on the first run without a configuration file present
+
 ## [2.1.0] - 2025-12-17
 
 ### Added

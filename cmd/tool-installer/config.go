@@ -78,9 +78,19 @@ func parseConfiguration(input []byte) (Configuration, error) {
 	return config, nil
 }
 
-func readConfiguration(path string) (Configuration, error) {
+func readConfigurationOrCreateDefault(path string) (Configuration, error) {
 	bytes, err := os.ReadFile(replaceTildePath(path))
 	if err != nil {
+		if errors.Is(err, fs.ErrNotExist) {
+			config := getDefaultConfiguration()
+			err := config.save(path, false)
+			if err != nil {
+				return Configuration{}, fmt.Errorf("failed to write default configuration to disk: %w", err)
+			}
+
+			return config, nil
+		}
+
 		return Configuration{}, err
 	}
 
@@ -148,7 +158,7 @@ var defaultTools = []string{
 	"uv",
 }
 
-func writeDefaultConfiguration(path string) error {
+func getDefaultConfiguration() Configuration {
 	tools := make(map[string]Tool)
 	for _, name := range defaultTools {
 		tool, found := knownTools[name]
@@ -159,14 +169,5 @@ func writeDefaultConfiguration(path string) error {
 		tools[name] = tool
 	}
 
-	defaultConfiguration := Configuration{InstallationDirectory: "~/.local/bin", Tools: tools}
-
-	err := defaultConfiguration.save(path, false)
-	if err != nil {
-		return err
-	}
-
-	fmt.Printf("Created default configuration: '%s'\n", path)
-
-	return nil
+	return Configuration{InstallationDirectory: "~/.local/bin", Tools: tools}
 }
