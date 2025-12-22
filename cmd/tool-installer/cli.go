@@ -239,7 +239,12 @@ func run() error {
 	var commandError error
 	switch args.command {
 	case "a", "add":
-		commandError = app.addTool()
+		if !hasArguments {
+			commandError = fmt.Errorf("you need to provide a tool name as the argument for 'add'")
+		} else {
+			message := app.addTool(args.commandArguments[0])
+			message.Print()
+		}
 	case "c", "check":
 		checkAll := hasArguments && args.commandArguments[0] == "all"
 		messages, err := app.checkToolVersions(checkAll)

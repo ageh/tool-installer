@@ -6,6 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) 
 
 ## [Unreleased]
 
+### Added
+
+- A list of commonly used/well-known tools to enable those tools to be quickly added to the configuration without needing further input from the user
+
+### Changed
+
+- The default configuration is no longer stored as a hardcoded string and now uses the entries from the well-known tools
+- The `add` command now takes the name of the tool to add as an argument instead of prompting for it
+
+### Fixed
+
+- The examples section documentation/help for `tooli add` is now accurate as `add` now actually accepts an argument
+
 ## [2.1.0] - 2025-12-17
 
 ### Added

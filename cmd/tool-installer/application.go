@@ -3,7 +3,6 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -84,12 +83,21 @@ func newApp(configPath string, timeout int) (App, error) {
 	return result, nil
 }
 
-func (app *App) addTool() error {
-	name := promptNonEmpty("Please enter the name of the tool: ")
-
+func (app *App) addTool(name string) UserMessage {
 	_, found := app.config.Tools[name]
 	if found {
-		return errors.New("an entry for this tool already exists. If you want to modify it, please edit the configuration file")
+		return UserMessage{Type: Info, Tool: name, Content: "an entry for this tool already exists. If you want to modify it, please edit the configuration file"}
+	}
+
+	tool, found := knownTools[name]
+	if found {
+		app.config.Tools[name] = tool
+		err := app.config.save(app.configLocation, false)
+		if err != nil {
+			return UserMessage{Type: Error, Tool: name, Content: "failed to write configuration to disk"}
+		} else {
+			return UserMessage{Type: Success, Tool: name, Content: "successfully added to the configuration with values taken from well-known tools list"}
+		}
 	}
 
 	fmt.Printf("Creating configuration entry for %s:\n", name)
@@ -129,7 +137,12 @@ func (app *App) addTool() error {
 		Description:  description,
 	}
 
-	return app.config.save(app.configLocation, false)
+	err := app.config.save(app.configLocation, false)
+	if err != nil {
+		return UserMessage{Type: Error, Tool: name, Content: "failed to write configuration to disk"}
+	} else {
+		return UserMessage{Type: Success, Tool: name, Content: "successfully added to the configuration"}
+	}
 }
 
 func (app *App) checkToolVersions(checkAll bool) ([]UserMessage, error) {

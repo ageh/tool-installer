@@ -131,165 +131,36 @@ func (config *Configuration) save(path string, promptOverride bool) error {
 	return nil
 }
 
-const defaultConfiguration = `{
-	"install_dir": "~/.local/bin",
-	"tools": {
-		"bat": {
-			"binaries": [
-				{
-					"name": "bat",
-					"rename_to": ""
-				}
-			],
-			"owner": "sharkdp",
-			"repository": "bat",
-			"linux_asset": "x86_64-unknown-linux-musl\\.tar\\.gz$",
-			"windows_asset": "x86_64-pc-windows-msvc\\.zip$",
-			"description": "Better cat"
-		},
-		"delta": {
-			"binaries": [
-				{
-					"name": "delta",
-					"rename_to": ""
-				}
-			],
-			"owner": "dandavison",
-			"repository": "delta",
-			"linux_asset": "x86_64-unknown-linux-musl\\.tar\\.gz$",
-			"windows_asset": "x86_64-pc-windows-msvc\\.zip$",
-			"description": "Diff tool"
-		},
-		"eza": {
-			"binaries": [
-				{
-					"name": "eza",
-					"rename_to": ""
-				}
-			],
-			"owner": "eza-community",
-			"repository": "eza",
-			"linux_asset": "x86_64-unknown-linux-musl\\.tar\\.gz$",
-			"windows_asset": "x86_64-pc-windows-gnu\\.zip$",
-			"description": "Better ls (replacement of exa which is unmaintained)"
-		},
-		"fd": {
-			"binaries": [
-				{
-					"name": "fd",
-					"rename_to": ""
-				}
-			],
-			"owner": "sharkdp",
-			"repository": "fd",
-			"linux_asset": "x86_64-unknown-linux-musl\\.tar\\.gz$",
-			"windows_asset": "x86_64-pc-windows-msvc\\.zip$",
-			"description": "Better find"
-		},
-		"hyperfine": {
-			"binaries": [
-				{
-					"name": "hyperfine",
-					"rename_to": ""
-				}
-			],
-			"owner": "sharkdp",
-			"repository": "hyperfine",
-			"linux_asset": "x86_64-unknown-linux-musl\\.tar\\.gz$",
-			"windows_asset": "x86_64-pc-windows-msvc\\.zip$",
-			"description": "Benchmark tool"
-		},
-		"micro": {
-			"binaries": [
-				{
-					"name": "micro",
-					"rename_to": ""
-				}
-			],
-			"owner": "zyedidia",
-			"repository": "micro",
-			"linux_asset": "linux64\\.tar\\.gz$",
-			"windows_asset": "win64\\.zip$",
-			"description": "Command-line editor"
-		},
-		"ripgrep": {
-			"binaries": [
-				{
-					"name": "rg",
-					"rename_to": ""
-				}
-			],
-			"owner": "burntsushi",
-			"repository": "ripgrep",
-			"linux_asset": "x86_64-unknown-linux-musl\\.tar\\.gz$",
-			"windows_asset": "x86_64-pc-windows-msvc\\.zip$",
-			"description": "Better grep"
-		},
-		"sd": {
-			"binaries": [
-				{
-					"name": "sd",
-					"rename_to": ""
-				}
-			],
-			"owner": "chmln",
-			"repository": "sd",
-			"linux_asset": "x86_64-unknown-linux-musl\\.tar\\.gz$",
-			"windows_asset": "x86_64-pc-windows-msvc\\.zip$",
-			"description": "Better sed"
-		},
-		"starship": {
-			"binaries": [
-				{
-					"name": "starship",
-					"rename_to": ""
-				}
-			],
-			"owner": "starship",
-			"repository": "starship",
-			"linux_asset": "x86_64-unknown-linux-musl\\.tar\\.gz$",
-			"windows_asset": "x86_64-pc-windows-msvc\\.zip$",
-			"description": "Cross-shell custom prompt"
-		},
-		"tealdeer": {
-			"binaries": [
-				{
-					"name": "tealdeer",
-					"rename_to": "tldr"
-				}
-			],
-			"owner": "dbrgn",
-			"repository": "tealdeer",
-			"linux_asset": "tealdeer-linux-x86_64-musl$",
-			"windows_asset": "windows-x86_64-msvc.exe$",
-			"description": "Command-line cheatsheets"
-		},
-		"tokei": {
-			"binaries": [
-				{
-					"name": "tokei",
-					"rename_to": ""
-				}
-			],
-			"owner": "XAMPPRocky",
-			"repository": "tokei",
-			"linux_asset": "x86_64-unknown-linux-musl\\.tar\\.gz$",
-			"windows_asset": "x86_64-pc-windows-msvc.exe$",
-			"description": "Code line counting tool"
-		}
-	}
-}`
+var defaultTools = []string{
+	"bat",
+	"delta",
+	"eza",
+	"fd",
+	"hyperfine",
+	"micro",
+	"ripgrep",
+	"sd",
+	"starship",
+	"tealdeer",
+	"tokei",
+}
 
 func writeDefaultConfiguration(path string) error {
-	tmp := []byte(defaultConfiguration)
-	defaultConfig, err := parseConfiguration(tmp)
-	if err != nil {
-		return fmt.Errorf("failed to parse default configuration: %w", err)
+	tools := make(map[string]Tool)
+	for _, name := range defaultTools {
+		tool, found := knownTools[name]
+		if !found {
+			panic(fmt.Sprintf("Could not find default tool '%s' in known tools", name))
+		}
+
+		tools[name] = tool
 	}
 
-	err = defaultConfig.save(path, true)
+	defaultConfiguration := Configuration{InstallationDirectory: "~/.local/bin", Tools: tools}
+
+	err := defaultConfiguration.save(path, false)
 	if err != nil {
-		return fmt.Errorf("error creating configuration file: %w", err)
+		return err
 	}
 
 	fmt.Printf("Created default configuration: '%s'\n", path)
