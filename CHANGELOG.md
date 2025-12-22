@@ -14,6 +14,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) 
 
 - The default configuration is no longer stored as a hardcoded string and now uses the entries from the well-known tools
 - The `add` command now takes the name of the tool to add as an argument instead of prompting for it
+- The default timeout for requests to GitHub is now 30 seconds instead of 10 to be more lenient with larger files or slower internet speeds
 
 ### Fixed
 

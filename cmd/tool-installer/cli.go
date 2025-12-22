@@ -8,6 +8,8 @@ import (
 	"fmt"
 )
 
+const defaultTimeout = 30
+
 const helpText = `tool-installer (tooli) provides an easy way to download
 all your favourite binaries from GitHub at once.
 
@@ -30,7 +32,7 @@ OPTIONS:
     -h, --help      Print this help information
     -v, --version   Print the version of tool-installer
     -c, --config    Specify from where to read the configuration (default: ~/.config/tool-installer/config.json)
-    -t, --timeout   Timeout for requests to GitHub in seconds (default: 10)
+    -t, --timeout   Timeout for requests to GitHub in seconds (default: 30)
 
 Use 'tooli help <command>' for more information on a specific command.
 `
@@ -95,6 +97,11 @@ const updateHelp = `Updates all installed tools to their latest version.
 Examples:
 tooli update`
 
+const shortConfigHelp = "Location of the configuration file"
+const shortHelpHelp = "Show program help"
+const shortVersionHelp = "Show program version"
+const shortTimeoutHelp = "Timeout for requests to GitHub"
+
 func getCommandHelp(command string) string {
 	switch command {
 	case "a", "add":
@@ -147,13 +154,13 @@ func parseArguments() (Arguments, error) {
 		return result, err
 	}
 
-	flag.StringVar(&result.configPath, "config", defaultConfigLocation, "Location of the configuration file")
-	flag.StringVar(&result.configPath, "c", defaultConfigLocation, "Location of the configuration file")
-	flag.BoolVar(&result.showHelp, "help", false, "Show program help")
-	flag.BoolVar(&result.showVersion, "version", false, "Show program version")
-	flag.BoolVar(&result.showVersion, "v", false, "Show program version")
-	flag.IntVar(&result.requestTimeout, "timeout", 10, "Timeout for requests to GitHub")
-	flag.IntVar(&result.requestTimeout, "t", 10, "Timeout for requests to GitHub")
+	flag.StringVar(&result.configPath, "config", defaultConfigLocation, shortConfigHelp)
+	flag.StringVar(&result.configPath, "c", defaultConfigLocation, shortConfigHelp)
+	flag.BoolVar(&result.showHelp, "help", false, shortHelpHelp)
+	flag.BoolVar(&result.showVersion, "version", false, shortVersionHelp)
+	flag.BoolVar(&result.showVersion, "v", false, shortVersionHelp)
+	flag.IntVar(&result.requestTimeout, "timeout", defaultTimeout, shortTimeoutHelp)
+	flag.IntVar(&result.requestTimeout, "t", defaultTimeout, shortTimeoutHelp)
 
 	// Override by default existing -h to produce the same effect as --help
 	flag.Usage = printHelp

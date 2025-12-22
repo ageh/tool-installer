@@ -82,7 +82,7 @@ The general usage of tool-installer is `tooli [OPTIONS] COMMAND [COMMAND_ARGS]
 tool-installer comes with two options you can use to influence the behaviour of the commands:
 
 1. `--config PATH` to specify a given file to be used as the config file (default: `${XDG_CONFIG_HOME}/tool-installer/config.json`)
-2. `--timeout AMOUNT` to set the timeout for the web requests in seconds (default 10)
+2. `--timeout AMOUNT` to set the timeout for the web requests in seconds (default 30)
 
 Additionally you can print tool-installer's version with `-v`/`--version` or the help with `-h`/`--help`
 
