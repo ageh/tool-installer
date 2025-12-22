@@ -86,7 +86,7 @@ func newApp(configPath string, timeout int) (App, error) {
 func (app *App) addTool(name string) UserMessage {
 	_, found := app.config.Tools[name]
 	if found {
-		return UserMessage{Type: Info, Tool: name, Content: "an entry for this tool already exists. If you want to modify it, please edit the configuration file"}
+		return UserMessage{Type: Info, Tool: name, Content: "skipping addition to configuration - an entry already exists"}
 	}
 
 	tool, found := knownTools[name]
