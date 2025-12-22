@@ -139,10 +139,13 @@ var defaultTools = []string{
 	"hyperfine",
 	"micro",
 	"ripgrep",
+	"ruff",
 	"sd",
 	"starship",
 	"tealdeer",
 	"tokei",
+	"ty",
+	"uv",
 }
 
 func writeDefaultConfiguration(path string) error {
