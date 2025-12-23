@@ -33,7 +33,7 @@ var knownTools = map[string]Tool{
 		Owner:        "eza-community",
 		Repository:   "eza",
 		LinuxAsset:   "eza_x86_64-unknown-linux-gnu\\.tar\\.gz$",
-		WindowsAsset: "eza\\.exe$_x86_64-pc-windows-gnu\\\\.zip$",
+		WindowsAsset: "eza\\.exe$_x86_64-pc-windows-gnu\\.zip$",
 		Description:  "A modern alternative to ls",
 	},
 	"fd": {
@@ -326,7 +326,7 @@ var knownTools = map[string]Tool{
 		Owner:        "charmbracelet",
 		Repository:   "freeze",
 		LinuxAsset:   "Linux_x86_64\\.tar\\.gz$",
-		WindowsAsset: "Windows_x86_64\\\\.zip$",
+		WindowsAsset: "Windows_x86_64\\.zip$",
 		Description:  "Generate images of code and terminal output",
 	},
 	"vhs": {
@@ -384,7 +384,7 @@ var knownTools = map[string]Tool{
 		Owner:        "openai",
 		Repository:   "codex",
 		LinuxAsset:   "codex-x86_64-unknown-linux-gnu.tar\\.gz$",
-		WindowsAsset: "codex-x86_64-pc-windows-msvc\\.exe$\\\\.zip$",
+		WindowsAsset: "codex-x86_64-pc-windows-msvc\\.exe$\\.zip$",
 		Description:  "Lightweight coding agent that runs in your terminal",
 	},
 	"crush": {
@@ -392,7 +392,7 @@ var knownTools = map[string]Tool{
 		Owner:        "charmbracelet",
 		Repository:   "crush",
 		LinuxAsset:   "Linux_x86_64\\.tar\\.gz$",
-		WindowsAsset: "Windows_x86_64\\\\.zip$",
+		WindowsAsset: "Windows_x86_64\\.zip$",
 		Description:  "The glamourous AI coding agent for your favourite terminal",
 	},
 
