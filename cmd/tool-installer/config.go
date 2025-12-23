@@ -47,6 +47,21 @@ type Configuration struct {
 	Tools                 map[string]Tool `json:"tools"`
 }
 
+func (c *Configuration) getSanitizedInstallationDirectory() (string, error) {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return "", err
+	}
+
+	if c.InstallationDirectory == "~" {
+		return filepath.Clean(homeDir), nil
+	} else if strings.HasPrefix(c.InstallationDirectory, "~/") {
+		return filepath.Clean(filepath.Join(homeDir, c.InstallationDirectory[2:])), nil
+	} else {
+		return filepath.Clean(c.InstallationDirectory), nil
+	}
+}
+
 func parseConfiguration(input []byte) (Configuration, error) {
 	var config Configuration
 
@@ -100,15 +115,14 @@ func readConfigurationOrCreateDefault(path string) (Configuration, bool, error) 
 }
 
 func (config *Configuration) save(path string, promptOverride bool) error {
-	filePath := replaceTildePath(path)
-	dirName := filepath.Dir(filePath)
+	dirName := filepath.Dir(path)
 
 	err := os.MkdirAll(dirName, 0755)
 	if err != nil {
 		return fmt.Errorf("failed to create the directory for configuration writing: %w", err)
 	}
 
-	_, err = os.Stat(filePath)
+	_, err = os.Stat(path)
 	if err == nil {
 		if promptOverride {
 			fmt.Print("A file already exists at that location. Overwrite? [y/N]")
@@ -126,7 +140,7 @@ func (config *Configuration) save(path string, promptOverride bool) error {
 		return fmt.Errorf("error when checking if target file already exists: %w", err)
 	}
 
-	file, err := os.Create(filePath)
+	file, err := os.Create(path)
 	if err != nil {
 		return fmt.Errorf("error creating configuration file: %w", err)
 	}

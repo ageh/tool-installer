@@ -5,10 +5,13 @@ package main
 import (
 	"fmt"
 	"os"
-	"os/user"
 	"path/filepath"
 	"strings"
 )
+
+const appName = "tool-installer"
+const cacheFileName = "tool-versions.json"
+const configFileName = "config.json"
 
 func addExeSuffix(fileName string) string {
 	if !strings.HasSuffix(fileName, ".exe") {
@@ -19,50 +22,45 @@ func addExeSuffix(fileName string) string {
 }
 
 func getCacheFilePath() (string, error) {
+	if cacheDir := os.Getenv("TOOLI_CACHE_DIRECTORY"); cacheDir != "" {
+		return filepath.Clean(filepath.Join(cacheDir, cacheFileName)), nil
+	}
+
 	baseDir := ""
 
 	if xdgCacheHome := os.Getenv("XDG_CACHE_HOME"); xdgCacheHome != "" {
 		baseDir = xdgCacheHome
 	} else {
-		usr, err := user.Current()
+		cacheDir, err := os.UserCacheDir()
 		if err != nil {
 			return "", err
 		}
 
-		baseDir = filepath.Join(usr.HomeDir, ".cache")
+		baseDir = cacheDir
 	}
 
-	return filepath.Join(baseDir, "tool-installer", "tool-versions.json"), nil
+	return filepath.Clean(filepath.Join(baseDir, appName, cacheFileName)), nil
 }
 
 func getConfigFilePath() (string, error) {
+	if configDir := os.Getenv("TOOLI_CONFIG_DIRECTORY"); configDir != "" {
+		return filepath.Clean(filepath.Join(configDir, configFileName)), nil
+	}
+
 	baseDir := ""
 
 	if xdgConfigHome := os.Getenv("XDG_CONFIG_HOME"); xdgConfigHome != "" {
 		baseDir = xdgConfigHome
 	} else {
-		usr, err := user.Current()
+		configDir, err := os.UserConfigDir()
 		if err != nil {
 			return "", err
 		}
 
-		baseDir = filepath.Join(usr.HomeDir, ".config")
+		baseDir = configDir
 	}
 
-	return filepath.Join(baseDir, "tool-installer", "config.json"), nil
-}
-
-func replaceTildePath(path string) string {
-	usr, _ := user.Current()
-	dir := usr.HomeDir
-
-	if path == "~" {
-		return dir
-	} else if strings.HasPrefix(path, "~/") {
-		return filepath.Join(dir, path[2:])
-	} else {
-		return path
-	}
+	return filepath.Clean(filepath.Join(baseDir, appName, configFileName)), nil
 }
 
 func makeOutputDirectory(path string) error {

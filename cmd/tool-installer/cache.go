@@ -67,7 +67,7 @@ func getCache() (Cache, error) {
 		return result, fmt.Errorf("error getting cache file stats: %w", err)
 	}
 
-	bytes, err := os.ReadFile(replaceTildePath(filePath))
+	bytes, err := os.ReadFile(filePath)
 	if err != nil {
 		return result, fmt.Errorf("error reading cache file: %w", err)
 	}

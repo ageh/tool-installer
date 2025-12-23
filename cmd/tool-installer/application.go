@@ -170,8 +170,12 @@ func (app *App) checkToolVersions(checkAll bool) ([]UserMessage, error) {
 }
 
 func (app *App) installTools(tools []string) ([]UserMessage, error) {
-	toolDirectory := replaceTildePath(app.config.InstallationDirectory)
-	err := makeOutputDirectory(toolDirectory)
+	toolDirectory, err := app.config.getSanitizedInstallationDirectory()
+	if err != nil {
+		return nil, fmt.Errorf("failed to obtain installation path: %w", err)
+	}
+
+	err = makeOutputDirectory(toolDirectory)
 	if err != nil {
 		return nil, err
 	}
@@ -294,7 +298,10 @@ func (app *App) listTools(longList bool) error {
 }
 
 func (app *App) removeTools(tools []string, removeFromConfig bool) ([]UserMessage, error) {
-	toolDirectory := replaceTildePath(app.config.InstallationDirectory)
+	toolDirectory, err := app.config.getSanitizedInstallationDirectory()
+	if err != nil {
+		return nil, err
+	}
 
 	results := make([]UserMessage, 0)
 

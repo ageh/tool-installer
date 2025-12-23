@@ -144,6 +144,20 @@ This command is the exact opposite of the `add` command and allows you to fully 
 
 This command is basically a shorthand for `tooli check` followed by `tooli install` (with the tools in need of an update as arguments). It will update all currently installed tools to their latest version. Skips tools which are already up to date.
 
+## File Locations
+
+You can fully configure the directories in which tool-installer stores the cache, configuration, and installed tools. No other directories will ever be touched by tool-installer.
+
+The directory for the installed tools is configured in the configuration, using the `install_dir` field. For the cache and configuration directories it can be configured via environment variables and fall back to platform-specific default values if those are not set or empty. Typically you should be fine with the defaults.
+
+|**Priority**|**Cache**|**Configuration**|
+|:-:|:-:|:-:|
+|Highest|`$T$OOLI_CACHE_DIRECTORY`|`$TOOLI_CONFIG_DIRECTORY`|
+|Second|`$XDG_CACHE_HOME/tool-installer`|`$XDG_CONFIG_HOME/tool-installer`|
+|Default (Linux)|`$HOME/.cache/tool-installer`|`$HOME/.config/tool-installer`|
+|Default (Windows)|`%LOCALAPPDATA%/tool-installer`|`%APPDATA%/tool-installer`|
+
+Please note that tool-installer supports the XDG variables on all platforms because this useful convention should be usable everywhere. There is no reason to exclude Windows from it even though most programs seem to think otherwise.
 
 ## FAQ
 

@@ -9,9 +9,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) 
 ### Added
 
 - A list of commonly used/well-known tools to enable those tools to be quickly added to the configuration without needing further input from the user
+- Support for environment variables `TOOLI_CACHE_DIRECTORY` and `TOOLI_CONFIG_DIRECTORY` to configure where tool-installer stores the cache and configuration files
 
 ### Changed
 
+- **BREAKING**: Cache and config directories are now using platform-dependent defaults instead of always `$HOME/.config` and `$HOME/.cache`, you may have to move files around
 - The default configuration is no longer stored as a hardcoded string and now uses the entries from the well-known tools
 - The `add` command now takes the name of the tool to add as an argument instead of prompting for it
 - The default timeout for requests to GitHub is now 30 seconds instead of 10 to be more lenient with larger files or slower internet speeds
