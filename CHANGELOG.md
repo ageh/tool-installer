@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) 
 
 ## [Unreleased]
 
+### Added
+
+- If two or more matching assets are found, the names are now shown to the user so the configuration can be updated more easily
+
+### Changed
+
+- Asset name regex checking is now more performant
+
 ## [3.0.0] - 2025-12-23
 
 ### Added

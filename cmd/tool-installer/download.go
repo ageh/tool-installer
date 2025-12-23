@@ -12,6 +12,7 @@ import (
 	"os"
 	"regexp"
 	"runtime"
+	"strings"
 	"time"
 )
 
@@ -159,7 +160,14 @@ func (client *Downloader) downloadTool(tool Tool, currentVersion string) (Downlo
 		return result, errors.New("no asset name provided for the current platform")
 	}
 
-	checksumRegex, _ := regexp.Compile(`(?i)\.(sha256(sum)?|sha512(sum)?|sha1(sum)?|md5(sum)?|checksums\.txt)$`)
+	checksumRegex, err := regexp.Compile(`(?i)\.(sha(\d+)?(sum)?|md5(sum)?|checksums\.txt)$`)
+	if err != nil {
+		return result, fmt.Errorf("failed to compile checksum regex: %w", err)
+	}
+	assetRegex, err := regexp.Compile(assetName)
+	if err != nil {
+		return result, fmt.Errorf("failed to compile asset regex: %w", err)
+	}
 
 	var res []Asset
 	for _, a := range release.Assets {
@@ -167,8 +175,7 @@ func (client *Downloader) downloadTool(tool Tool, currentVersion string) (Downlo
 			continue
 		}
 
-		matched, _ := regexp.MatchString(assetName, a.Name)
-		if matched {
+		if assetRegex.MatchString(a.Name) {
 			res = append(res, a)
 		}
 	}
@@ -177,7 +184,11 @@ func (client *Downloader) downloadTool(tool Tool, currentVersion string) (Downlo
 		return result, errors.New("could not find a matching asset. Did you forget to include one in the config?")
 	}
 	if len(res) > 1 {
-		return result, errors.New("found two or more matching assets. Please be more specific")
+		assets := make([]string, 0)
+		for _, a := range res {
+			assets = append(assets, a.Name)
+		}
+		return result, fmt.Errorf("found two or more matching assets (%v). Please be more specific", strings.Join(assets, ", "))
 	}
 
 	asset := res[0]
