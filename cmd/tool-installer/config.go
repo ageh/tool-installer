@@ -143,11 +143,14 @@ func (config *Configuration) save(path string, promptOverride bool) error {
 
 var defaultTools = []string{
 	"bat",
+	"bun",
 	"delta",
+	"deno",
 	"eza",
 	"fd",
 	"hyperfine",
 	"micro",
+	"pandoc",
 	"ripgrep",
 	"ruff",
 	"sd",
@@ -155,6 +158,7 @@ var defaultTools = []string{
 	"tealdeer",
 	"tokei",
 	"ty",
+	"typst",
 	"uv",
 }
 
