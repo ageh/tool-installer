@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) 
 
 ## [Unreleased]
 
+## [3.0.0] - 2025-12-23
+
 ### Added
 
 - A list of commonly used/well-known tools to enable those tools to be quickly added to the configuration without needing further input from the user
