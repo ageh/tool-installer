@@ -222,6 +222,11 @@ func run() error {
 		return err
 	}
 
+	if app.createdDefaultConfig {
+		message := UserMessage{Type: Info, Tool: "tooli", Content: "Default configuration has been created because no configuration file existed yet"}
+		message.Print()
+	}
+
 	var commandError error
 	switch args.command {
 	case "a", "add":

@@ -53,20 +53,22 @@ func (array ByName[T]) Swap(i int, j int) {
 }
 
 type App struct {
-	downloader     Downloader
-	config         Configuration
-	cache          Cache
-	configLocation string
+	downloader           Downloader
+	config               Configuration
+	cache                Cache
+	configLocation       string
+	createdDefaultConfig bool
 }
 
 func newApp(configPath string, timeout int) (App, error) {
 	var result App
 
-	config, err := readConfigurationOrCreateDefault(configPath)
+	config, defaulted, err := readConfigurationOrCreateDefault(configPath)
 	if err != nil {
 		return result, fmt.Errorf("could not obtain configuration: %w", err)
 	}
 
+	result.createdDefaultConfig = defaulted
 	result.config = config
 
 	cache, err := getCache()

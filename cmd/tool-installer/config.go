@@ -78,23 +78,25 @@ func parseConfiguration(input []byte) (Configuration, error) {
 	return config, nil
 }
 
-func readConfigurationOrCreateDefault(path string) (Configuration, error) {
-	bytes, err := os.ReadFile(replaceTildePath(path))
+func readConfigurationOrCreateDefault(path string) (Configuration, bool, error) {
+	bytes, err := os.ReadFile(path)
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
 			config := getDefaultConfiguration()
 			err := config.save(path, false)
 			if err != nil {
-				return Configuration{}, fmt.Errorf("failed to write default configuration to disk: %w", err)
+				return Configuration{}, true, fmt.Errorf("failed to write default configuration to disk: %w", err)
 			}
 
-			return config, nil
+			return config, true, nil
 		}
 
-		return Configuration{}, err
+		return Configuration{}, false, err
 	}
 
-	return parseConfiguration(bytes)
+	config, err := parseConfiguration(bytes)
+
+	return config, false, err
 }
 
 func (config *Configuration) save(path string, promptOverride bool) error {
