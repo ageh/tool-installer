@@ -395,6 +395,14 @@ var knownTools = map[string]Tool{
 		WindowsAsset: "Windows_x86_64\\.zip$",
 		Description:  "The glamourous AI coding agent for your favourite terminal",
 	},
+	"opencode": {
+		Binaries:     []Binary{{Name: "opencode", RenameTo: ""}},
+		Owner:        "sst",
+		Repository:   "opencode",
+		LinuxAsset:   "linux-x64\\.tar\\.gz$",
+		WindowsAsset: "windows-x64\\.zip$",
+		Description:  "The open source coding agent.",
+	},
 
 	// Miscellaneous
 	"hledger": {
