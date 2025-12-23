@@ -31,7 +31,6 @@ COMMANDS:
 OPTIONS:
     -h, --help      Print this help information
     -v, --version   Print the version of tool-installer
-    -c, --config    Specify from where to read the configuration (default: ~/.config/tool-installer/config.json)
     -t, --timeout   Timeout for requests to GitHub in seconds (default: 30)
 
 Use 'tooli help <command>' for more information on a specific command.
@@ -97,7 +96,6 @@ const updateHelp = `Updates all installed tools to their latest version.
 Examples:
 tooli update`
 
-const shortConfigHelp = "Location of the configuration file"
 const shortHelpHelp = "Show program help"
 const shortVersionHelp = "Show program version"
 const shortTimeoutHelp = "Timeout for requests to GitHub"
@@ -128,7 +126,6 @@ func getCommandHelp(command string) string {
 type Arguments struct {
 	commandArguments []string
 	command          string
-	configPath       string
 	requestTimeout   int
 	showHelp         bool
 	showVersion      bool
@@ -149,13 +146,7 @@ func printHelp() {
 
 func parseArguments() (Arguments, error) {
 	var result Arguments
-	defaultConfigLocation, err := getConfigFilePath()
-	if err != nil {
-		return result, err
-	}
 
-	flag.StringVar(&result.configPath, "config", defaultConfigLocation, shortConfigHelp)
-	flag.StringVar(&result.configPath, "c", defaultConfigLocation, shortConfigHelp)
 	flag.BoolVar(&result.showHelp, "help", false, shortHelpHelp)
 	flag.BoolVar(&result.showVersion, "version", false, shortVersionHelp)
 	flag.BoolVar(&result.showVersion, "v", false, shortVersionHelp)
@@ -217,7 +208,12 @@ func run() error {
 		return nil
 	}
 
-	app, err := newApp(args.configPath, args.requestTimeout)
+	configPath, err := getConfigFilePath()
+	if err != nil {
+		return fmt.Errorf("failed to obtain the configuration file path: %w", err)
+	}
+
+	app, err := newApp(configPath, args.requestTimeout)
 	if err != nil {
 		return err
 	}

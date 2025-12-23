@@ -79,10 +79,7 @@ Since GitHub's API is subject to rate limits, you should create a [personal acce
 
 The general usage of tool-installer is `tooli [OPTIONS] COMMAND [COMMAND_ARGS]
 
-tool-installer comes with two options you can use to influence the behaviour of the commands:
-
-1. `--config PATH` to specify a given file to be used as the config file (default: `${XDG_CONFIG_HOME}/tool-installer/config.json`)
-2. `--timeout AMOUNT` to set the timeout for the web requests in seconds (default 30)
+tool-installer has a single global option you can use to change the timeout for the web requests in seconds (default 30): `--timeout AMOUNT`
 
 Additionally you can print tool-installer's version with `-v`/`--version` or the help with `-h`/`--help`
 

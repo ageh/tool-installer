@@ -13,6 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) 
 
 ### Changed
 
+- **BREAKING**: Removed `--config` option as it makes no real sense to support different configurations
 - **BREAKING**: Cache and config directories are now using platform-dependent defaults instead of always `$HOME/.config` and `$HOME/.cache`, you may have to move files around
 - The default configuration is no longer stored as a hardcoded string and now uses the entries from the well-known tools
 - The `add` command now takes the name of the tool to add as an argument instead of prompting for it
