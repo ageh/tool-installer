@@ -367,21 +367,34 @@ func (app *App) updateTools() ([]UserMessage, error) {
 	return messages, err
 }
 
-func (app *App) toolsFromCache() map[string]Tool {
+func (app *App) toolsFromCache() (map[string]Tool, []string) {
 	tools := make(map[string]Tool, len(app.cache.Tools))
+	notFound := make([]string, 0)
 	for name := range app.cache.Tools {
-		tools[name] = app.config.Tools[name]
+		tool, found := app.config.Tools[name]
+		if !found {
+			notFound = append(notFound, name)
+		} else {
+			tools[name] = tool
+		}
 	}
 
-	return tools
+	return tools, notFound
 }
 
 func (app *App) getOutdatedTools(checkAll bool) ([]UserMessage, []ToolVersionInfo, error) {
+	messages := make([]UserMessage, 0)
+
 	var tools map[string]Tool
 	if checkAll {
 		tools = app.config.Tools
 	} else {
-		tools = app.toolsFromCache()
+		tmp, notFound := app.toolsFromCache()
+		tools = tmp
+
+		for _, name := range notFound {
+			messages = append(messages, UserMessage{Type: Error, Tool: name, Content: "tool exists in cache but is not in configuration"})
+		}
 	}
 
 	var wg sync.WaitGroup
@@ -407,7 +420,6 @@ func (app *App) getOutdatedTools(checkAll bool) ([]UserMessage, []ToolVersionInf
 	}()
 
 	result := make([]ToolVersionInfo, 0)
-	messages := make([]UserMessage, 0)
 
 	for r := range results {
 		if r.Installed != r.Available {

@@ -9,6 +9,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) 
 ### Added
 
 - If two or more matching assets are found, the names are now shown to the user so the configuration can be updated more easily
+- The user is informed about tools that exist in the cache but are not present in the configuration
 
 ### Changed
 
