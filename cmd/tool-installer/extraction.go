@@ -172,9 +172,7 @@ func extractFilesRaw(rawData []byte, binaries []Binary, outputPath string) error
 		return err
 	}
 
-	os.Chmod(filePath, 0755)
-
-	return nil
+	return os.Chmod(filePath, 0755)
 }
 
 func extractFiles(rawData []byte, assetName string, binaries []Binary, outputPath string) (AssetType, error) {
