@@ -15,6 +15,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) 
 
 - Asset name regex checking is now more performant
 - Colored output is disabled for any value of `NO_COLOR` instead of just `1`
+- Improved user output for different HTTP error codes
 
 ## Fixed
 

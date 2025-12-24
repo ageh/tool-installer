@@ -35,12 +35,16 @@ const (
 	rtBinary
 )
 
-const rateLimitText = `got non-OK status code '%v'.
-
-This most likely means that you hit Github's API rate limit. To increase the number of requests you can make, set the 'GITHUB_TOKEN' environment variable`
-
 func createUserAgent() string {
 	return "ageh/tool-installer-" + version
+}
+
+func httpError(statusCode int) error {
+	if statusCode == http.StatusForbidden || statusCode == http.StatusTooManyRequests {
+		return fmt.Errorf("HTTP status %d: GitHub API rate limit is likely hit, check if you have set the `GITHUB_TOKEN` environment variable", statusCode)
+	}
+
+	return fmt.Errorf("unexpected HTTP status: %d", statusCode)
 }
 
 func newDownloader(timeoutSeconds int) Downloader {
@@ -92,7 +96,7 @@ func (client *Downloader) downloadRelease(owner string, repository string) (Rele
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return result, fmt.Errorf(rateLimitText, resp.StatusCode)
+		return result, httpError(resp.StatusCode)
 	}
 
 	body, err := io.ReadAll(resp.Body)
@@ -123,7 +127,7 @@ func (client *Downloader) downloadAsset(url string) ([]byte, error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return result, fmt.Errorf(rateLimitText, resp.StatusCode)
+		return result, httpError(resp.StatusCode)
 	}
 
 	result, err = io.ReadAll(resp.Body)
