@@ -77,11 +77,11 @@ Since GitHub's API is subject to rate limits, you should create a [personal acce
 
 ## Usage
 
-The general usage of tool-installer is `tooli [OPTIONS] COMMAND [COMMAND_ARGS]
+The general usage of tool-installer is `tooli [OPTIONS] COMMAND [COMMAND_ARGS]`.
 
-tool-installer has a single global option you can use to change the timeout for the web requests in seconds (default 30): `--timeout AMOUNT`
+tool-installer has a single global option you can use to change the timeout for the web requests in seconds (default 30): `--timeout AMOUNT`.
 
-Additionally you can print tool-installer's version with `-v`/`--version` or the help with `-h`/`--help`
+Additionally you can print tool-installer's version with `-v`/`--version` or the help with `-h`/`--help`.
 
 tool-installer has the following commands (you can use the long or the short form):
 
