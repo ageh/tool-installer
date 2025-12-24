@@ -15,6 +15,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) 
 
 - Asset name regex checking is now more performant
 
+## Fixed
+
+- Asset regex validity checks are now performed on all platforms instead of just Windows
+
 ## [3.0.0] - 2025-12-23
 
 ### Added

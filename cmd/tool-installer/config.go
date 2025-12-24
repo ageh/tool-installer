@@ -70,17 +70,17 @@ func parseConfiguration(input []byte) (Configuration, error) {
 		return config, fmt.Errorf("failed to parse configuration: %w", err)
 	}
 
-	if runtime.GOOS == "windows" {
-		for name, tool := range config.Tools {
-			_, err := regexp.Compile(tool.WindowsAsset)
-			if err != nil {
-				return config, fmt.Errorf("error in Windows asset regex for tool '%s': %w", name, err)
-			}
-			_, err = regexp.Compile(tool.LinuxAsset)
-			if err != nil {
-				return config, fmt.Errorf("error in Linux asset regex for tool '%s': %w", name, err)
-			}
+	for name, tool := range config.Tools {
+		_, err := regexp.Compile(tool.WindowsAsset)
+		if err != nil {
+			return config, fmt.Errorf("error in Windows asset regex for tool '%s': %w", name, err)
+		}
+		_, err = regexp.Compile(tool.LinuxAsset)
+		if err != nil {
+			return config, fmt.Errorf("error in Linux asset regex for tool '%s': %w", name, err)
+		}
 
+		if runtime.GOOS == "windows" {
 			for i, b := range tool.Binaries {
 				config.Tools[name].Binaries[i].Name = addExeSuffix(b.Name)
 				if b.RenameTo != "" {
