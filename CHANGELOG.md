@@ -14,6 +14,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) 
 ### Changed
 
 - Asset name regex checking is now more performant
+- Colored output is disabled for any value of `NO_COLOR` instead of just `1`
 
 ## Fixed
 

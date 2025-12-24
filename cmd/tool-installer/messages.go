@@ -23,7 +23,8 @@ func (c *Color) String() string {
 }
 
 func isColorEnabled() bool {
-	return os.Getenv("NO_COLOR") != "1"
+	_, exists := os.LookupEnv("NO_COLOR")
+	return !exists
 }
 
 var colorEnabled = isColorEnabled()
