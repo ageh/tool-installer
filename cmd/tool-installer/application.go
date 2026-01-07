@@ -367,6 +367,46 @@ func (app *App) updateTools() ([]UserMessage, error) {
 	return messages, err
 }
 
+func (app *App) showStatus() error {
+	cachePath, err := getCacheFilePath()
+	if err != nil {
+		return fmt.Errorf("failed to obtain the cache file path: %w", err)
+	}
+
+	installPath, err := app.config.getSanitizedInstallationDirectory()
+	if err != nil {
+		return fmt.Errorf("failed to obtain the installation path: %w", err)
+	}
+
+	configured := len(app.config.Tools)
+	installed := len(app.cache.Tools)
+
+	fmt.Printf("Config path: %s\n", app.configLocation)
+	fmt.Printf("Cache path: %s\n", cachePath)
+	fmt.Printf("Tool install path: %s\n", installPath)
+	fmt.Printf("Number of configured tools: %d\n", configured)
+	fmt.Printf("Number of installed tools: %d\n", installed)
+
+	if version == "dev" {
+		fmt.Println("Version: skipped (dev build)")
+		return nil
+	}
+
+	release, err := app.downloader.downloadRelease("ageh", "tool-installer")
+	if err != nil {
+		fmt.Printf("Version: check failed (%v)\n", err)
+		return nil
+	}
+
+	if release.TagName == version {
+		fmt.Printf("Version: up to date (%s)\n", version)
+	} else {
+		fmt.Printf("Version: newer version %s available (current: %s)\n", release.TagName, version)
+	}
+
+	return nil
+}
+
 func (app *App) toolsFromCache() (map[string]Tool, []string) {
 	tools := make(map[string]Tool, len(app.cache.Tools))
 	notFound := make([]string, 0)

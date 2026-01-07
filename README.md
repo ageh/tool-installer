@@ -90,7 +90,8 @@ tool-installer has the following commands (you can use the long or the short for
 5. `help` (`h`)
 6. `list`  (`l`)
 7. `remove` (`r`)
-8. `update` (`u`)
+8. `status` (`s`)
+9. `update` (`u`)
 
 ### `install`
 
@@ -134,6 +135,10 @@ If you pass `long` as an argument it switches to long mode, by default the descr
 ### `remove`
 
 This command is the exact opposite of the `add` command and allows you to fully uninstall installed tools, including their configuration entries. If you only want to uninstall tools but keep their configuration entries, use the `delete` command instead.
+
+### `status`
+
+This command displays some information about tool-installer and the used configuration. It shows the paths for the configuration file, the cache file, and the directory in which tools are installed. It also shows how many tools are configured and how many of those are installed. Finally it checks and displays and whether a newer version of tool-installer is available.
 
 ### `update`
 

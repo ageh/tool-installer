@@ -26,6 +26,7 @@ COMMANDS:
     h,  help            Shows the help for the program or given command
     l,  list            Lists the tools in the configuration, sorted by name
     r,  remove          Uninstalls one or more tools and removes the config entries
+    s,  status          Shows config/cache paths, tool counts, and update status
     u,  update          Updates the installed tools to the latest version
 
 OPTIONS:
@@ -91,6 +92,13 @@ Examples:
 tooli remove ripgrep
 tooli remove ripgrep bat micro`
 
+const statusHelp = `Shows installation status.
+
+Displays config file, cache file, and tool installation directory paths, configured and installed tool counts, and whether a new tool-installer version is available.
+
+Examples:
+tooli status`
+
 const updateHelp = `Updates all installed tools to their latest version.
 
 Examples:
@@ -116,6 +124,8 @@ func getCommandHelp(command string) string {
 		return listHelp
 	case "r", "remove":
 		return removeHelp
+	case "s", "status":
+		return statusHelp
 	case "u", "update":
 		return updateHelp
 	default:
@@ -260,6 +270,8 @@ func run() error {
 			printMessages(messages)
 			commandError = err
 		}
+	case "s", "status":
+		commandError = app.showStatus()
 	case "u", "update":
 		messages, err := app.updateTools()
 		printMessages(messages)
