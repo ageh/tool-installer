@@ -104,7 +104,7 @@ The `timeout` parameter's default value should work fine for most tools on norma
 **Notes:**
 
 - tool-installer will always get the latest release from GitHub, version fixing is intentionally not supported.
-- The installed version is cached at `${XDG_CACHE_HOME}/tool-installer/tool-versions.json`. If no newer version is available on GitHub releases, tool-installer will skip the tool if an attempt to install it again is made. If you uninstall a tool by deleting the binary, make sure to also remove the entry from the cache file or just use the `delete` command which does both things for you.
+- The installed versions are cached ([you can configure where exactly](#file-locations)). If no newer version is available on GitHub releases, tool-installer will skip the tool if an attempt to install it again is made. If you uninstall a tool by deleting the binary, make sure to also remove the entry from the cache file or just use the `delete` command which does both things for you.
 
 ### `add`
 
@@ -138,7 +138,7 @@ This command is the exact opposite of the `add` command and allows you to fully 
 
 ### `status`
 
-This command displays some information about tool-installer and the used configuration. It shows the paths for the configuration file, the cache file, and the directory in which tools are installed. It also shows how many tools are configured and how many of those are installed. Finally it checks and displays and whether a newer version of tool-installer is available.
+This command displays some information about tool-installer and the used configuration. It shows the paths for the configuration file, the cache file, and the directory in which tools are installed. It also shows how many tools are listed in the configuration and how many are installed (based on cache entries). Finally it checks and displays and whether a newer version of tool-installer is available.
 
 ### `update`
 
@@ -152,7 +152,7 @@ The directory for the installed tools is configured in the configuration, using 
 
 |**Priority**|**Cache**|**Configuration**|
 |:-:|:-:|:-:|
-|Highest|`$T$OOLI_CACHE_DIRECTORY`|`$TOOLI_CONFIG_DIRECTORY`|
+|Highest|`$TOOLI_CACHE_DIRECTORY`|`$TOOLI_CONFIG_DIRECTORY`|
 |Second|`$XDG_CACHE_HOME/tool-installer`|`$XDG_CONFIG_HOME/tool-installer`|
 |Default (Linux)|`$HOME/.cache/tool-installer`|`$HOME/.config/tool-installer`|
 |Default (Windows)|`%LOCALAPPDATA%/tool-installer`|`%APPDATA%/tool-installer`|
