@@ -71,13 +71,17 @@ func parseConfiguration(input []byte) (Configuration, error) {
 	}
 
 	for name, tool := range config.Tools {
+		var compileErr error
 		_, err := regexp.Compile(tool.WindowsAsset)
 		if err != nil {
-			return config, fmt.Errorf("error in Windows asset regex for tool '%s': %w", name, err)
+			compileErr = errors.Join(compileErr, fmt.Errorf("error in Windows asset regex for tool '%s': %w", name, err))
 		}
 		_, err = regexp.Compile(tool.LinuxAsset)
 		if err != nil {
-			return config, fmt.Errorf("error in Linux asset regex for tool '%s': %w", name, err)
+			compileErr = errors.Join(compileErr, fmt.Errorf("error in Linux asset regex for tool '%s': %w", name, err))
+		}
+		if compileErr != nil {
+			return config, compileErr
 		}
 
 		if runtime.GOOS == "windows" {
