@@ -9,7 +9,7 @@ I wrote tool-installer to automate downloading a bunch of tools from GitHub rele
 ## Quickstart
 
 1. Download tool-installer from the releases page
-2. Set your [GitHub access token](#acess-token)
+2. Set your [GitHub access token](#access-token)
 3. Run `tooli list` to see which tools are configured by default and then edit the [configuration file](#configuration) if needed
 4. Run `tooli install` to install all tools or provide the ones you want as arguments
 5. Wait for all tools to be installed
@@ -69,7 +69,7 @@ To change the installation directory, set the value of `install_dir` to a differ
 
 On the first run without a configuration file present, tool-installer will use its default configuration which includes some widely used tools such as `ripgrep` and write this configuration to the disk.
 
-### Acess Token
+### Access Token
 
 Since GitHub's API is subject to rate limits, you should create a [personal access token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token#creating-a-fine-grained-personal-access-token) and set that as the `GITHUB_TOKEN` environment variable. This also allows you to download from (your own) private repositories.
 
@@ -114,7 +114,7 @@ If the name of the tool is one of the well-known tools baked into tool-installer
 
 ### `check`
 
-The `check` commands downloads the latest release information from GitHub and displays for which of the installed tools an update is available.
+The `check` command downloads the latest release information from GitHub and shows which installed tools have updates available.
 
 By default it only checks the installed tools from the cache, but if you pass `all` as an argument it will also obtain the latest release information from all tools listed in the configuration file.
 
@@ -138,7 +138,7 @@ This command is the exact opposite of the `add` command and allows you to fully 
 
 ### `status`
 
-This command displays some information about tool-installer and the used configuration. It shows the paths for the configuration file, the cache file, and the directory in which tools are installed. It also shows how many tools are listed in the configuration and how many are installed (based on cache entries). Finally it checks and displays and whether a newer version of tool-installer is available.
+This command displays some information about tool-installer and the configuration in use. It shows the paths for the configuration file, the cache file, and the directory in which tools are installed. It also shows how many tools are listed in the configuration and how many are installed (based on cache entries). Finally it checks and displays whether a newer version of tool-installer is available.
 
 ### `update`
 

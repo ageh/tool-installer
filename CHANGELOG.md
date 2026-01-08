@@ -22,6 +22,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) 
 
 - Asset regex validity checks are now performed on all platforms instead of just Windows
 - Removed invalid paragraphs from README which still described asset name regexes as suffixes
+- Improved wording in README wording and fixed typos
 
 ## Removed
 
