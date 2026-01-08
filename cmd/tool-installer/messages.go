@@ -15,8 +15,10 @@ type Color struct {
 	blue  uint8
 }
 
-var ErrorRed = Color{220, 50, 47}
 var SuccessGreen = Color{50, 205, 50}
+var WarningYellow = Color{250, 193, 7}
+var ErrorRed = Color{220, 50, 47}
+var HintBlue = Color{54, 138, 203}
 
 func (c *Color) String() string {
 	return fmt.Sprintf("\x1B[38;2;%d;%d;%dm", c.red, c.green, c.blue)

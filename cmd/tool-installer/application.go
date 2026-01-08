@@ -386,6 +386,10 @@ func (app *App) showStatus() error {
 	fmt.Printf("Tool install path: %s\n", installPath)
 	fmt.Printf("Number of configured tools: %d\n", configured)
 	fmt.Printf("Number of installed tools: %d\n", installed)
+	if installed > configured {
+		colorPrintln(WarningYellow, "warning: installed tool count exceeds configured tool count")
+		colorPrintln(HintBlue, "hint: this means that there are tools in the cache that are not/no longer in the configuration. You might want to check if this is correct")
+	}
 
 	if version == "dev" {
 		fmt.Println("Version: skipped (dev build)")
