@@ -377,11 +377,29 @@ func (app *App) showStatus(verbose bool) error {
 	_, cacheOnly := app.toolsFromCache()
 	cacheOnlyCount := len(cacheOnly)
 
-	fmt.Printf("Config path: %s\n", app.configLocation)
-	fmt.Printf("Cache path: %s\n", cachePath)
-	fmt.Printf("Tool install path: %s\n", installPath)
-	fmt.Printf("Number of configured tools: %d\n", configured)
-	fmt.Printf("Number of installed tools: %d\n", installed)
+	versionStatus := "skipped (dev build)"
+	if version != "dev" {
+		release, err := app.downloader.downloadRelease("ageh", "tool-installer")
+		if err != nil {
+			versionStatus = fmt.Sprintf("check failed (%v)", err)
+		} else if release.TagName == version {
+			versionStatus = "up to date"
+		} else {
+			versionStatus = fmt.Sprintf("new version %s available", release.TagName)
+		}
+	}
+
+	statusTable := newTableBuilder([]string{"Field", "Value"})
+	statusTable.addRow([]string{"Configuration file path", app.configLocation})
+	statusTable.addRow([]string{"Cache file path", cachePath})
+	statusTable.addRow([]string{"Tool installation directory", installPath})
+	statusTable.addRow([]string{"Configured tools", fmt.Sprintf("%d", configured)})
+	statusTable.addRow([]string{"Installed tools", fmt.Sprintf("%d", installed)})
+	statusTable.addRow([]string{"Cache-only tools", fmt.Sprintf("%d", cacheOnlyCount)})
+	statusTable.addRow([]string{"Current version", version})
+	statusTable.addRow([]string{"Update status", versionStatus})
+
+	fmt.Print(statusTable.build())
 	if installed > configured {
 		colorPrintln(WarningYellow, "warning: installed tool count exceeds configured tool count")
 	}
@@ -393,26 +411,8 @@ func (app *App) showStatus(verbose bool) error {
 				fmt.Printf("- %s\n", name)
 			}
 		} else {
-			fmt.Printf("Number of cache-only tools: %d\n", cacheOnlyCount)
 			colorPrintln(HintBlue, "hint: run `status verbose` to see which tools are present in the cache but not in the configuration")
 		}
-	}
-
-	if version == "dev" {
-		fmt.Println("Version: skipped (dev build)")
-		return nil
-	}
-
-	release, err := app.downloader.downloadRelease("ageh", "tool-installer")
-	if err != nil {
-		fmt.Printf("Version: check failed (%v)\n", err)
-		return nil
-	}
-
-	if release.TagName == version {
-		fmt.Printf("Version: up to date (%s)\n", version)
-	} else {
-		fmt.Printf("Version: newer version %s available (current: %s)\n", release.TagName, version)
 	}
 
 	return nil
