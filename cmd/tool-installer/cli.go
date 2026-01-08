@@ -95,9 +95,11 @@ tooli remove ripgrep bat micro`
 const statusHelp = `Shows installation status.
 
 Displays config file, cache file, and tool installation directory paths, configured and installed tool counts, and whether a new tool-installer version is available.
+Pass 'verbose' to list tools that exist in the cache but not in the configuration.
 
 Examples:
-tooli status`
+tooli status
+tooli status verbose`
 
 const updateHelp = `Updates all installed tools to their latest version.
 
@@ -271,7 +273,8 @@ func run() error {
 			commandError = err
 		}
 	case "s", "status":
-		commandError = app.showStatus()
+		statusVerbose := hasArguments && args.commandArguments[0] == "verbose"
+		commandError = app.showStatus(statusVerbose)
 	case "u", "update":
 		messages, err := app.updateTools()
 		printMessages(messages)

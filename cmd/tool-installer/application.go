@@ -360,7 +360,7 @@ func (app *App) updateTools() ([]UserMessage, error) {
 	return messages, err
 }
 
-func (app *App) showStatus() error {
+func (app *App) showStatus(verbose bool) error {
 	cachePath, err := getCacheFilePath()
 	if err != nil {
 		return fmt.Errorf("failed to obtain the cache file path: %w", err)
@@ -374,6 +374,9 @@ func (app *App) showStatus() error {
 	configured := len(app.config.Tools)
 	installed := len(app.cache.Tools)
 
+	_, cacheOnly := app.toolsFromCache()
+	cacheOnlyCount := len(cacheOnly)
+
 	fmt.Printf("Config path: %s\n", app.configLocation)
 	fmt.Printf("Cache path: %s\n", cachePath)
 	fmt.Printf("Tool install path: %s\n", installPath)
@@ -381,7 +384,18 @@ func (app *App) showStatus() error {
 	fmt.Printf("Number of installed tools: %d\n", installed)
 	if installed > configured {
 		colorPrintln(WarningYellow, "warning: installed tool count exceeds configured tool count")
-		colorPrintln(HintBlue, "hint: this means that there are tools in the cache that are not/no longer in the configuration. You might want to check if this is correct")
+	}
+	if cacheOnlyCount != 0 {
+		if verbose {
+			fmt.Println("Cache-only tools:")
+			slices.Sort(cacheOnly)
+			for _, name := range cacheOnly {
+				fmt.Printf("- %s\n", name)
+			}
+		} else {
+			fmt.Printf("Number of cache-only tools: %d\n", cacheOnlyCount)
+			colorPrintln(HintBlue, "hint: run `status verbose` to see which tools are present in the cache but not in the configuration")
+		}
 	}
 
 	if version == "dev" {

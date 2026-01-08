@@ -139,6 +139,7 @@ This command is the exact opposite of the `add` command and allows you to fully 
 ### `status`
 
 This command displays some information about tool-installer and the configuration in use. It shows the paths for the configuration file, the cache file, and the directory in which tools are installed. It also shows how many tools are listed in the configuration and how many are installed (based on cache entries). Finally it checks and displays whether a newer version of tool-installer is available.
+Pass `verbose` to list tools that exist in the cache but not in the configuration.
 
 ### `update`
 

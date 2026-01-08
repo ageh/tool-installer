@@ -10,7 +10,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) 
 
 - If two or more matching assets are found, the names are now shown to the user so the configuration can be updated more easily
 - The user is informed about tools that exist in the cache but are not present in the configuration
-- New `status` command to show config/cache/install paths, tool counts, and if a newer version of tool-installer. It also warns when the cache contains more tools than the configuration
+- New `status` command:
+	- Shows config, cache, and installation paths
+	- Shows the number of tools in the configuration and how many are installed (based on cache entries)
+	- Warns if there are tools in the cache that are not in the configuration
+	- If an argument of `verbose` is provided, shows the names of the tools in the cache but not the configuration
+	- Shows the version of tool-installer and if a newer version is available
 
 ### Changed
 
