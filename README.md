@@ -176,5 +176,3 @@ Feel free to suggest something but most likely no, tool-installer is by design v
 ## License
 
 This project is licensed under the [Apache License 2.0](LICENSE).
-
-Licenses for the third-party tools (only the Go compiler/standard library) used by tool-installer are listed in [LICENSE-THIRD-PARTY](LICENSE-THIRD-PARTY).
