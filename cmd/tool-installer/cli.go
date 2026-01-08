@@ -26,7 +26,7 @@ COMMANDS:
     h,  help            Shows the help for the program or given command
     l,  list            Lists the tools in the configuration, sorted by name
     r,  remove          Uninstalls one or more tools and removes the config entries
-    s,  status          Shows config/cache paths, tool counts, and update status
+    s,  status          Shows config/cache paths, tool counts, and version status
     u,  update          Updates the installed tools to the latest version
 
 OPTIONS:
