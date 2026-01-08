@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"sort"
+	"slices"
 	"sync"
 )
 
@@ -31,25 +31,16 @@ func (v ToolVersionInfo) GetName() string {
 	return v.Name
 }
 
-type Named interface {
-	GetName() string
-}
+func compareNames(a string, b string) int {
+	if a < b {
+		return -1
+	}
 
-// Define a generic type that implements sort.Interface for any slice of Named
-type ByName[T Named] struct {
-	data []T
-}
+	if a > b {
+		return 1
+	}
 
-func (array ByName[T]) Len() int {
-	return len(array.data)
-}
-
-func (array ByName[T]) Less(i int, j int) bool {
-	return array.data[i].GetName() < array.data[j].GetName()
-}
-
-func (array ByName[T]) Swap(i int, j int) {
-	array.data[i], array.data[j] = array.data[j], array.data[i]
+	return 0
 }
 
 type App struct {
@@ -274,7 +265,9 @@ func (app *App) listTools(longList bool) error {
 		i++
 	}
 
-	sort.Sort(ByName[ToolInfo]{tmp})
+	slices.SortFunc(tmp, func(a ToolInfo, b ToolInfo) int {
+		return compareNames(a.Name, b.Name)
+	})
 
 	var builder TableBuilder
 
@@ -475,7 +468,9 @@ func (app *App) getOutdatedTools(checkAll bool) ([]UserMessage, []ToolVersionInf
 		messages = append(messages, m)
 	}
 
-	sort.Sort(ByName[ToolVersionInfo]{result})
+	slices.SortFunc(result, func(a ToolVersionInfo, b ToolVersionInfo) int {
+		return compareNames(a.Name, b.Name)
+	})
 
 	return messages, result, nil
 }
