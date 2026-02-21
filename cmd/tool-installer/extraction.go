@@ -32,7 +32,7 @@ func getRenameTarget(fullName string, binaries []Binary) string {
 	for _, binary := range binaries {
 		if fileName == binary.Name {
 			if binary.RenameTo != "" {
-				return binary.RenameTo
+				return filepath.Base(binary.RenameTo)
 			} else {
 				return fileName
 			}
@@ -154,7 +154,7 @@ func extractFilesRaw(rawData []byte, binaries []Binary, outputPath string) error
 
 	fileName := binaries[0].Name
 	if binaries[0].RenameTo != "" {
-		fileName = binaries[0].RenameTo
+		fileName = filepath.Base(binaries[0].RenameTo)
 	}
 
 	filePath := filepath.Join(outputPath, fileName)

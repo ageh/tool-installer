@@ -84,6 +84,16 @@ func parseConfiguration(input []byte) (Configuration, error) {
 			return config, compileErr
 		}
 
+		for _, b := range tool.Binaries {
+			if b.RenameTo == "" {
+				continue
+			}
+			baseName := filepath.Base(b.RenameTo)
+			if baseName == "." || baseName == ".." || strings.ContainsAny(baseName, `/\`) {
+				return config, fmt.Errorf("invalid rename_to ('%s') for tool '%s': must be a plain filename", b.RenameTo, name)
+			}
+		}
+
 		if runtime.GOOS == "windows" {
 			for i, b := range tool.Binaries {
 				config.Tools[name].Binaries[i].Name = addExeSuffix(b.Name)
@@ -101,8 +111,12 @@ func readConfigurationOrCreateDefault(path string) (Configuration, bool, error) 
 	bytes, err := os.ReadFile(path)
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
-			config := getDefaultConfiguration()
-			err := config.save(path, false)
+			config, err := getDefaultConfiguration()
+			if err != nil {
+				return Configuration{}, true, err
+			}
+
+			err = config.save(path, false)
 			if err != nil {
 				return Configuration{}, true, fmt.Errorf("failed to write default configuration to disk: %w", err)
 			}
@@ -182,16 +196,16 @@ var defaultTools = []string{
 	"uv",
 }
 
-func getDefaultConfiguration() Configuration {
+func getDefaultConfiguration() (Configuration, error) {
 	tools := make(map[string]Tool)
 	for _, name := range defaultTools {
 		tool, found := knownTools[name]
 		if !found {
-			panic(fmt.Sprintf("Could not find default tool '%s' in known tools", name))
+			return Configuration{}, fmt.Errorf("could not find default tool '%s' in known tools", name)
 		}
 
 		tools[name] = tool
 	}
 
-	return Configuration{InstallationDirectory: "~/.local/bin", Tools: tools}
+	return Configuration{InstallationDirectory: "~/.local/bin", Tools: tools}, nil
 }
