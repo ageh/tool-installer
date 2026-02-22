@@ -429,7 +429,7 @@ var knownTools = map[string]KnownTool{
 	// Text editors
 	"micro": {
 		Binaries:    []Binary{{Name: "micro", RenameTo: ""}},
-		Owner:       "zyedidia",
+		Owner:       "micro-editor",
 		Repository:  "micro",
 		Description: "A modern and intuitive terminal-based text editor",
 		AssetNames: map[string]string{
