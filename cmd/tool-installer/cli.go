@@ -225,14 +225,13 @@ func run() error {
 		return fmt.Errorf("failed to obtain the configuration file path: %w", err)
 	}
 
-	app, err := newApp(configPath, args.requestTimeout)
+	app, messages, err := newApp(configPath, args.requestTimeout)
 	if err != nil {
 		return err
 	}
 
-	if app.createdDefaultConfig {
-		message := UserMessage{Type: Info, Tool: "tooli", Content: "Default configuration has been created because no configuration file existed yet"}
-		message.Print()
+	for _, msg := range messages {
+		msg.Print()
 	}
 
 	var commandError error

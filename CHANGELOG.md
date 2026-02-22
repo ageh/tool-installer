@@ -10,6 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 - If two or more matching assets are found, the names are now shown to the user so the configuration can be updated more easily
 - The user is informed about tools that exist in the cache but are not present in the configuration
+- Configuration now has a version number (for the configuration)
 - New `status` command:
 	- Shows config, cache, and installation paths
 	- Shows the number of tools in the configuration and how many are installed (based on cache entries)
@@ -19,6 +20,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 ### Changed
 
+- BREAKING: The configuration now only contains a single `asset` entry for the asset name instead of having an entry per supported platform. This will allow more platforms to be supported in the future. Old configurations will automatically be transformed into the new format.
 - Asset name regex checking is now more performant
 - Colored output is disabled for any value of `NO_COLOR` instead of just `1`
 - Improved user output for different HTTP error codes

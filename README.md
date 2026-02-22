@@ -22,6 +22,7 @@ The configuration for tool-installer is a simple JSON file with the following st
 
 ```json
 {
+	"version": 2,
 	"install_dir": "~/.local/bin",
 	"tools": {
 		"tool1": {
@@ -54,15 +55,16 @@ The configuration for tool-installer is a simple JSON file with the following st
 }
 ```
 
+The `rename_to` field is optional, if you do not need it, you can safely omit it.
+
 To change the installation directory, set the value of `install_dir` to a different path. To add or remove tools, you can use the `add` and `remove` commands or directly change the entries in the configuration file. Each entry of `tools` should be a struct with the entries:
 
 - `owner`: Name of the GitHub account under which the repository is located
 - `repository`: Name of the repository
-- `linux_asset`: Regular expression to match the name of the asset to download on Linux, leave empty if the tool does not support Linux
-- `windows_asset`: Regular expression to match the name of the asset to download on Windows, leave empty if the tool does not support Windows
+- `asset`: Regular expression to match the name of the asset to download
 - `binaries`: A list of structs where each struct has these entries:
 	- `name`: Name of the file to extract
-	- `rename_to`: The name which the file should have after extraction, if left empty the file is not renamed. Do _not_ include the `.exe` file ending.
+	- `rename_to`: The name which the file should have after extraction, if left empty or omitted the file is not renamed. Do _not_ include the `.exe` file ending here, tool-installer handles this automatically on Windows.
 - `description`: A (short) description of what the tool does
 
 ### Default configuration

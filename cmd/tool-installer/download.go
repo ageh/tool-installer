@@ -11,10 +11,11 @@ import (
 	"net/http"
 	"os"
 	"regexp"
-	"runtime"
 	"strings"
 	"time"
 )
+
+var checksumRegex = regexp.MustCompile(`(?i)\.(sha(\d+)?(sum)?|md5(sum)?|checksums\.txt)$`)
 
 type Downloader struct {
 	client      http.Client
@@ -47,12 +48,16 @@ func httpError(statusCode int) error {
 	return fmt.Errorf("unexpected HTTP status: %d", statusCode)
 }
 
-func newDownloader(timeoutSeconds int) Downloader {
+func newDownloader(timeoutSeconds int) (Downloader, *UserMessage) {
 	githubToken := os.Getenv("GITHUB_TOKEN")
 
 	res := Downloader{client: http.Client{Timeout: time.Duration(timeoutSeconds) * time.Second}, githubToken: githubToken}
 
-	return res
+	if githubToken == "" {
+		return res, &UserMessage{Type: Info, Tool: "tooli", Content: "GITHUB_TOKEN is not set in the environment variables, consider setting it to avoid rate limiting"}
+	}
+
+	return res, nil
 }
 
 func (client *Downloader) newRequest(url string, requestFormat RequestFormat) (*http.Request, error) {
@@ -150,36 +155,13 @@ func (client *Downloader) downloadTool(tool Tool, currentVersion string) (Downlo
 		return result, nil
 	}
 
-	var assetName string
-	switch os := runtime.GOOS; os {
-	case "linux":
-		assetName = tool.LinuxAsset
-	case "windows":
-		assetName = tool.WindowsAsset
-	default:
-		return result, fmt.Errorf("the platform '%s' is not supported", os)
-	}
-
-	if assetName == "" {
-		return result, errors.New("no asset name provided for the current platform")
-	}
-
-	checksumRegex, err := regexp.Compile(`(?i)\.(sha(\d+)?(sum)?|md5(sum)?|checksums\.txt)$`)
-	if err != nil {
-		return result, fmt.Errorf("failed to compile checksum regex: %w", err)
-	}
-	assetRegex, err := regexp.Compile(assetName)
-	if err != nil {
-		return result, fmt.Errorf("failed to compile asset regex: %w", err)
-	}
-
 	var res []Asset
 	for _, a := range release.Assets {
 		if checksumRegex.MatchString(a.Name) {
 			continue
 		}
 
-		if assetRegex.MatchString(a.Name) {
+		if tool.Asset.Regex.MatchString(a.Name) {
 			res = append(res, a)
 		}
 	}
@@ -187,6 +169,7 @@ func (client *Downloader) downloadTool(tool Tool, currentVersion string) (Downlo
 	if len(res) == 0 {
 		return result, errors.New("could not find a matching asset. Did you forget to include one in the config?")
 	}
+
 	if len(res) > 1 {
 		assets := make([]string, 0)
 		for _, a := range res {

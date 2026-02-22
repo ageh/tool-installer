@@ -44,36 +44,44 @@ func compareNames(a string, b string) int {
 }
 
 type App struct {
-	downloader           Downloader
-	config               Configuration
-	cache                Cache
-	configLocation       string
-	createdDefaultConfig bool
+	downloader     Downloader
+	config         Configuration
+	cache          Cache
+	configLocation string
 }
 
-func newApp(configPath string, timeout int) (App, error) {
+func newApp(configPath string, timeout int) (App, []UserMessage, error) {
 	var result App
+	messages := make([]UserMessage, 0)
 
-	config, defaulted, err := readConfigurationOrCreateDefault(configPath)
+	config, message, err := readConfigurationOrCreateDefault(configPath)
 	if err != nil {
-		return result, fmt.Errorf("could not obtain configuration: %w", err)
+		return result, messages, fmt.Errorf("could not obtain configuration: %w", err)
 	}
 
-	result.createdDefaultConfig = defaulted
+	if message != nil {
+		messages = append(messages, *message)
+	}
+
 	result.config = config
 
 	cache, err := getCache()
 	if err != nil {
-		return result, fmt.Errorf("could not obtain cache: %w", err)
+		return result, messages, fmt.Errorf("could not obtain cache: %w", err)
 	}
 
 	result.cache = cache
 
-	result.downloader = newDownloader(timeout)
+	downloader, message := newDownloader(timeout)
+	if message != nil {
+		messages = append(messages, *message)
+	}
+
+	result.downloader = downloader
 
 	result.configLocation = configPath
 
-	return result, nil
+	return result, messages, nil
 }
 
 func (app *App) addTool(name string) UserMessage {
@@ -84,8 +92,13 @@ func (app *App) addTool(name string) UserMessage {
 
 	tool, found := knownTools[name]
 	if found {
-		app.config.Tools[name] = tool
-		err := app.config.save(app.configLocation, false)
+		tmp, err := tool.intoToolForPlatform()
+		if err != nil {
+			return UserMessage{Type: Error, Tool: name, Content: fmt.Sprintf("error obtaining known tool: %v", err)}
+		}
+
+		app.config.Tools[name] = tmp
+		err = app.config.save(app.configLocation, false)
 		if err != nil {
 			return UserMessage{Type: Error, Tool: name, Content: "failed to write configuration to disk"}
 		} else {
@@ -99,8 +112,11 @@ func (app *App) addTool(name string) UserMessage {
 	owner := promptNonEmpty("GitHub user/org: ")
 	repo := promptNonEmpty("Repository name: ")
 
-	windows := promptRegex("Windows asset name (regex): ")
-	linux := promptRegex("Linux asset name (regex): ")
+	assetName := promptRegex("Asset name (regex): ")
+	asset, err := stringToAssetRegex(assetName)
+	if err != nil {
+		return UserMessage{Type: Error, Tool: name, Content: fmt.Sprintf("failed to compile asset name regex: %v", err)}
+	}
 
 	binary := promptNonEmpty("Binary name: ")
 	rename := prompt("Rename binary to (leave empty if no rename): ")
@@ -122,15 +138,14 @@ func (app *App) addTool(name string) UserMessage {
 	}
 
 	app.config.Tools[name] = Tool{
-		Binaries:     binaries,
-		Owner:        owner,
-		Repository:   repo,
-		LinuxAsset:   linux,
-		WindowsAsset: windows,
-		Description:  description,
+		Binaries:    binaries,
+		Owner:       owner,
+		Repository:  repo,
+		Asset:       asset,
+		Description: description,
 	}
 
-	err := app.config.save(app.configLocation, false)
+	err = app.config.save(app.configLocation, false)
 	if err != nil {
 		return UserMessage{Type: Error, Tool: name, Content: "failed to write configuration to disk"}
 	} else {
