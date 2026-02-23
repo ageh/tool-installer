@@ -41,12 +41,12 @@ func (k KnownTool) intoToolForPlatform() (Tool, error) {
 	return result, nil
 }
 
-const defaultLinuxArm = "aarch64-unknown-linux-gnu\\.tar\\.gz$"
-const defaultLinux64 = "x86_64-unknown-linux-gnu\\.tar\\.gz$"
-const defaultWindowsArm = "aarch-pc-windows-msvc\\.zip$"
-const defaultWindows64 = "x86_64-pc-windows-msvc\\.zip$"
-const defaultAppleArm = "aarch64-apple-darwin\\.tar\\.gz$"
-const defaultApple64 = "x86_64-apple-darwin\\.tar\\.gz$"
+const standardAssetLinuxArm = "aarch64-unknown-linux-gnu\\.tar\\.gz$"
+const standardAssetLinuxx64 = "x86_64-unknown-linux-gnu\\.tar\\.gz$"
+const standardAssetWindowsArm = "aarch-pc-windows-msvc\\.zip$"
+const standardAssetWindowsx64 = "x86_64-pc-windows-msvc\\.zip$"
+const standardAssetAppleArm = "aarch64-apple-darwin\\.tar\\.gz$"
+const standardAssetApplex64 = "x86_64-apple-darwin\\.tar\\.gz$"
 
 var knownTools = map[string]KnownTool{
 	// Shells and common shell command/tool replacements/upgrades
@@ -56,8 +56,8 @@ var knownTools = map[string]KnownTool{
 		Repository:  "bat",
 		Description: "A cat(1) clone with wings.",
 		AssetNames: map[string]string{
-			"linux/amd64":   defaultLinux64,
-			"windows/amd64": defaultWindows64,
+			"linux/amd64":   standardAssetLinuxx64,
+			"windows/amd64": standardAssetWindowsx64,
 		},
 	},
 	"dua": {
@@ -66,8 +66,8 @@ var knownTools = map[string]KnownTool{
 		Repository:  "dua-cli",
 		Description: "View disk space usage and delete unwanted data, fast.",
 		AssetNames: map[string]string{
-			"linux/amd64":   defaultLinux64,
-			"windows/amd64": defaultWindows64,
+			"linux/amd64":   standardAssetLinuxx64,
+			"windows/amd64": standardAssetWindowsx64,
 		},
 	},
 	"dust": {
@@ -76,8 +76,8 @@ var knownTools = map[string]KnownTool{
 		Repository:  "dust",
 		Description: "A more intuitive version of du in rust",
 		AssetNames: map[string]string{
-			"linux/amd64":   defaultLinux64,
-			"windows/amd64": defaultWindows64,
+			"linux/amd64":   standardAssetLinuxx64,
+			"windows/amd64": standardAssetWindowsx64,
 		},
 	},
 	"eza": {
@@ -96,8 +96,8 @@ var knownTools = map[string]KnownTool{
 		Repository:  "fd",
 		Description: "A simple, fast and user-friendly alternative to 'find'",
 		AssetNames: map[string]string{
-			"linux/amd64":   defaultLinux64,
-			"windows/amd64": defaultWindows64,
+			"linux/amd64":   standardAssetLinuxx64,
+			"windows/amd64": standardAssetWindowsx64,
 		},
 	},
 	"fzf": {
@@ -116,8 +116,8 @@ var knownTools = map[string]KnownTool{
 		Repository:  "numbat",
 		Description: "A statically typed programming language for scientific computations with first class support for physical dimensions and units",
 		AssetNames: map[string]string{
-			"linux/amd64":   defaultLinux64,
-			"windows/amd64": defaultWindows64,
+			"linux/amd64":   standardAssetLinuxx64,
+			"windows/amd64": standardAssetWindowsx64,
 		},
 	},
 	"nushell": {
@@ -137,8 +137,8 @@ var knownTools = map[string]KnownTool{
 		Repository:  "nushell",
 		Description: "Data oriented shell",
 		AssetNames: map[string]string{
-			"linux/amd64":   defaultLinux64,
-			"windows/amd64": defaultWindows64,
+			"linux/amd64":   standardAssetLinuxx64,
+			"windows/amd64": standardAssetWindowsx64,
 		},
 	},
 	"ouch": {
@@ -147,8 +147,8 @@ var knownTools = map[string]KnownTool{
 		Repository:  "ouch",
 		Description: "(De)compression for your terminal",
 		AssetNames: map[string]string{
-			"linux/amd64":   defaultLinux64,
-			"windows/amd64": defaultWindows64,
+			"linux/amd64":   standardAssetLinuxx64,
+			"windows/amd64": standardAssetWindowsx64,
 		},
 	},
 	"ripgrep": {
@@ -157,8 +157,8 @@ var knownTools = map[string]KnownTool{
 		Repository:  "ripgrep",
 		Description: "Better grep",
 		AssetNames: map[string]string{
-			"linux/amd64":   defaultLinux64,
-			"windows/amd64": defaultWindows64,
+			"linux/amd64":   standardAssetLinuxx64,
+			"windows/amd64": standardAssetWindowsx64,
 		},
 	},
 	"sd": {
@@ -168,7 +168,7 @@ var knownTools = map[string]KnownTool{
 		Description: "Better sed",
 		AssetNames: map[string]string{
 			"linux/amd64":   "x86_64-unknown-linux-gnu",
-			"windows/amd64": defaultWindows64,
+			"windows/amd64": standardAssetWindowsx64,
 		},
 	},
 	"starship": {
@@ -177,8 +177,8 @@ var knownTools = map[string]KnownTool{
 		Repository:  "starship",
 		Description: "Cross-shell custom prompt",
 		AssetNames: map[string]string{
-			"linux/amd64":   defaultLinux64,
-			"windows/amd64": defaultWindows64,
+			"linux/amd64":   standardAssetLinuxx64,
+			"windows/amd64": standardAssetWindowsx64,
 		},
 	},
 
@@ -199,8 +199,8 @@ var knownTools = map[string]KnownTool{
 		Repository:  "ruff",
 		Description: "An extremely fast Python linter and code formatter",
 		AssetNames: map[string]string{
-			"linux/amd64":   defaultLinux64,
-			"windows/amd64": defaultWindows64,
+			"linux/amd64":   standardAssetLinuxx64,
+			"windows/amd64": standardAssetWindowsx64,
 		},
 	},
 	"ty": {
@@ -209,8 +209,8 @@ var knownTools = map[string]KnownTool{
 		Repository:  "ty",
 		Description: "An extremely fast Python type checker and language server, written in Rust.",
 		AssetNames: map[string]string{
-			"linux/amd64":   defaultLinux64,
-			"windows/amd64": defaultWindows64,
+			"linux/amd64":   standardAssetLinuxx64,
+			"windows/amd64": standardAssetWindowsx64,
 		},
 	},
 	"uv": {
@@ -219,8 +219,8 @@ var knownTools = map[string]KnownTool{
 		Repository:  "uv",
 		Description: "An extremely fast Python package installer and resolver, written in Rust.",
 		AssetNames: map[string]string{
-			"linux/amd64":   defaultLinux64,
-			"windows/amd64": defaultWindows64,
+			"linux/amd64":   standardAssetLinuxx64,
+			"windows/amd64": standardAssetWindowsx64,
 		},
 	},
 	"vale": {
@@ -297,8 +297,8 @@ var knownTools = map[string]KnownTool{
 		Repository:  "just",
 		Description: "Just a command runner",
 		AssetNames: map[string]string{
-			"linux/amd64":   defaultLinux64,
-			"windows/amd64": defaultWindows64,
+			"linux/amd64":   standardAssetLinuxx64,
+			"windows/amd64": standardAssetWindowsx64,
 		},
 	},
 	"ninja": {
@@ -329,8 +329,8 @@ var knownTools = map[string]KnownTool{
 		Repository:  "mdBook",
 		Description: "Create a book from markdown files",
 		AssetNames: map[string]string{
-			"linux/amd64":   defaultLinux64,
-			"windows/amd64": defaultWindows64,
+			"linux/amd64":   standardAssetLinuxx64,
+			"windows/amd64": standardAssetWindowsx64,
 		},
 	},
 	"mdbook-admonish": {
@@ -339,8 +339,8 @@ var knownTools = map[string]KnownTool{
 		Repository:  "mdbook-admonish",
 		Description: "A preprocessor for mdbook to add Material Design admonishments",
 		AssetNames: map[string]string{
-			"linux/amd64":   defaultLinux64,
-			"windows/amd64": defaultWindows64,
+			"linux/amd64":   standardAssetLinuxx64,
+			"windows/amd64": standardAssetWindowsx64,
 		},
 	},
 	"pandoc": {
@@ -360,7 +360,7 @@ var knownTools = map[string]KnownTool{
 		Description: "A new markup-based typesetting system",
 		AssetNames: map[string]string{
 			"linux/amd64":   "x86_64-unknown-linux-gnu.tar.xz",
-			"windows/amd64": defaultWindows64,
+			"windows/amd64": standardAssetWindowsx64,
 		},
 	},
 	"zola": {
@@ -369,8 +369,8 @@ var knownTools = map[string]KnownTool{
 		Repository:  "zola",
 		Description: "Fast single binary static site generator",
 		AssetNames: map[string]string{
-			"linux/amd64":   defaultLinux64,
-			"windows/amd64": defaultWindows64,
+			"linux/amd64":   standardAssetLinuxx64,
+			"windows/amd64": standardAssetWindowsx64,
 		},
 	},
 
@@ -381,8 +381,8 @@ var knownTools = map[string]KnownTool{
 		Repository:  "delta",
 		Description: "A syntax-highlighting pager for git, diff, grep, and blame output",
 		AssetNames: map[string]string{
-			"linux/amd64":   defaultLinux64,
-			"windows/amd64": defaultWindows64,
+			"linux/amd64":   standardAssetLinuxx64,
+			"windows/amd64": standardAssetWindowsx64,
 		},
 	},
 	"github": {
@@ -411,8 +411,8 @@ var knownTools = map[string]KnownTool{
 		Repository:  "jj",
 		Description: "A Git-compatible VCS that is both simple and powerful",
 		AssetNames: map[string]string{
-			"linux/amd64":   defaultLinux64,
-			"windows/amd64": defaultWindows64,
+			"linux/amd64":   standardAssetLinuxx64,
+			"windows/amd64": standardAssetWindowsx64,
 		},
 	},
 	"lazygit": {
@@ -561,8 +561,8 @@ var knownTools = map[string]KnownTool{
 		Repository:  "hyperfine",
 		Description: "A command-line benchmarking tool",
 		AssetNames: map[string]string{
-			"linux/amd64":   defaultLinux64,
-			"windows/amd64": defaultWindows64,
+			"linux/amd64":   standardAssetLinuxx64,
+			"windows/amd64": standardAssetWindowsx64,
 		},
 	},
 	"miniserve": {
@@ -591,7 +591,7 @@ var knownTools = map[string]KnownTool{
 		Repository:  "tokei",
 		Description: "Count your code, quickly.",
 		AssetNames: map[string]string{
-			"linux/amd64":   defaultLinux64,
+			"linux/amd64":   standardAssetLinuxx64,
 			"windows/amd64": "x86_64-pc-windows-msvc\\.exe$",
 		},
 	},
