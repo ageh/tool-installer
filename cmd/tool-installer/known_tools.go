@@ -42,9 +42,12 @@ func (k KnownTool) intoToolForPlatform() (Tool, error) {
 }
 
 const standardAssetLinuxArm = "aarch64-unknown-linux-gnu\\.tar\\.gz$"
+const standardAssetLinuxMuslArm = "aarch64-unknown-linux-musl\\.tar\\.gz$"
 const standardAssetLinuxx64 = "x86_64-unknown-linux-gnu\\.tar\\.gz$"
+const standardAssetLinuxMuslx64 = "x86_64-unknown-linux-musl\\.tar\\.gz$"
 const standardAssetWindowsArm = "aarch-pc-windows-msvc\\.zip$"
 const standardAssetWindowsx64 = "x86_64-pc-windows-msvc\\.zip$"
+const standardAssetWindowsGnux64 = "x86_64-pc-windows-gnu\\.zip$"
 const standardAssetAppleArm = "aarch64-apple-darwin\\.tar\\.gz$"
 const standardAssetApplex64 = "x86_64-apple-darwin\\.tar\\.gz$"
 
@@ -57,7 +60,11 @@ var knownTools = map[string]KnownTool{
 		Description: "A cat(1) clone with wings.",
 		AssetNames: map[string]string{
 			"linux/amd64":   standardAssetLinuxx64,
+			"linux/arm64":   standardAssetLinuxArm,
 			"windows/amd64": standardAssetWindowsx64,
+			"windows/arm64": standardAssetWindowsArm,
+			"darwin/amd64":  standardAssetApplex64,
+			"darwin/arm64":  standardAssetAppleArm,
 		},
 	},
 	"dua": {
@@ -67,7 +74,9 @@ var knownTools = map[string]KnownTool{
 		Description: "View disk space usage and delete unwanted data, fast.",
 		AssetNames: map[string]string{
 			"linux/amd64":   standardAssetLinuxx64,
+			"linux/arm64":   standardAssetLinuxArm,
 			"windows/amd64": standardAssetWindowsx64,
+			"darwin/amd64":  standardAssetApplex64,
 		},
 	},
 	"dust": {
@@ -77,6 +86,7 @@ var knownTools = map[string]KnownTool{
 		Description: "A more intuitive version of du in rust",
 		AssetNames: map[string]string{
 			"linux/amd64":   standardAssetLinuxx64,
+			"linux/arm64":   standardAssetLinuxArm,
 			"windows/amd64": standardAssetWindowsx64,
 		},
 	},
@@ -86,8 +96,9 @@ var knownTools = map[string]KnownTool{
 		Repository:  "eza",
 		Description: "A modern alternative to ls",
 		AssetNames: map[string]string{
-			"linux/amd64":   "eza_x86_64-unknown-linux-gnu\\.tar\\.gz$",
-			"windows/amd64": "eza\\.exe$_x86_64-pc-windows-gnu\\.zip$",
+			"linux/amd64":   standardAssetLinuxx64,
+			"linux/arm64":   standardAssetLinuxArm,
+			"windows/amd64": standardAssetWindowsGnux64,
 		},
 	},
 	"fd": {
@@ -97,7 +108,9 @@ var knownTools = map[string]KnownTool{
 		Description: "A simple, fast and user-friendly alternative to 'find'",
 		AssetNames: map[string]string{
 			"linux/amd64":   standardAssetLinuxx64,
+			"linux/arm64":   standardAssetLinuxArm,
 			"windows/amd64": standardAssetWindowsx64,
+			"windows/arm64": standardAssetWindowsArm,
 		},
 	},
 	"fzf": {
@@ -107,7 +120,9 @@ var knownTools = map[string]KnownTool{
 		Description: "A command-line fuzzy finder",
 		AssetNames: map[string]string{
 			"linux/amd64":   "linux_amd64\\.tar\\.gz$",
+			"linux/arm64":   "linux_arm64\\.tar\\.gz$",
 			"windows/amd64": "windows_amd64\\.zip$",
+			"windows/arm64": "windows_arm64\\.zip$",
 		},
 	},
 	"numbat": {
@@ -117,7 +132,10 @@ var knownTools = map[string]KnownTool{
 		Description: "A statically typed programming language for scientific computations with first class support for physical dimensions and units",
 		AssetNames: map[string]string{
 			"linux/amd64":   standardAssetLinuxx64,
+			"linux/arm64":   standardAssetLinuxArm,
 			"windows/amd64": standardAssetWindowsx64,
+			"darwin/amd64":  standardAssetApplex64,
+			"darwin/arm64":  standardAssetAppleArm,
 		},
 	},
 	"nushell": {
@@ -138,7 +156,11 @@ var knownTools = map[string]KnownTool{
 		Description: "Data oriented shell",
 		AssetNames: map[string]string{
 			"linux/amd64":   standardAssetLinuxx64,
+			"linux/arm64":   standardAssetLinuxArm,
 			"windows/amd64": standardAssetWindowsx64,
+			"windows/arm64": standardAssetWindowsArm,
+			"darwin/amd64":  standardAssetApplex64,
+			"darwin/arm64":  standardAssetAppleArm,
 		},
 	},
 	"ouch": {
@@ -148,7 +170,10 @@ var knownTools = map[string]KnownTool{
 		Description: "(De)compression for your terminal",
 		AssetNames: map[string]string{
 			"linux/amd64":   standardAssetLinuxx64,
+			"linux/arm64":   standardAssetLinuxArm,
 			"windows/amd64": standardAssetWindowsx64,
+			"windows/arm64": standardAssetWindowsArm,
+			"darwin/amd64":  standardAssetApplex64,
 		},
 	},
 	"ripgrep": {
@@ -158,7 +183,11 @@ var knownTools = map[string]KnownTool{
 		Description: "Better grep",
 		AssetNames: map[string]string{
 			"linux/amd64":   standardAssetLinuxx64,
+			"linux/arm64":   standardAssetLinuxArm,
 			"windows/amd64": standardAssetWindowsx64,
+			"windows/arm64": standardAssetWindowsArm,
+			"darwin/amd64":  standardAssetApplex64,
+			"darwin/arm64":  standardAssetAppleArm,
 		},
 	},
 	"sd": {
@@ -167,8 +196,11 @@ var knownTools = map[string]KnownTool{
 		Repository:  "sd",
 		Description: "Better sed",
 		AssetNames: map[string]string{
-			"linux/amd64":   "x86_64-unknown-linux-gnu",
+			"linux/amd64":   standardAssetLinuxx64,
+			"linux/arm64":   standardAssetLinuxMuslArm,
 			"windows/amd64": standardAssetWindowsx64,
+			"darwin/amd64":  standardAssetApplex64,
+			"darwin/arm64":  standardAssetAppleArm,
 		},
 	},
 	"starship": {
@@ -178,7 +210,11 @@ var knownTools = map[string]KnownTool{
 		Description: "Cross-shell custom prompt",
 		AssetNames: map[string]string{
 			"linux/amd64":   standardAssetLinuxx64,
+			"linux/arm64":   standardAssetLinuxMuslArm,
 			"windows/amd64": standardAssetWindowsx64,
+			"windows/arm64": standardAssetWindowsArm,
+			"darwin/amd64":  standardAssetApplex64,
+			"darwin/arm64":  standardAssetAppleArm,
 		},
 	},
 
@@ -189,8 +225,12 @@ var knownTools = map[string]KnownTool{
 		Repository:  "biome",
 		Description: "Web Dev formatter and linter",
 		AssetNames: map[string]string{
-			"linux/amd64":   "biome-linux-x64-musl",
-			"windows/amd64": "biome-win32-x64\\.exe$",
+			"linux/amd64":   "linux-x64-musl",
+			"linux/arm64":   "linux-arm64$",
+			"windows/amd64": "win32-x64\\.exe$",
+			"windows/arm64": "win32-arm64\\.exe$",
+			"darwin/amd64":  "darwin-x64$",
+			"darwin/arm64":  "darwin-arm64$",
 		},
 	},
 	"ruff": {
@@ -200,7 +240,11 @@ var knownTools = map[string]KnownTool{
 		Description: "An extremely fast Python linter and code formatter",
 		AssetNames: map[string]string{
 			"linux/amd64":   standardAssetLinuxx64,
+			"linux/arm64":   standardAssetLinuxArm,
 			"windows/amd64": standardAssetWindowsx64,
+			"windows/arm64": standardAssetWindowsArm,
+			"darwin/amd64":  standardAssetApplex64,
+			"darwin/arm64":  standardAssetAppleArm,
 		},
 	},
 	"ty": {
@@ -210,7 +254,11 @@ var knownTools = map[string]KnownTool{
 		Description: "An extremely fast Python type checker and language server, written in Rust.",
 		AssetNames: map[string]string{
 			"linux/amd64":   standardAssetLinuxx64,
+			"linux/arm64":   standardAssetLinuxArm,
 			"windows/amd64": standardAssetWindowsx64,
+			"windows/arm64": standardAssetWindowsArm,
+			"darwin/amd64":  standardAssetApplex64,
+			"darwin/arm64":  standardAssetAppleArm,
 		},
 	},
 	"uv": {
@@ -220,7 +268,11 @@ var knownTools = map[string]KnownTool{
 		Description: "An extremely fast Python package installer and resolver, written in Rust.",
 		AssetNames: map[string]string{
 			"linux/amd64":   standardAssetLinuxx64,
+			"linux/arm64":   standardAssetLinuxArm,
 			"windows/amd64": standardAssetWindowsx64,
+			"windows/arm64": standardAssetWindowsArm,
+			"darwin/amd64":  standardAssetApplex64,
+			"darwin/arm64":  standardAssetAppleArm,
 		},
 	},
 	"vale": {
@@ -230,7 +282,10 @@ var knownTools = map[string]KnownTool{
 		Description: "Text linter",
 		AssetNames: map[string]string{
 			"linux/amd64":   "Linux_64-bit\\.tar\\.gz$",
+			"linux/arm64":   "Linux_arm64\\.tar\\.gz$",
 			"windows/amd64": "Windows_64-bit\\.zip$",
+			"darwin/amd64":  "macOS_64-bit\\.zip$",
+			"darwin/arm64":  "macOS_arm64\\.zip$",
 		},
 	},
 
@@ -242,7 +297,10 @@ var knownTools = map[string]KnownTool{
 		Description: "Javascript runtime written in Zig",
 		AssetNames: map[string]string{
 			"linux/amd64":   "linux-x64\\.zip$",
+			"linux/arm64":   "linux-aarch64\\.zip$",
 			"windows/amd64": "windows-x64\\.zip$",
+			"darwin/amd64":  "darwin-x64\\.zip$",
+			"darwin/arm64":  "darwin-aarch64\\.zip$",
 		},
 	},
 	"deno": {
@@ -251,8 +309,12 @@ var knownTools = map[string]KnownTool{
 		Repository:  "deno",
 		Description: "A modern runtime for JavaScript and TypeScript",
 		AssetNames: map[string]string{
-			"linux/amd64":   "deno-x86_64-unknown-linux-gnu\\.zip$",
-			"windows/amd64": "deno-x86_64-pc-windows-msvc\\.zip$",
+			"linux/amd64":   standardAssetLinuxx64,
+			"linux/arm64":   standardAssetLinuxArm,
+			"windows/amd64": standardAssetWindowsx64,
+			"windows/arm64": standardAssetWindowsArm,
+			"darwin/amd64":  standardAssetApplex64,
+			"darwin/arm64":  standardAssetAppleArm,
 		},
 	},
 	"luau": {
@@ -267,6 +329,7 @@ var knownTools = map[string]KnownTool{
 		AssetNames: map[string]string{
 			"linux/amd64":   "-ubuntu\\.zip$",
 			"windows/amd64": "-windows\\.zip$",
+			"darwin/amd64":  "-macos\\.zip$",
 		},
 	},
 	"lune": {
@@ -276,7 +339,11 @@ var knownTools = map[string]KnownTool{
 		Description: "A standalone Luau runtime ",
 		AssetNames: map[string]string{
 			"linux/amd64":   "linux-x86_64\\.zip$",
+			"linux/arm64":   "linux-aarch64\\.zip$",
 			"windows/amd64": "windows-x86_64\\.zip$",
+			"windows/arm64": "windows-aarch64\\.zip$",
+			"darwin/amd64":  "macos-x86_64\\.zip$",
+			"darwin/arm64":  "macos-aarch64\\.zip$",
 		},
 	},
 	"teal": {
@@ -297,8 +364,12 @@ var knownTools = map[string]KnownTool{
 		Repository:  "just",
 		Description: "Just a command runner",
 		AssetNames: map[string]string{
-			"linux/amd64":   standardAssetLinuxx64,
+			"linux/amd64":   standardAssetLinuxMuslx64,
+			"linux/arm64":   standardAssetLinuxMuslArm,
 			"windows/amd64": standardAssetWindowsx64,
+			"windows/arm64": standardAssetWindowsArm,
+			"darwin/amd64":  standardAssetApplex64,
+			"darwin/arm64":  standardAssetAppleArm,
 		},
 	},
 	"ninja": {
@@ -308,7 +379,10 @@ var knownTools = map[string]KnownTool{
 		Description: "A small build system with a focus on speed",
 		AssetNames: map[string]string{
 			"linux/amd64":   "ninja-linux\\.zip$",
+			"linux/arm64":   "ninja-linux-aarch64\\.zip$",
 			"windows/amd64": "ninja-win\\.zip$",
+			"windows/arm64": "ninja-winarm64\\.zip$",
+			"darwin/amd64":  "ninja-mac\\.zip$",
 		},
 	},
 
@@ -330,7 +404,10 @@ var knownTools = map[string]KnownTool{
 		Description: "Create a book from markdown files",
 		AssetNames: map[string]string{
 			"linux/amd64":   standardAssetLinuxx64,
+			"linux/arm64":   standardAssetLinuxMuslArm,
 			"windows/amd64": standardAssetWindowsx64,
+			"darwin/amd64":  standardAssetApplex64,
+			"darwin/arm64":  standardAssetAppleArm,
 		},
 	},
 	"mdbook-admonish": {
@@ -340,7 +417,9 @@ var knownTools = map[string]KnownTool{
 		Description: "A preprocessor for mdbook to add Material Design admonishments",
 		AssetNames: map[string]string{
 			"linux/amd64":   standardAssetLinuxx64,
+			"linux/arm64":   standardAssetLinuxMuslArm,
 			"windows/amd64": standardAssetWindowsx64,
+			"darwin/amd64":  standardAssetApplex64,
 		},
 	},
 	"pandoc": {
@@ -350,7 +429,10 @@ var knownTools = map[string]KnownTool{
 		Description: "Universal markup converter",
 		AssetNames: map[string]string{
 			"linux/amd64":   "linux-amd64\\.tar\\.gz$",
+			"linux/arm64":   "linux-arm64\\.tar\\.gz$",
 			"windows/amd64": "windows-x86_64\\.zip$",
+			"darwin/amd64":  "x86_64-maxOS\\.zip$",
+			"darwin/arm64":  "arm64-maxOS\\.zip$",
 		},
 	},
 	"typst": {
@@ -359,8 +441,12 @@ var knownTools = map[string]KnownTool{
 		Repository:  "typst",
 		Description: "A new markup-based typesetting system",
 		AssetNames: map[string]string{
-			"linux/amd64":   "x86_64-unknown-linux-gnu.tar.xz",
+			"linux/amd64":   "x86_64-unknown-linux-gnu\\.tar\\.xz$",
+			"linux/arm64":   "aarch64-unknown-linux-musl\\.tar\\.xz$",
 			"windows/amd64": standardAssetWindowsx64,
+			"windows/arm64": standardAssetWindowsArm,
+			"darwin/amd64":  "x86_64-apple-darwin\\.tar\\.xz$",
+			"darwin/arm64":  "aarch64-apple-darwin\\.tar\\.xz$",
 		},
 	},
 	"zola": {
@@ -370,7 +456,10 @@ var knownTools = map[string]KnownTool{
 		Description: "Fast single binary static site generator",
 		AssetNames: map[string]string{
 			"linux/amd64":   standardAssetLinuxx64,
+			"linux/arm64":   standardAssetLinuxArm,
 			"windows/amd64": standardAssetWindowsx64,
+			"darwin/amd64":  standardAssetApplex64,
+			"darwin/arm64":  standardAssetAppleArm,
 		},
 	},
 
@@ -382,7 +471,10 @@ var knownTools = map[string]KnownTool{
 		Description: "A syntax-highlighting pager for git, diff, grep, and blame output",
 		AssetNames: map[string]string{
 			"linux/amd64":   standardAssetLinuxx64,
+			"linux/arm64":   standardAssetLinuxArm,
 			"windows/amd64": standardAssetWindowsx64,
+			"darwin/amd64":  standardAssetApplex64,
+			"darwin/arm64":  standardAssetAppleArm,
 		},
 	},
 	"github": {
@@ -391,18 +483,24 @@ var knownTools = map[string]KnownTool{
 		Repository:  "cli",
 		Description: "GitHub's official command line tool",
 		AssetNames: map[string]string{
-			"linux/amd64":   "linux amd64$",
-			"windows/amd64": "windows amd64$",
+			"linux/amd64":   "linux_amd64\\.tar\\.gz$",
+			"linux/arm64":   "linux_arm64\\.tar\\.gz$",
+			"windows/amd64": "windows_amd64\\.zip$",
+			"windows/arm64": "windows_arm64\\.zip$",
+			"darwin/amd64":  "macOS_amd64\\.zip$",
+			"darwin/arm64":  "macOS_arm64\\.zip$",
 		},
 	},
 	"gitui": {
 		Binaries:    []Binary{{Name: "gitui", RenameTo: ""}},
-		Owner:       "extrawurst",
+		Owner:       "gitui-org",
 		Repository:  "gitui",
 		Description: "Blazing fast terminal-ui for git written in rust",
 		AssetNames: map[string]string{
-			"linux/amd64":   "gitui-linux-gnu\\.tar\\.gz$",
-			"windows/amd64": "gitui-win\\.tar\\.gz$",
+			"linux/amd64":   "linux-x86_64\\.tar\\.gz$",
+			"linux/arm64":   "linux-aarch64\\.tar\\.gz$",
+			"windows/amd64": "win\\.tar\\.gz$",
+			"darwin/amd64":  "mac-x86\\.tar\\.gz$",
 		},
 	},
 	"jujutsu": {
@@ -412,7 +510,11 @@ var knownTools = map[string]KnownTool{
 		Description: "A Git-compatible VCS that is both simple and powerful",
 		AssetNames: map[string]string{
 			"linux/amd64":   standardAssetLinuxx64,
+			"linux/arm64":   standardAssetLinuxMuslArm,
 			"windows/amd64": standardAssetWindowsx64,
+			"windows/arm64": standardAssetWindowsArm,
+			"darwin/amd64":  standardAssetApplex64,
+			"darwin/arm64":  standardAssetAppleArm,
 		},
 	},
 	"lazygit": {
@@ -421,8 +523,12 @@ var knownTools = map[string]KnownTool{
 		Repository:  "lazygit",
 		Description: "Simple terminal UI for git commands",
 		AssetNames: map[string]string{
-			"linux/amd64":   "Linux_x86_64\\.tar\\.gz$",
-			"windows/amd64": "Windows_x86_64\\.zip$",
+			"linux/amd64":   "linux_x86_64\\.tar\\.gz$",
+			"linux/arm64":   "linux_arm64\\.tar\\.gz$",
+			"windows/amd64": "windows_x86_64\\.zip$",
+			"windows/arm64": "windows_arm64\\.zip$",
+			"darwin/amd64":  "darwin_x86_64\\.tar\\.gz$",
+			"darwin/arm64":  "darwin_arm64\\.tar\\.gz$",
 		},
 	},
 
@@ -434,7 +540,11 @@ var knownTools = map[string]KnownTool{
 		Description: "A modern and intuitive terminal-based text editor",
 		AssetNames: map[string]string{
 			"linux/amd64":   "linux64\\.tar\\.gz$",
+			"linux/arm64":   "linux-arm64\\.tar\\.gz$",
 			"windows/amd64": "win64\\.zip$",
+			"windows/arm64": "win-arm64\\.zip$",
+			"darwin/amd64":  "osx\\.tar\\.gz$",
+			"darwin/arm64":  "macos-arm64\\.tar\\.gz$",
 		},
 	},
 
@@ -446,7 +556,10 @@ var knownTools = map[string]KnownTool{
 		Description: "Generate images of code and terminal output",
 		AssetNames: map[string]string{
 			"linux/amd64":   "Linux_x86_64\\.tar\\.gz$",
+			"linux/arm64":   "Linux_arm64\\.tar\\.gz$",
 			"windows/amd64": "Windows_x86_64\\.zip$",
+			"darwin/amd64":  "Darwin_x86_64\\.tar\\.gz$",
+			"darwin/arm64":  "Darwin_arm64\\.tar\\.gz$",
 		},
 	},
 	"vhs": {
@@ -456,7 +569,10 @@ var knownTools = map[string]KnownTool{
 		Description: "Your CLI home video recorder",
 		AssetNames: map[string]string{
 			"linux/amd64":   "Linux_x86_64\\.tar\\.gz$",
+			"linux/arm64":   "Linux_arm64\\.tar\\.gz$",
 			"windows/amd64": "Windows_x86_64\\.zip$",
+			"darwin/amd64":  "Darwin_x86_64\\.tar\\.gz$",
+			"darwin/arm64":  "Darwin_arm64\\.tar\\.gz$",
 		},
 	},
 	"yt-dlp": {
@@ -466,7 +582,10 @@ var knownTools = map[string]KnownTool{
 		Description: "A feature-rich command-line audio/video downloader",
 		AssetNames: map[string]string{
 			"linux/amd64":   "yt-dlp_linux$",
+			"linux/arm64":   "yt-dlp_linux_aarch64$",
 			"windows/amd64": "yt-dlp\\.exe$",
+			"windows/arm64": "yt-dlp_arm64\\.exe$",
+			"darwin/amd64":  "yt-dlp_macos$",
 		},
 	},
 
@@ -481,7 +600,10 @@ var knownTools = map[string]KnownTool{
 		Description: "A simple, modern and secure encryption tool (and Go library) with small explicit keys, no config options, and UNIX-style composability.",
 		AssetNames: map[string]string{
 			"linux/amd64":   "linux-amd64\\.tar\\.gz$",
+			"linux/arm64":   "linux-arm64\\.tar\\.gz$",
 			"windows/amd64": "windows-amd64\\.zip$",
+			"darwin/amd64":  "darwin-amd64\\.tar\\.gz$",
+			"darwin/arm64":  "darwin-arm64\\.tar\\.gz$",
 		},
 	},
 	"minisign": {
@@ -492,6 +614,7 @@ var knownTools = map[string]KnownTool{
 		AssetNames: map[string]string{
 			"linux/amd64":   "linux\\.tar\\.gz$",
 			"windows/amd64": "win64\\.zip$",
+			"darwin/amd64":  "macos\\.zip$",
 		},
 	},
 	"mkcert": {
@@ -501,7 +624,11 @@ var knownTools = map[string]KnownTool{
 		Description: "A simple zero-config tool to make locally trusted development certificates with any names you'd like.",
 		AssetNames: map[string]string{
 			"linux/amd64":   "linux-amd64",
-			"windows/amd64": "windows-arm64\\.exe$",
+			"linux/arm64":   "linux-arm64",
+			"windows/amd64": "windows-amd64\\.exe$",
+			"windows/arm64": "windows-arm64\\.exe$",
+			"darwin/amd64":  "darwin-amd64$",
+			"darwin/arm64":  "darwin-arm64$",
 		},
 	},
 
@@ -516,7 +643,11 @@ var knownTools = map[string]KnownTool{
 		Description: "Lightweight coding agent that runs in your terminal",
 		AssetNames: map[string]string{
 			"linux/amd64":   "codex-x86_64-unknown-linux-gnu.tar\\.gz$",
+			"linux/arm64":   standardAssetLinuxArm,
 			"windows/amd64": "codex-x86_64-pc-windows-msvc\\.exe$\\.zip$",
+			"windows/arm64": standardAssetWindowsArm,
+			"darwin/amd64":  standardAssetApplex64,
+			"darwin/arm64":  standardAssetAppleArm,
 		},
 	},
 	"crush": {
@@ -526,7 +657,11 @@ var knownTools = map[string]KnownTool{
 		Description: "The glamourous AI coding agent for your favourite terminal",
 		AssetNames: map[string]string{
 			"linux/amd64":   "Linux_x86_64\\.tar\\.gz$",
+			"linux/arm64":   "Linux_arm64\\.tar\\.gz$",
 			"windows/amd64": "Windows_x86_64\\.zip$",
+			"windows/arm64": "Windows_arm64\\.zip$",
+			"darwin/amd64":  "Darwin_x86_64\\.zip$",
+			"darwin/arn64":  "Darwin_arm64\\.zip$",
 		},
 	},
 	"opencode": {
@@ -536,7 +671,10 @@ var knownTools = map[string]KnownTool{
 		Description: "The open source coding agent.",
 		AssetNames: map[string]string{
 			"linux/amd64":   "linux-x64\\.tar\\.gz$",
+			"linux/arm64":   "linux-arm64\\.tar\\.gz$",
 			"windows/amd64": "windows-x64\\.zip$",
+			"darwin/amd64":  "darwin-x64\\.zip$",
+			"darwin/arm64":  "darwin-arm64\\.zip$",
 		},
 	},
 
@@ -553,6 +691,8 @@ var knownTools = map[string]KnownTool{
 		AssetNames: map[string]string{
 			"linux/amd64":   "linux-x64\\.zip$",
 			"windows/amd64": "windows-x64\\.zip$",
+			"darwin/amd64":  "mac-x64\\.zip$",
+			"darwin/arm64":  "mac-arm64\\.zip$",
 		},
 	},
 	"hyperfine": {
@@ -562,7 +702,10 @@ var knownTools = map[string]KnownTool{
 		Description: "A command-line benchmarking tool",
 		AssetNames: map[string]string{
 			"linux/amd64":   standardAssetLinuxx64,
+			"linux/arm64":   standardAssetLinuxArm,
 			"windows/amd64": standardAssetWindowsx64,
+			"darwin/amd64":  standardAssetApplex64,
+			"darwin/arm64":  standardAssetAppleArm,
 		},
 	},
 	"miniserve": {
@@ -572,7 +715,10 @@ var knownTools = map[string]KnownTool{
 		Description: "For when you really just want to serve some files over HTTP right now!",
 		AssetNames: map[string]string{
 			"linux/amd64":   "x86_64-unknown-linux-gnu$",
+			"linux/arm64":   "aarch64-unknown-linux-gnu$",
 			"windows/amd64": "x86_64-pc-windows-msvc\\.exe$",
+			"darwin/amd64":  "x86_64-apple-darwin$",
+			"darwin/arm64":  "aarch64-apple-darwin$",
 		},
 	},
 	"tealdeer": {
@@ -581,8 +727,11 @@ var knownTools = map[string]KnownTool{
 		Repository:  "tealdeer",
 		Description: "A very fast implementation of tldr in Rust.",
 		AssetNames: map[string]string{
-			"linux/amd64":   "tealdeer-linux-x86_64-musl$",
+			"linux/amd64":   "linux-x86_64-musl$",
+			"linux/arm64":   "linux-aarch64-musl$",
 			"windows/amd64": "windows-x86_64-msvc\\.exe$",
+			"darwin/amd64":  "macos-x86_64$",
+			"darwin/arm64":  "macos-aarch64$",
 		},
 	},
 	"tokei": {
@@ -592,7 +741,9 @@ var knownTools = map[string]KnownTool{
 		Description: "Count your code, quickly.",
 		AssetNames: map[string]string{
 			"linux/amd64":   standardAssetLinuxx64,
+			"linux/arm64":   standardAssetLinuxArm,
 			"windows/amd64": "x86_64-pc-windows-msvc\\.exe$",
+			"darwin/amd64":  standardAssetApplex64,
 		},
 	},
 	"tailwind": {
@@ -602,7 +753,10 @@ var knownTools = map[string]KnownTool{
 		Description: "Tailwind CSS standalone CLI tool",
 		AssetNames: map[string]string{
 			"linux/amd64":   "tailwindcss-linux-x64$",
+			"linux/arm64":   "tailwindcss-linux-arm$",
 			"windows/amd64": "tailwindcss-windows-x64\\.exe$",
+			"darwin/amd64":  "macos-x64$",
+			"darwin/arm64":  "macos-arm64$",
 		},
 	},
 }
