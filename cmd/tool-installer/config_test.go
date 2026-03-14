@@ -4,6 +4,7 @@ package main
 
 import (
 	"encoding/json"
+	"runtime"
 	"testing"
 )
 
@@ -230,6 +231,48 @@ func TestAssetRegexMarshalUnmarshalJSON(t *testing.T) {
 		}
 		if restored.Regex == nil {
 			t.Error("expected Regex to be compiled after unmarshal, got nil")
+		}
+	}
+}
+
+func TestMigrateConfiguration(t *testing.T) {
+	input := []byte(`{
+		"install_dir": "~/.local/bin",
+		"tools": {
+			"ripgrep": {
+				"owner": "BurntSushi",
+				"repository": "ripgrep",
+				"linux_asset": "linux-x86_64\\.tar\\.gz$",
+				"windows_asset": "windows-x86_64\\.zip$",
+				"description": "Faster grep",
+				"binaries": [
+					{
+						"name":"rg"
+					}
+				]
+			}
+		}
+	}`)
+
+	cfg, err := migrateConfiguration(input)
+	if err != nil {
+		t.Fatalf("migrateConfiguration() error = %v", err)
+	}
+
+	tool := cfg.Tools["ripgrep"]
+
+	if cfg.Version != currentConfigurationVersion {
+		t.Fatalf("got version %d, expected %d", cfg.Version, currentConfigurationVersion)
+	}
+
+	switch runtime.GOOS {
+	case "windows":
+		if tool.Asset.Pattern != "windows-x86_64\\.zip$" {
+			t.Fatalf("got unexpected pattern %q", tool.Asset.Pattern)
+		}
+	case "linux":
+		if tool.Asset.Pattern != "linux-x86_64\\.tar\\.gz$" {
+			t.Fatalf("got unexpected pattern %q", tool.Asset.Pattern)
 		}
 	}
 }
