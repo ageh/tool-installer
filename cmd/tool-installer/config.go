@@ -48,7 +48,7 @@ func (b *Binary) UnmarshalJSON(bytes []byte) error {
 	}
 
 	baseName := filepath.Base(result.RenameTo)
-	if baseName == "." || baseName == ".." || strings.ContainsAny(baseName, `/\`) {
+	if baseName == "." || baseName == ".." || strings.ContainsAny(result.RenameTo, `/\`) {
 		return fmt.Errorf("invalid rename_to ('%s'): must be a plain filename", b.RenameTo)
 	}
 
