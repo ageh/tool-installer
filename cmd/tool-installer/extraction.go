@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"compress/gzip"
 	"errors"
+	"fmt"
 	"io"
 	"os"
 	"path"
@@ -86,6 +87,10 @@ func extractFilesZip(rawData []byte, binaries []Binary, outputPath string) error
 		}
 	}
 
+	if extracted != toExtract {
+		return fmt.Errorf("only extracted %d of %d expected binaries", extracted, toExtract)
+	}
+
 	return nil
 }
 
@@ -142,6 +147,10 @@ func extractFilesTarGz(rawData []byte, binaries []Binary, outputPath string) err
 		if extracted == toExtract {
 			break
 		}
+	}
+
+	if extracted != toExtract {
+		return fmt.Errorf("only extracted %d of %d expected binaries", extracted, toExtract)
 	}
 
 	return nil
