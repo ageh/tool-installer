@@ -321,6 +321,55 @@ func TestAssetRegexMarshalUnmarshalJSON(t *testing.T) {
 	}
 }
 
+func TestGetSanitizedInstallationDirectory(t *testing.T) {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		t.Fatalf("unexpected error obtaining user home directory: %v", err)
+	}
+
+	t.Run("Config path tilde", func(t *testing.T) {
+		config := Configuration{InstallationDirectory: "~"}
+
+		result, err := config.getSanitizedInstallationDirectory()
+		if err != nil {
+			t.Fatalf("unexpected error from getSanitizedInstallationDirectory: %v", err)
+		}
+
+		expected := homeDir
+		if result != expected {
+			t.Errorf("got installation directory %q but expected %q", result, expected)
+		}
+	})
+
+	t.Run("Config path tilde prefix", func(t *testing.T) {
+		config := Configuration{InstallationDirectory: "~/.localbin"}
+
+		result, err := config.getSanitizedInstallationDirectory()
+		if err != nil {
+			t.Fatalf("unexpected error from getSanitizedInstallationDirectory: %v", err)
+		}
+
+		expected := filepath.Join(homeDir, ".localbin")
+		if result != expected {
+			t.Errorf("got installation directory %q but expected %q", result, expected)
+		}
+	})
+
+	t.Run("Config path other", func(t *testing.T) {
+		config := Configuration{InstallationDirectory: "/usr/bin/test"}
+
+		result, err := config.getSanitizedInstallationDirectory()
+		if err != nil {
+			t.Fatalf("unexpected error from getSanitizedInstallationDirectory: %v", err)
+		}
+
+		expected := filepath.Clean("/usr/bin/test")
+		if result != expected {
+			t.Errorf("got installation directory %q but expected %q", result, expected)
+		}
+	})
+}
+
 func TestMigrateConfiguration(t *testing.T) {
 	input := []byte(`{
 		"install_dir": "~/.local/bin",
