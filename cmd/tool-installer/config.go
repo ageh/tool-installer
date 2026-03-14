@@ -353,5 +353,5 @@ func getDefaultConfiguration() (Configuration, error) {
 		tools[name] = tmp
 	}
 
-	return Configuration{InstallationDirectory: "~/.local/bin", Tools: tools}, nil
+	return Configuration{Version: currentConfigurationVersion, InstallationDirectory: "~/.local/bin", Tools: tools}, nil
 }
