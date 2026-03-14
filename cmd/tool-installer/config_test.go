@@ -160,6 +160,13 @@ func TestAssetRegexUnmarshalJSON(t *testing.T) {
 		}
 	})
 
+	t.Run("Empty pattern", func(t *testing.T) {
+		var a AssetRegex
+		if err := json.Unmarshal([]byte(`""`), &a); err == nil {
+			t.Error("expected an error for empty regex, got nil")
+		}
+	})
+
 	var tests = []struct {
 		name          string
 		input         string
