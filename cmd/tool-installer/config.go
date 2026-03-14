@@ -72,6 +72,10 @@ func (a *AssetRegex) UnmarshalJSON(bytes []byte) error {
 		return fmt.Errorf("regex must be a string: %w", err)
 	}
 
+	if s == "" {
+		return errors.New("invalid regex pattern: must not be empty")
+	}
+
 	re, err := regexp.Compile(s)
 	if err != nil {
 		return fmt.Errorf("invalid regex %q: %w", s, err)
