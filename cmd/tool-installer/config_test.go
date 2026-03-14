@@ -4,9 +4,80 @@ package main
 
 import (
 	"encoding/json"
+	"os"
+	"path/filepath"
 	"runtime"
 	"testing"
 )
+
+const testLegacyConfig = `{
+	"install_dir": "~/.local/bin",
+	"tools": {
+		"ripgrep": {
+			"owner": "BurntSushi",
+			"repository": "ripgrep",
+			"linux_asset": "linux\\.tar\\.gz$",
+			"windows_asset": "windows\\.zip$",
+			"description": "Fast grep",
+			"binaries": [
+				{
+					"name":"rg"
+				}
+			]
+		}
+	}
+}`
+
+const testFutureConfig = `{
+	"version": 999999999,
+	"install_dir": "~/.local/bin",
+	"tools": {
+		"ripgrep": {
+			"owner": "BurntSushi",
+			"repository": "ripgrep",
+			"linux_asset": "linux\\.tar\\.gz$",
+			"description": "Fast grep",
+			"binaries": [
+				{
+					"name":"rg"
+				}
+			]
+		}
+	}
+}`
+
+const testConfig = `{
+	"version": 2,
+	"install_dir": "~/.local/bin",
+	"tools": {
+		"ripgrep": {
+			"owner": "BurntSushi",
+			"repository": "ripgrep",
+			"asset": "linux\\.tar\\.gz$",
+			"description": "Fast grep",
+			"binaries": [
+				{
+					"name":"rg"
+				}
+			]
+		}
+	}
+}`
+
+func writeTestFile(t *testing.T, path string, contents string) {
+	t.Helper()
+
+	f, err := os.Create(path)
+	if err != nil {
+		t.Fatalf("unexpected error creating file: %v", err)
+	}
+	defer f.Close()
+
+	_, err = f.WriteString(contents)
+	if err != nil {
+		t.Fatalf("unexpected error writing to file: %v", err)
+	}
+}
 
 func TestBinaryMarshalJSON(t *testing.T) {
 	cases := []struct {
@@ -324,4 +395,81 @@ func TestDefaultConfiguration(t *testing.T) {
 			t.Errorf("tool %q has no valid compiled asset regex", name)
 		}
 	}
+}
+
+func TestReadConfigurationOrCreateDefault(t *testing.T) {
+	tempDir := t.TempDir()
+
+	configPath := filepath.Join(tempDir, "config.json")
+
+	t.Run("Missing config file", func(t *testing.T) {
+		_, message, err := readConfigurationOrCreateDefault(configPath)
+		if err != nil {
+			t.Fatalf("unexpected error creating new config: %v", err)
+		}
+
+		if message == nil {
+			t.Error("expected to get a user message about the default configuration being created but got nil")
+		}
+
+		config, message, err := readConfigurationOrCreateDefault(configPath)
+		if err != nil {
+			t.Fatalf("unexpected error reading newly created default config: %v", err)
+		}
+
+		if message != nil {
+			t.Errorf("unexpected user message when reading newly created default configuration: %v", *message)
+		}
+
+		if config.Version != currentConfigurationVersion {
+			t.Errorf("unexpected version %d for newly created default configuration", config.Version)
+		}
+	})
+
+	t.Run("Legacy config file", func(t *testing.T) {
+		writeTestFile(t, configPath, testLegacyConfig)
+
+		config, message, err := readConfigurationOrCreateDefault(configPath)
+		if err != nil {
+			t.Fatalf("unexpected error reading config: %v", err)
+		}
+
+		if message == nil {
+			t.Error("expected to get a user message about the configuration being migrated but got nil")
+		}
+
+		if config.Version != currentConfigurationVersion {
+			t.Errorf("migrated configuration should have the latest version but it has %q", config.Version)
+		}
+	})
+
+	t.Run("Future config file", func(t *testing.T) {
+		writeTestFile(t, configPath, testFutureConfig)
+
+		_, message, err := readConfigurationOrCreateDefault(configPath)
+		if err == nil {
+			t.Error("expected to get an error reading invalid (future version) configuration")
+		}
+
+		if message != nil {
+			t.Errorf("unexpected user message reading invalid (future version) configuration: %v", *message)
+		}
+	})
+
+	t.Run("Normal config file", func(t *testing.T) {
+		writeTestFile(t, configPath, testConfig)
+
+		config, message, err := readConfigurationOrCreateDefault(configPath)
+		if err != nil {
+			t.Fatalf("unexpected error reading config: %v", err)
+		}
+
+		if message != nil {
+			t.Errorf("unexpected user message reading configuration: %v", *message)
+		}
+
+		if len(config.Tools) != 1 {
+			t.Errorf("expected exactly one tool in example configuration but got %d", len(config.Tools))
+		}
+	})
 }
