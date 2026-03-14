@@ -80,7 +80,7 @@ func writeTestFile(t *testing.T, path string, contents string) {
 }
 
 func TestBinaryMarshalJSON(t *testing.T) {
-	cases := []struct {
+	tests := []struct {
 		name     string
 		input    Binary
 		expected string
@@ -91,29 +91,29 @@ func TestBinaryMarshalJSON(t *testing.T) {
 		{name: "Windows exe suffix stripped", input: Binary{Name: "rg.exe"}, expected: `{"name":"rg"}`},
 	}
 
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			got, err := json.Marshal(tc.input)
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := json.Marshal(test.input)
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
 
-			if string(got) != tc.expected {
-				t.Errorf("got %q, expected %q", got, tc.expected)
+			if string(got) != test.expected {
+				t.Errorf("got %q, expected %q", got, test.expected)
 			}
 		})
 	}
 }
 
 func TestBinaryUnmarshalJSON(t *testing.T) {
-	t.Run("invalid JSON", func(t *testing.T) {
+	t.Run("Invalid JSON", func(t *testing.T) {
 		var b Binary
 		if err := json.Unmarshal([]byte(`not json`), &b); err == nil {
 			t.Error("expected an error for invalid JSON, got nil")
 		}
 	})
 
-	var tests = []struct {
+	tests := []struct {
 		name     string
 		input    string
 		expected Binary
@@ -140,28 +140,28 @@ func TestBinaryUnmarshalJSON(t *testing.T) {
 		})
 	}
 
-	t.Run("invalid name: empty string", func(t *testing.T) {
+	t.Run("Invalid name: empty string", func(t *testing.T) {
 		var b Binary
 		if err := json.Unmarshal([]byte(`{"name": ""}`), &b); err == nil {
 			t.Error("expected an error for name, got nil")
 		}
 	})
 
-	t.Run("invalid rename_to: contains period", func(t *testing.T) {
+	t.Run("Invalid rename_to: contains period", func(t *testing.T) {
 		var b Binary
 		if err := json.Unmarshal([]byte(`{"name": "rg", "rename_to": "."}`), &b); err == nil {
 			t.Error("expected an error for rename_to, got nil")
 		}
 	})
 
-	t.Run("invalid rename_to: path separator", func(t *testing.T) {
+	t.Run("Invalid rename_to: path separator", func(t *testing.T) {
 		var b Binary
 		if err := json.Unmarshal([]byte(`{"name": "rg", "rename_to": "rip/grep"}`), &b); err == nil {
 			t.Error("expected an error for rename_to, got nil")
 		}
 	})
 
-	t.Run("invalid rename_to: Windows path separator", func(t *testing.T) {
+	t.Run("Invalid rename_to: Windows path separator", func(t *testing.T) {
 		var b Binary
 		if err := json.Unmarshal([]byte(`{"name": "rg", "rename_to": "rip\\grep"}`), &b); err == nil {
 			t.Error("expected an error for rename_to, got nil")
@@ -170,12 +170,12 @@ func TestBinaryUnmarshalJSON(t *testing.T) {
 }
 
 func TestBinaryMarshalUnmarshalJSON(t *testing.T) {
-	cases := []Binary{
+	tests := []Binary{
 		{Name: "rg"},
 		{Name: "tool-installer", RenameTo: "tooli"},
 	}
 
-	for _, original := range cases {
+	for _, original := range tests {
 		data, err := json.Marshal(original)
 		if err != nil {
 			t.Fatalf("marshal failed for %+v: %v", original, err)
@@ -197,7 +197,7 @@ func TestBinaryMarshalUnmarshalJSON(t *testing.T) {
 }
 
 func TestAssetRegexMarshalJSON(t *testing.T) {
-	cases := []struct {
+	tests := []struct {
 		name     string
 		input    AssetRegex
 		expected string
@@ -210,15 +210,15 @@ func TestAssetRegexMarshalJSON(t *testing.T) {
 		},
 	}
 
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			got, err := json.Marshal(tc.input)
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := json.Marshal(test.input)
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
 
-			if string(got) != tc.expected {
-				t.Errorf("got %q, expected %q", got, tc.expected)
+			if string(got) != test.expected {
+				t.Errorf("got %q, expected %q", got, test.expected)
 			}
 		})
 	}
@@ -246,7 +246,7 @@ func TestAssetRegexUnmarshalJSON(t *testing.T) {
 		}
 	})
 
-	var tests = []struct {
+	tests := []struct {
 		name          string
 		input         string
 		expected      string
@@ -290,26 +290,34 @@ func TestAssetRegexUnmarshalJSON(t *testing.T) {
 }
 
 func TestAssetRegexMarshalUnmarshalJSON(t *testing.T) {
-	tests := []string{`windows-x86_64\.tar\.gz`, `fd-v[0-9]+\.[0-9]+\.[0-9]+-x86_64-unknown-linux-musl\.tar\.gz`}
+	tests := []struct {
+		name    string
+		pattern string
+	}{
+		{"Simple pattern", `windows-x86_64\.tar\.gz`},
+		{"Complex pattern", `fd-v[0-9]+\.[0-9]+\.[0-9]+-x86_64-unknown-linux-musl\.tar\.gz`},
+	}
 
-	for _, pattern := range tests {
-		original := AssetRegex{Pattern: pattern}
-		data, err := json.Marshal(original)
-		if err != nil {
-			t.Fatalf("marshal failed for %q: %v", pattern, err)
-		}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			original := AssetRegex{Pattern: test.pattern}
+			data, err := json.Marshal(original)
+			if err != nil {
+				t.Fatalf("marshal: %v", err)
+			}
 
-		var restored AssetRegex
-		if err := json.Unmarshal(data, &restored); err != nil {
-			t.Fatalf("unmarshal failed for %q: %v", data, err)
-		}
+			var restored AssetRegex
+			if err := json.Unmarshal(data, &restored); err != nil {
+				t.Fatalf("unmarshal failed: %v", err)
+			}
 
-		if restored.Pattern != original.Pattern {
-			t.Errorf("Pattern mismatch: got %q, expected %q", restored.Pattern, original.Pattern)
-		}
-		if restored.Regex == nil {
-			t.Error("expected Regex to be compiled after unmarshal, got nil")
-		}
+			if restored.Pattern != original.Pattern {
+				t.Errorf("pattern mismatch: got %q, expected %q", restored.Pattern, original.Pattern)
+			}
+			if restored.Regex == nil {
+				t.Error("expected regex to be compiled after unmarshal, got nil")
+			}
+		})
 	}
 }
 
@@ -332,15 +340,15 @@ func TestMigrateConfiguration(t *testing.T) {
 		}
 	}`)
 
-	cfg, err := migrateConfiguration(input)
+	config, err := migrateConfiguration(input)
 	if err != nil {
 		t.Fatalf("migrateConfiguration() error = %v", err)
 	}
 
-	tool := cfg.Tools["ripgrep"]
+	tool := config.Tools["ripgrep"]
 
-	if cfg.Version != currentConfigurationVersion {
-		t.Fatalf("got version %d, expected %d", cfg.Version, currentConfigurationVersion)
+	if config.Version != currentConfigurationVersion {
+		t.Fatalf("got version %d, expected %d", config.Version, currentConfigurationVersion)
 	}
 
 	switch runtime.GOOS {
