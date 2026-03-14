@@ -41,6 +41,10 @@ func (b *Binary) UnmarshalJSON(bytes []byte) error {
 		return fmt.Errorf("failed to parse JSON into Binary type: %w", err)
 	}
 
+	if result.Name == "" {
+		return errors.New("binary name must not be empty")
+	}
+
 	b.Name = result.Name
 
 	if result.RenameTo == "" {

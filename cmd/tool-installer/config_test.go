@@ -69,6 +69,13 @@ func TestBinaryUnmarshalJSON(t *testing.T) {
 		})
 	}
 
+	t.Run("invalid name: empty string", func(t *testing.T) {
+		var b Binary
+		if err := json.Unmarshal([]byte(`{"name": ""}`), &b); err == nil {
+			t.Error("expected an error for name, got nil")
+		}
+	})
+
 	t.Run("invalid rename_to: contains period", func(t *testing.T) {
 		var b Binary
 		if err := json.Unmarshal([]byte(`{"name": "rg", "rename_to": "."}`), &b); err == nil {
