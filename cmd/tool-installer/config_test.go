@@ -92,7 +92,7 @@ func TestBinaryUnmarshalJSON(t *testing.T) {
 
 	t.Run("invalid rename_to: Windows path separator", func(t *testing.T) {
 		var b Binary
-		if err := json.Unmarshal([]byte(`{"name": "rg", "rename_to": "rip\grep"}`), &b); err == nil {
+		if err := json.Unmarshal([]byte(`{"name": "rg", "rename_to": "rip\\grep"}`), &b); err == nil {
 			t.Error("expected an error for rename_to, got nil")
 		}
 	})
