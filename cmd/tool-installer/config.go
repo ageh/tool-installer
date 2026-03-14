@@ -305,7 +305,7 @@ func migrateConfiguration(input []byte) (Configuration, error) {
 				Binaries:    tool.Binaries,
 				Owner:       tool.Owner,
 				Repository:  tool.Repository,
-				Asset:       AssetRegex{Pattern: tool.WindowsAsset, Regex: re},
+				Asset:       AssetRegex{Pattern: tool.LinuxAsset, Regex: re},
 				Description: tool.Description,
 			}
 		}
