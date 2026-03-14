@@ -180,9 +180,7 @@ func parseConfiguration(input []byte) (Configuration, error) {
 		for name, tool := range config.Tools {
 			for i, b := range tool.Binaries {
 				config.Tools[name].Binaries[i].Name = addExeSuffix(b.Name)
-				if b.RenameTo != "" {
-					config.Tools[name].Binaries[i].RenameTo = addExeSuffix(b.RenameTo)
-				}
+				config.Tools[name].Binaries[i].RenameTo = addExeSuffix(b.RenameTo)
 			}
 		}
 	}
