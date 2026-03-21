@@ -67,11 +67,53 @@ func promptRegex(text string) string {
 
 func promptForBinary() (Binary, bool) {
 	binary := prompt("Binary name: ")
-	rename := prompt("Rename binary to (leave empty if no rename): ")
-
 	if binary == "" {
 		return Binary{}, false
 	}
 
-	return Binary{Name: binary, RenameTo: rename}, true
+	rename := prompt("Rename binary to (leave empty if no rename): ")
+
+	return Binary{Name: strings.TrimSuffix(binary, ".exe"), RenameTo: strings.TrimSuffix(rename, ".exe")}, true
+}
+
+func promptForBinaries(fileNames []string) []Binary {
+	result := make([]Binary, 0)
+
+	if len(fileNames) != 0 {
+		fmt.Println("Found some files inside the asset, please enter which ones are the binaries to add.")
+		fmt.Println("For each file, input a name if it is a binary and should be renamed, press enter if it is a binary to add without a rename, and input 's' if you want to skip the file")
+
+		for _, file := range fileNames {
+			rename := prompt(fmt.Sprintf("For file %q:", file))
+
+			if rename == "s" || rename == "S" {
+				continue
+			}
+
+			result = append(result, Binary{Name: strings.TrimSuffix(file, ".exe"), RenameTo: strings.TrimSuffix(rename, ".exe")})
+		}
+	}
+
+	if len(result) != 0 {
+		return result
+	}
+
+	fmt.Println("Please provide the binaries to extract from the asset. Pressing enter (empty binary name) will finish the process:")
+
+	binary := promptNonEmpty("Binary name: ")
+	rename := prompt("Rename binary to (leave empty if no rename): ")
+
+	result = append(result, Binary{Name: binary, RenameTo: rename})
+
+	for {
+		binary, ok := promptForBinary()
+
+		if !ok {
+			break
+		}
+
+		result = append(result, binary)
+	}
+
+	return result
 }

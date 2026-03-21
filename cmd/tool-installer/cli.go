@@ -37,11 +37,15 @@ OPTIONS:
 Use 'tooli help <command>' for more information on a specific command.
 `
 
-const addHelp = `Adds a tool to the configuration by prompting the necessary values from the user.
+const addHelp = `Adds a tool to the configuration.
+
+Expects the "owner/repository" Github slug as an argument, optionally taking a second argument which names the tool in the configuration,
+otherwise it defaults to using the repository name for the entry.
+Takes as much information about the description, asset name, and binaries from Github as possible, prompting the user if necessary.
 
 Examples:
-tooli add ripgrep
-tooli add bat`
+tooli add burntsushi/ripgrep
+tooli add burntsushi/ripgrep rg`
 
 const checkHelp = `Checks the configured tools for version updates.
 
@@ -240,7 +244,11 @@ func run() error {
 		if !hasArguments {
 			commandError = fmt.Errorf("you need to provide a tool name as the argument for 'add'")
 		} else {
-			message := app.addTool(args.commandArguments[0])
+			entryName := ""
+			if len(args.commandArguments) > 1 {
+				entryName = args.commandArguments[1]
+			}
+			message := app.addTool(args.commandArguments[0], entryName)
 			message.Print()
 		}
 	case "c", "check":

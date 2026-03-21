@@ -7,16 +7,21 @@ import (
 	"archive/zip"
 	"bytes"
 	"compress/gzip"
+	"maps"
 	"os"
 	"path/filepath"
+	"slices"
 	"testing"
 )
 
 const testBinaryContent = "definitely not an executable"
 
 var testArchiveContent = map[string][]byte{
-	"tooli":   []byte(testBinaryContent),
-	"ignored": []byte(testBinaryContent),
+	"tooli":                []byte(testBinaryContent),
+	"ignored":              []byte(testBinaryContent),
+	"README.md":            []byte(testBinaryContent),
+	"LICENSE":              []byte(testBinaryContent),
+	"completions/shell.sh": []byte(testBinaryContent),
 }
 
 var expectedBinaries = []Binary{{Name: "tooli"}}
@@ -29,7 +34,9 @@ func makeZip(t *testing.T, files map[string][]byte) []byte {
 	var buf bytes.Buffer
 	w := zip.NewWriter(&buf)
 
-	for name, content := range files {
+	keys := slices.Sorted(maps.Keys(files))
+	for _, name := range keys {
+		content := files[name]
 		f, err := w.Create(name)
 		if err != nil {
 			t.Fatalf("unexpected error creating zip entry: %v", err)
@@ -52,7 +59,9 @@ func makeTarGz(t *testing.T, files map[string][]byte) []byte {
 	gw := gzip.NewWriter(&buf)
 	tw := tar.NewWriter(gw)
 
-	for name, content := range files {
+	keys := slices.Sorted(maps.Keys(files))
+	for _, name := range keys {
+		content := files[name]
 		err := tw.WriteHeader(&tar.Header{Name: name, Size: int64(len(content)), Mode: 0755})
 		if err != nil {
 			t.Fatalf("unexpected error writing tar header: %v", err)
@@ -268,6 +277,44 @@ func TestExtractFiles(t *testing.T) {
 
 			if assetType != test.expectedType {
 				t.Errorf("wrong detected asset type: got %d but expected %d", assetType, test.expectedType)
+			}
+		})
+	}
+}
+
+func TestExtractBinaryFileNames(t *testing.T) {
+	tests := []struct {
+		name              string
+		assetNameSuffix   string
+		expectedFilenames []string
+	}{
+		{"Zip", ".zip", []string{"tooli", "ignored"}},
+		{"Tar.gz", ".tar.gz", []string{"tooli", "ignored"}},
+		{"Raw", "", []string{"tooli-windows-x86_64"}},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			assetName := "tooli-windows-x86_64" + test.assetNameSuffix
+
+			var data []byte
+			switch test.assetNameSuffix {
+			case ".zip":
+				data = makeZip(t, testArchiveContent)
+			case ".tar.gz":
+				data = makeTarGz(t, testArchiveContent)
+			default:
+				data = testArchiveContent["tooli"]
+			}
+
+			files, err := getBinaryFileNames(data, assetName)
+			if err != nil {
+				t.Fatalf("unexpected error reading fileNames: %v", err)
+			}
+
+			slices.Sort(test.expectedFilenames)
+			if !slices.Equal(files, test.expectedFilenames) {
+				t.Errorf("mismatch in extracted filenames, got %v but expected %v", files, test.expectedFilenames)
 			}
 		})
 	}

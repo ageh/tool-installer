@@ -108,9 +108,9 @@ The `timeout` parameter's default value should work fine for most tools on norma
 
 ### `add`
 
-This command allows you to easily add a new tool to the configuration without needing to edit the configuration file directly. It takes the name of the tool to add as an argument.
+This command allows you to easily add a new tool to the configuration without needing to edit the configuration file directly. It takes the Github `owner/repository` slug as an argument and optionally the name the tool should have in the configuration instead of the `repository` part as a second argument.
 
-If the name of the tool is one of the well-known tools baked into tool-installer, it will automatically be added to the configuration. Otherwise this command opens a prompt which allows you to enter the required information for the tool.
+If the name of the tool is one of the well-known tools baked into tool-installer, it will automatically be added to the configuration. If not, tool-installer will automatically try to deduce the correct asset name (regex) and binary names, prompting the user if more information is required.
 
 ### `check`
 

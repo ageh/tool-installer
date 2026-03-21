@@ -24,6 +24,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 - Asset name regex checking is now more performant
 - Colored output is disabled for any value of `NO_COLOR` instead of just `1`
 - Improved user output for different HTTP error codes
+- The `add` command now takes its argument in the form `owner/repository` and an optional second argument if the name in the configuration should be different from the repository name
+- The `add` command now tries to automatically deduce the asset and binary names as much as possible, reducing the amount of user prompts
 
 ## Fixed
 

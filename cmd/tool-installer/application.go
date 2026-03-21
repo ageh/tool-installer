@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"slices"
+	"strings"
 	"sync"
 )
 
@@ -84,7 +86,20 @@ func newApp(configPath string, timeout int) (App, []UserMessage, error) {
 	return result, messages, nil
 }
 
-func (app *App) addTool(name string) UserMessage {
+func (app *App) addTool(githubSlug string, entryName string) UserMessage {
+	parts := strings.Split(githubSlug, "/")
+	if len(parts) != 2 {
+		return UserMessage{Type: Error, Tool: "user", Content: fmt.Sprintf("%q is an invalid Github slug, expected the form 'owner/repository'", githubSlug)}
+	}
+
+	owner := parts[0]
+	repository := parts[1]
+
+	name := entryName
+	if name == "" {
+		name = repository
+	}
+
 	_, found := app.config.Tools[name]
 	if found {
 		return UserMessage{Type: Info, Tool: name, Content: "skipping addition to configuration - an entry already exists"}
@@ -106,43 +121,64 @@ func (app *App) addTool(name string) UserMessage {
 		}
 	}
 
-	fmt.Printf("Creating configuration entry for %s:\n", name)
+	var repoInfo RepositoryInfo
+	var repoError error
 
-	description := promptNonEmpty("Short description: ")
-	owner := promptNonEmpty("GitHub user/org: ")
-	repo := promptNonEmpty("Repository name: ")
+	var release Release
+	var releaseError error
 
-	assetName := promptRegex("Asset name (regex): ")
-	asset, err := stringToAssetRegex(assetName)
-	if err != nil {
-		return UserMessage{Type: Error, Tool: name, Content: fmt.Sprintf("failed to compile asset name regex: %v", err)}
+	var wg sync.WaitGroup
+
+	wg.Go(func() { repoInfo, repoError = app.downloader.downloadRepoInfo(owner, repository) })
+	wg.Go(func() { release, releaseError = app.downloader.downloadRelease(owner, repository) })
+
+	wg.Wait()
+
+	if repoError != nil {
+		return UserMessage{Type: Error, Tool: name, Content: fmt.Sprintf("failed to fetch repository info: %v", repoError)}
 	}
 
-	binary := promptNonEmpty("Binary name: ")
-	rename := prompt("Rename binary to (leave empty if no rename): ")
+	if releaseError != nil {
+		return UserMessage{Type: Error, Tool: name, Content: fmt.Sprintf("failed to fetch latest release: %v", releaseError)}
+	}
 
-	furtherEntries := prompt("Does this tool have more binaries? [y/N]: ")
+	var asset Asset
+	var assetRegex AssetRegex
 
-	binaries := []Binary{{Name: binary, RenameTo: rename}}
+	assetCandidates := matchBestAssetName(release.Assets, runtime.GOOS, runtime.GOARCH)
 
-	if furtherEntries == "y" || furtherEntries == "Y" {
-		for {
-			binary, ok := promptForBinary()
+	if len(assetCandidates) == 1 {
+		asset = assetCandidates[0].asset
+		assetRegex = assetCandidates[0].assetRegex
 
-			if !ok {
-				break
-			}
+		fmt.Printf("Automatically determined asset regex from asset name: %q\n", asset.Name)
+	} else {
+		fmt.Println("Could not determine asset name automatically.")
+		pattern := promptRegex("Enter asset regex: ")
 
-			binaries = append(binaries, binary)
+		tmp, err := stringToAssetRegex(pattern)
+		if err != nil {
+			return UserMessage{Type: Error, Tool: "tooli", Content: fmt.Sprintf("unexpected error compiling asset regex: %v", err)}
 		}
+
+		assetRegex = tmp
 	}
+
+	assetContent, err := app.downloader.downloadAsset(asset.Url)
+
+	fileNames, err := getBinaryFileNames(assetContent, asset.Name)
+	if err != nil {
+		return UserMessage{Type: Error, Tool: name, Content: fmt.Sprintf("error when trying to obtain binary file names in asset: %v", err)}
+	}
+
+	binaries := promptForBinaries(fileNames)
 
 	app.config.Tools[name] = Tool{
 		Binaries:    binaries,
 		Owner:       owner,
-		Repository:  repo,
-		Asset:       asset,
-		Description: description,
+		Repository:  repository,
+		Asset:       assetRegex,
+		Description: repoInfo.Description,
 	}
 
 	err = app.config.save(app.configLocation, false)

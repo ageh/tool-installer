@@ -2,6 +2,10 @@
 
 package main
 
+type RepositoryInfo struct {
+	Description string `json:"description"`
+}
+
 type Reactions struct {
 	PlusOne    int64  `json:"+1"`
 	MinusOne   int64  `json:"-1"`

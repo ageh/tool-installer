@@ -84,6 +84,39 @@ func (client *Downloader) newRequest(url string, requestFormat RequestFormat) (*
 	return req, nil
 }
 
+func (client *Downloader) downloadRepoInfo(owner string, repository string) (RepositoryInfo, error) {
+	url := fmt.Sprintf("https://api.github.com/repos/%s/%s", owner, repository)
+
+	var result RepositoryInfo
+
+	req, err := client.newRequest(url, rtJson)
+	if err != nil {
+		return result, err
+	}
+
+	resp, err := client.client.Do(req)
+	if err != nil {
+		return result, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return result, httpError(resp.StatusCode)
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return result, err
+	}
+
+	err = json.Unmarshal(body, &result)
+	if err != nil {
+		return result, err
+	}
+
+	return result, nil
+}
+
 func (client *Downloader) downloadRelease(owner string, repository string) (Release, error) {
 	url := fmt.Sprintf("https://api.github.com/repos/%s/%s/releases/latest", owner, repository)
 
@@ -180,9 +213,7 @@ func (client *Downloader) downloadTool(tool Tool, currentVersion string) (Downlo
 
 	asset := res[0]
 
-	assetUrl := fmt.Sprintf("https://api.github.com/repos/%s/%s/releases/assets/%d", tool.Owner, tool.Repository, asset.Id)
-
-	binaryContent, err := client.downloadAsset(assetUrl)
+	binaryContent, err := client.downloadAsset(asset.Url)
 	if err != nil {
 		return result, err
 	}

@@ -13,6 +13,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"slices"
 	"strings"
 )
 
@@ -22,6 +23,21 @@ const (
 	Archive AssetType = iota
 	RawBinary
 )
+
+var ignoredExtensions = []string{".md", ".txt", ".sh", ".bash", ".fish", ".ps1", ".bat", ".1", ".json"}
+var ignoredFiles = []string{"COPYING", "CONTRIBUTING", "CONTRIBUTORS", "NOTICE", "AUTHORS", "Makefile", "VERSION"}
+
+func isKnownNonBinaryFile(fileName string) bool {
+	if strings.HasPrefix(fileName, "_") || strings.Contains(fileName, "LICENSE") || strings.Contains(fileName, "LICENCE") {
+		return true
+	}
+
+	if slices.Contains(ignoredFiles, fileName) {
+		return true
+	}
+
+	return slices.Contains(ignoredExtensions, filepath.Ext(fileName))
+}
 
 func getRenameTarget(fullName string, binaries []Binary) string {
 	if strings.HasSuffix(fullName, "/") {
@@ -192,4 +208,82 @@ func extractFiles(rawData []byte, assetName string, binaries []Binary, outputPat
 	} else {
 		return RawBinary, extractFilesRaw(rawData, binaries, outputPath)
 	}
+}
+
+func getFilesNamesZip(rawData []byte) ([]string, error) {
+	result := make([]string, 0)
+
+	byteReader := bytes.NewReader(rawData)
+
+	zipReader, err := zip.NewReader(byteReader, int64(len(rawData)))
+	if err != nil {
+		return result, err
+	}
+
+	for _, file := range zipReader.File {
+		if strings.HasSuffix(file.Name, "/") {
+			continue
+		}
+
+		result = append(result, path.Base(file.Name))
+	}
+
+	return result, nil
+}
+
+func getFilesNamesTarGz(rawData []byte) ([]string, error) {
+	result := make([]string, 0)
+
+	byteReader := bytes.NewReader(rawData)
+
+	gzipReader, err := gzip.NewReader(byteReader)
+	if err != nil {
+		return result, err
+	}
+	defer gzipReader.Close()
+
+	tarReader := tar.NewReader(gzipReader)
+
+	for {
+		header, err := tarReader.Next()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return result, err
+		}
+
+		if strings.HasSuffix(header.Name, "/") {
+			continue
+		}
+
+		result = append(result, path.Base(header.Name))
+	}
+
+	return result, nil
+}
+
+func getBinaryFileNames(rawData []byte, assetName string) ([]string, error) {
+	var files []string
+	var err error
+
+	if strings.HasSuffix(assetName, ".tar.gz") {
+		files, err = getFilesNamesTarGz(rawData)
+	} else if strings.HasSuffix(assetName, ".zip") {
+		files, err = getFilesNamesZip(rawData)
+	} else {
+		files, err = []string{assetName}, nil
+	}
+
+	result := make([]string, 0, len(files))
+
+	for _, file := range files {
+		if isKnownNonBinaryFile(file) {
+			continue
+		}
+
+		result = append(result, file)
+	}
+
+	return result, err
 }
