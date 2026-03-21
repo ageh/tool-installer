@@ -34,8 +34,7 @@ The configuration for tool-installer is a simple JSON file with the following st
 			],
 			"owner": "owner1",
 			"repository": "repo1",
-			"linux_asset": "x86_64-unknown-linux-musl\\.tar\\.gz$",
-			"windows_asset": "x86_64-pc-windows-msvc\\.zip$",
+			"asset": "x86_64-unknown-linux-gnu\\.tar\\.gz$",
 			"description": "Very cool tool"
 		},
 		"tool2": {
@@ -47,8 +46,7 @@ The configuration for tool-installer is a simple JSON file with the following st
 			],
 			"owner": "owner2",
 			"repository": "repo2",
-			"linux_asset": "x86_64-unknown-linux-musl\\.tar\\.gz$",
-			"windows_asset": "x86_64-pc-windows-msvc\\.zip$",
+			"asset": "x86_64-unknown-linux-musl\\.tar\\.gz$",
 			"description": "A tool to do stuff"
 		}
 	}
