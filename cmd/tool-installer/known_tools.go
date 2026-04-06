@@ -644,7 +644,7 @@ var knownTools = map[string]KnownTool{
 		AssetNames: map[string]string{
 			"linux/amd64":   "codex-x86_64-unknown-linux-gnu.tar\\.gz$",
 			"linux/arm64":   standardAssetLinuxArm,
-			"windows/amd64": "codex-x86_64-pc-windows-msvc\\.exe$\\.zip$",
+			"windows/amd64": "codex-x86_64-pc-windows-msvc\\.exe\\.zip$",
 			"windows/arm64": standardAssetWindowsArm,
 			"darwin/amd64":  standardAssetApplex64,
 			"darwin/arm64":  standardAssetAppleArm,
@@ -661,7 +661,7 @@ var knownTools = map[string]KnownTool{
 			"windows/amd64": "Windows_x86_64\\.zip$",
 			"windows/arm64": "Windows_arm64\\.zip$",
 			"darwin/amd64":  "Darwin_x86_64\\.zip$",
-			"darwin/arn64":  "Darwin_arm64\\.zip$",
+			"darwin/arm64":  "Darwin_arm64\\.zip$",
 		},
 	},
 	"opencode": {
