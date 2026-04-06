@@ -33,7 +33,7 @@ func (k KnownTool) intoToolForPlatform() (Tool, error) {
 	var result = Tool{
 		Binaries:    k.Binaries,
 		Owner:       k.Owner,
-		Repository:  k.Owner,
+		Repository:  k.Repository,
 		Description: k.Description,
 		Asset:       AssetRegex{Pattern: asset, Regex: re},
 	}
