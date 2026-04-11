@@ -154,7 +154,7 @@ func (app *App) addTool(githubSlug string, entryName string) UserMessage {
 		fmt.Printf("Automatically determined asset regex from asset name: %q\n", asset.Name)
 	} else {
 		fmt.Println("Could not determine asset name automatically.")
-		pattern := promptRegex("Enter asset regex: ")
+		pattern := promptForUniqueAssetRegex(release.Assets)
 
 		tmp, err := stringToAssetRegex(pattern)
 		if err != nil {

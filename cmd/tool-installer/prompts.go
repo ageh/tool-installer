@@ -43,7 +43,7 @@ func promptNonEmpty(text string) string {
 	}
 }
 
-func promptRegex(text string) string {
+func promptRegex(text string) (*regexp.Regexp, string) {
 	fmt.Print(text)
 	reader := bufio.NewReader(os.Stdin)
 
@@ -51,14 +51,14 @@ func promptRegex(text string) string {
 		input, err := reader.ReadString('\n')
 		if err != nil {
 			fmt.Printf("Error reading input: %v\n", err)
-			return ""
+			return nil, ""
 		}
 
 		result := strings.TrimSpace(input)
 
-		_, err = regexp.Compile(result)
+		rx, err := regexp.Compile(result)
 		if err == nil {
-			return result
+			return rx, result
 		}
 
 		fmt.Print("Input must be a valid regular expression. Please try again: ")
@@ -116,4 +116,33 @@ func promptForBinaries(fileNames []string) []Binary {
 	}
 
 	return result
+}
+
+func promptForUniqueAssetRegex(assets []Asset) string {
+	assetNames := make([]string, len(assets))
+
+	for i, asset := range assets {
+		assetNames[i] = asset.Name
+	}
+
+	for {
+		regex, pattern := promptRegex("Enter asset regex: ")
+
+		matches := make([]string, 0)
+		for _, name := range assetNames {
+			if regex.MatchString(name) {
+				matches = append(matches, name)
+			}
+		}
+
+		if len(matches) == 1 {
+			return pattern
+		}
+
+		fmt.Println("The provided pattern matches more than one asset name, please be more specific.")
+		fmt.Println("The following asset names would be matched by this regex:")
+		for _, name := range matches {
+			fmt.Printf("  - %s", name)
+		}
+	}
 }
