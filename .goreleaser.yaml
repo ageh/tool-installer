@@ -9,8 +9,10 @@ builds:
     goos:
       - linux
       - windows
+      - darwin
     goarch:
       - amd64
+      - arm64
     main: ./cmd/tool-installer
     binary: tooli
     
@@ -27,13 +29,7 @@ archives:
       {{- else -}}
       {{- .Arch -}}
       {{ end }}-
-      {{- if eq .Os "windows" -}}
-      pc-windows-msvc
-      {{- else if eq .Os "linux" -}}
-      unknown-linux-gnu
-      {{- else -}}
       {{- .Os -}}
-      {{ end }}
     format_overrides:
       - goos: windows
         formats: [zip]
