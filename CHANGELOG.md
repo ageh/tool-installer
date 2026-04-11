@@ -17,6 +17,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 	- Warns if there are tools in the cache that are not in the configuration
 	- If an argument of `verbose` is provided, shows the names of the tools in the cache but not the configuration
 	- Shows the version of tool-installer and if a newer version is available
+- Sanity check to check if all binaries of a tool in the cache are on disk
 
 ### Changed
 

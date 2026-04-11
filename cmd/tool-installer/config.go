@@ -61,6 +61,14 @@ func (b *Binary) UnmarshalJSON(bytes []byte) error {
 	return nil
 }
 
+func (binary Binary) getTargetName() string {
+	if binary.RenameTo != "" {
+		return binary.RenameTo
+	}
+
+	return binary.Name
+}
+
 type AssetRegex struct {
 	Pattern string         `json:"-"`
 	Regex   *regexp.Regexp `json:"-"`

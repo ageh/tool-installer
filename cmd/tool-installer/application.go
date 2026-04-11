@@ -362,11 +362,19 @@ func (app *App) removeTools(tools []string, removeFromConfig bool) ([]UserMessag
 			continue
 		}
 
+		allBinariesExist, err := app.allBinariesExist(toolDirectory, tool)
+		if err != nil {
+			return results, err
+		}
+
+		if !allBinariesExist {
+			results = append(results, UserMessage{Type: Info, Tool: name, Content: "tool exists in the cache but one or more binaries are missing, removing stale cache entry"})
+			app.cache.remove(name)
+			continue
+		}
+
 		for _, binary := range tool.Binaries {
-			n := binary.Name
-			if binary.RenameTo != "" {
-				n = binary.RenameTo
-			}
+			n := binary.getTargetName()
 
 			path := filepath.Join(toolDirectory, n)
 			err := os.Remove(path)
@@ -423,10 +431,15 @@ func (app *App) showStatus(verbose bool) error {
 	}
 
 	configured := len(app.config.Tools)
-	installed := len(app.cache.Tools)
 
-	_, cacheOnly := app.toolsFromCache()
+	installedTools, cacheOnly, staleCache, err := app.toolsFromCache()
+	if err != nil {
+		return err
+	}
+
+	installed := len(installedTools)
 	cacheOnlyCount := len(cacheOnly)
+	staleCacheCount := len(staleCache)
 
 	versionStatus := "skipped (dev build)"
 	if version != "dev" {
@@ -447,6 +460,7 @@ func (app *App) showStatus(verbose bool) error {
 	statusTable.addRow([]string{"Configured tools", fmt.Sprintf("%d", configured)})
 	statusTable.addRow([]string{"Installed tools", fmt.Sprintf("%d", installed)})
 	statusTable.addRow([]string{"Cache-only tools", fmt.Sprintf("%d", cacheOnlyCount)})
+	statusTable.addRow([]string{"Stale cache entries", fmt.Sprintf("%d", staleCacheCount)})
 	statusTable.addRow([]string{"Current version", version})
 	statusTable.addRow([]string{"Update status", versionStatus})
 
@@ -465,23 +479,68 @@ func (app *App) showStatus(verbose bool) error {
 			colorPrintln(HintBlue, "hint: run `status verbose` to see which tools are present in the cache but not in the configuration")
 		}
 	}
+	if staleCacheCount != 0 {
+		if verbose {
+			fmt.Println("Stale cache entries:")
+			slices.Sort(staleCache)
+			for _, name := range staleCache {
+				fmt.Printf("- %s\n", name)
+			}
+		} else {
+			colorPrintln(HintBlue, "hint: run `status verbose` to see which tools are present in the cache but missing binaries on disk")
+		}
+	}
 
 	return nil
 }
 
-func (app *App) toolsFromCache() (map[string]Tool, []string) {
+func (app *App) allBinariesExist(toolDirectory string, tool Tool) (bool, error) {
+	for _, binary := range tool.Binaries {
+		path := filepath.Join(toolDirectory, binary.getTargetName())
+		_, err := os.Stat(path)
+		if err == nil {
+			continue
+		}
+
+		if os.IsNotExist(err) {
+			return false, nil
+		}
+
+		return false, fmt.Errorf("failed to stat binary '%s': %w", path, err)
+	}
+
+	return true, nil
+}
+
+func (app *App) toolsFromCache() (map[string]Tool, []string, []string, error) {
+	toolDirectory, err := app.config.getSanitizedInstallationDirectory()
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
 	tools := make(map[string]Tool, len(app.cache.Tools))
 	notFound := make([]string, 0)
+	stale := make([]string, 0)
 	for name := range app.cache.Tools {
 		tool, found := app.config.Tools[name]
 		if !found {
 			notFound = append(notFound, name)
 		} else {
+			allBinariesExist, err := app.allBinariesExist(toolDirectory, tool)
+			if err != nil {
+				return nil, nil, nil, err
+			}
+
+			if !allBinariesExist {
+				stale = append(stale, name)
+				continue
+			}
+
 			tools[name] = tool
 		}
 	}
 
-	return tools, notFound
+	return tools, notFound, stale, nil
 }
 
 func (app *App) getOutdatedTools(checkAll bool) ([]UserMessage, []ToolVersionInfo, error) {
@@ -491,11 +550,17 @@ func (app *App) getOutdatedTools(checkAll bool) ([]UserMessage, []ToolVersionInf
 	if checkAll {
 		tools = app.config.Tools
 	} else {
-		tmp, notFound := app.toolsFromCache()
+		tmp, notFound, stale, err := app.toolsFromCache()
+		if err != nil {
+			return messages, nil, err
+		}
 		tools = tmp
 
 		for _, name := range notFound {
 			messages = append(messages, UserMessage{Type: Error, Tool: name, Content: "tool exists in cache but is not in configuration"})
+		}
+		for _, name := range stale {
+			messages = append(messages, UserMessage{Type: Error, Tool: name, Content: "tool exists in cache but one or more binaries are missing on disk"})
 		}
 	}
 
