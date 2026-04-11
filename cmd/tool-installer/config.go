@@ -108,6 +108,24 @@ type Tool struct {
 	Description string     `json:"description"`
 }
 
+func (t Tool) forCurrentPlatform(goos string) Tool {
+	if goos != "windows" {
+		return t
+	}
+
+	result := t
+	result.Binaries = make([]Binary, len(t.Binaries))
+
+	for i, binary := range t.Binaries {
+		result.Binaries[i] = Binary{
+			Name:     addExeSuffix(binary.Name),
+			RenameTo: addExeSuffix(binary.RenameTo),
+		}
+	}
+
+	return result
+}
+
 type Configuration struct {
 	Version               int             `json:"version"`
 	InstallationDirectory string          `json:"install_dir"`
@@ -180,16 +198,18 @@ func parseConfiguration(input []byte) (Configuration, error) {
 		return config, fmt.Errorf("failed to parse configuration: %w", err)
 	}
 
-	if runtime.GOOS == "windows" {
-		for name, tool := range config.Tools {
-			for i, b := range tool.Binaries {
-				config.Tools[name].Binaries[i].Name = addExeSuffix(b.Name)
-				config.Tools[name].Binaries[i].RenameTo = addExeSuffix(b.RenameTo)
-			}
-		}
+	return config, nil
+}
+
+func normalizeConfiguration(config Configuration, goos string) Configuration {
+	result := config
+	result.Tools = make(map[string]Tool, len(config.Tools))
+
+	for name, tool := range config.Tools {
+		result.Tools[name] = tool.forCurrentPlatform(goos)
 	}
 
-	return config, nil
+	return result
 }
 
 func getConfigurationVersion(input []byte) (int, error) {
@@ -220,7 +240,7 @@ func readConfigurationOrCreateDefault(path string) (Configuration, *UserMessage,
 				return Configuration{}, message, fmt.Errorf("failed to write default configuration to disk: %w", err)
 			}
 
-			return config, message, nil
+			return normalizeConfiguration(config, runtime.GOOS), message, nil
 		}
 
 		return Configuration{}, message, err
@@ -248,12 +268,12 @@ func readConfigurationOrCreateDefault(path string) (Configuration, *UserMessage,
 			return Configuration{}, message, fmt.Errorf("could not save automatically migrated configuration: %w", err)
 		}
 
-		return config, message, nil
+		return normalizeConfiguration(config, runtime.GOOS), message, nil
 	}
 
 	config, err := parseConfiguration(bytes)
 
-	return config, message, err
+	return normalizeConfiguration(config, runtime.GOOS), message, err
 }
 
 type ToolV1 struct {

@@ -321,6 +321,40 @@ func TestAssetRegexMarshalUnmarshalJSON(t *testing.T) {
 	}
 }
 
+func TestToolForCurrentPlatform(t *testing.T) {
+	testTool := Tool{
+		Binaries: []Binary{
+			{Name: "rg", RenameTo: ""},
+			{Name: "fd", RenameTo: "finder"},
+		},
+	}
+
+	tests := []struct {
+		name             string
+		goos             string
+		expectedBinaries []Binary
+	}{
+		{"Windows has exe suffix", "windows", []Binary{{Name: "rg.exe", RenameTo: ""}, {Name: "fd.exe", RenameTo: "finder.exe"}}},
+		{"Non-Windows has no effect", "linux", []Binary{{Name: "rg", RenameTo: ""}, {Name: "fd", RenameTo: "finder"}}},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			result := testTool.forCurrentPlatform(test.goos)
+
+			for i := range result.Binaries {
+				if result.Binaries[i].Name != test.expectedBinaries[i].Name {
+					t.Errorf("wrong Name: got %q, expected %q", result.Binaries[0].Name, test.expectedBinaries[i].Name)
+				}
+
+				if result.Binaries[i].RenameTo != test.expectedBinaries[i].RenameTo {
+					t.Errorf("wrong RenameTo: got %q, expected %q", result.Binaries[i].RenameTo, test.expectedBinaries[i].RenameTo)
+				}
+			}
+		})
+	}
+}
+
 func TestGetSanitizedInstallationDirectory(t *testing.T) {
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
