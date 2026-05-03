@@ -15,6 +15,8 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
+
+	"github.com/ulikunitz/xz/v2"
 )
 
 type AssetType int
@@ -22,6 +24,7 @@ type AssetType int
 const (
 	ZipArchive AssetType = iota
 	TarGzArchive
+	TarXzArchive
 	RawBinary
 )
 
@@ -72,6 +75,10 @@ func extractFilesZip(rawData []byte, binaries []Binary, outputPath string) error
 	extracted := 0
 
 	for _, file := range zipReader.File {
+		if file.FileInfo().IsDir() {
+			continue
+		}
+
 		fileName := getRenameTarget(file.Name, binaries)
 		if fileName == "" {
 			continue
@@ -120,7 +127,23 @@ func extractFilesTarGz(rawData []byte, binaries []Binary, outputPath string) err
 	}
 	defer gzipReader.Close()
 
-	tarReader := tar.NewReader(gzipReader)
+	return extractFromTar(gzipReader, binaries, outputPath)
+}
+
+func extractFilesTarXz(rawData []byte, binaries []Binary, outputPath string) error {
+	byteReader := bytes.NewReader(rawData)
+
+	xzReader, err := xz.NewReader(byteReader)
+	if err != nil {
+		return err
+	}
+	defer xzReader.Close()
+
+	return extractFromTar(xzReader, binaries, outputPath)
+}
+
+func extractFromTar(uncompressReader io.Reader, binaries []Binary, outputPath string) error {
+	tarReader := tar.NewReader(uncompressReader)
 
 	toExtract := len(binaries)
 	extracted := 0
@@ -132,6 +155,10 @@ func extractFilesTarGz(rawData []byte, binaries []Binary, outputPath string) err
 		}
 		if err != nil {
 			return err
+		}
+
+		if header.Typeflag != tar.TypeReg {
+			continue
 		}
 
 		fileName := getRenameTarget(header.Name, binaries)
@@ -202,7 +229,8 @@ func extractFilesRaw(rawData []byte, binaries []Binary, outputPath string) error
 }
 
 func hasArchiveSuffix(assetName string) bool {
-	return strings.HasSuffix(assetName, ".zip") || strings.HasSuffix(assetName, ".tar.gz")
+	assetName = strings.ToLower(assetName)
+	return strings.HasSuffix(assetName, ".zip") || strings.HasSuffix(assetName, ".tar.gz") || strings.HasSuffix(assetName, ".tar.xz")
 }
 
 func isZip(rawData []byte) bool {
@@ -218,7 +246,18 @@ func isTarGz(rawData []byte) bool {
 	defer gzipReader.Close()
 
 	_, err = tar.NewReader(gzipReader).Next()
-	return err == nil || err == io.EOF
+	return err == nil
+}
+
+func isTarXz(rawData []byte) bool {
+	r, err := xz.NewReader(bytes.NewReader(rawData))
+	if err != nil {
+		return false
+	}
+	defer r.Close()
+
+	_, err = tar.NewReader(r).Next()
+	return err == nil
 }
 
 func detectAssetType(rawData []byte, assetName string) (AssetType, error) {
@@ -230,8 +269,12 @@ func detectAssetType(rawData []byte, assetName string) (AssetType, error) {
 		return TarGzArchive, nil
 	}
 
+	if isTarXz(rawData) {
+		return TarXzArchive, nil
+	}
+
 	if hasArchiveSuffix(assetName) {
-		return RawBinary, fmt.Errorf("asset %q has an archive suffix but is not a valid zip or tar.gz archive", assetName)
+		return RawBinary, fmt.Errorf("asset %q has an archive suffix but is not a valid zip, tar.gz, or tar.xz archive", assetName)
 	}
 
 	return RawBinary, nil
@@ -248,6 +291,8 @@ func extractFiles(rawData []byte, assetName string, binaries []Binary, outputPat
 		return detectedType, extractFilesZip(rawData, binaries, outputPath)
 	case TarGzArchive:
 		return detectedType, extractFilesTarGz(rawData, binaries, outputPath)
+	case TarXzArchive:
+		return detectedType, extractFilesTarXz(rawData, binaries, outputPath)
 	default:
 		return detectedType, extractFilesRaw(rawData, binaries, outputPath)
 	}
@@ -264,7 +309,7 @@ func getFilesNamesZip(rawData []byte) ([]string, error) {
 	}
 
 	for _, file := range zipReader.File {
-		if strings.HasSuffix(file.Name, "/") {
+		if file.FileInfo().IsDir() {
 			continue
 		}
 
@@ -275,17 +320,33 @@ func getFilesNamesZip(rawData []byte) ([]string, error) {
 }
 
 func getFilesNamesTarGz(rawData []byte) ([]string, error) {
-	result := make([]string, 0)
-
 	byteReader := bytes.NewReader(rawData)
 
 	gzipReader, err := gzip.NewReader(byteReader)
 	if err != nil {
-		return result, err
+		return make([]string, 0), err
 	}
 	defer gzipReader.Close()
 
-	tarReader := tar.NewReader(gzipReader)
+	return getFilesNamesFromTar(gzipReader)
+}
+
+func getFilesNamesTarXz(rawData []byte) ([]string, error) {
+	byteReader := bytes.NewReader(rawData)
+
+	xzReader, err := xz.NewReader(byteReader)
+	if err != nil {
+		return make([]string, 0), err
+	}
+	defer xzReader.Close()
+
+	return getFilesNamesFromTar(xzReader)
+}
+
+func getFilesNamesFromTar(uncompressReader io.Reader) ([]string, error) {
+	result := make([]string, 0)
+
+	tarReader := tar.NewReader(uncompressReader)
 
 	for {
 		header, err := tarReader.Next()
@@ -296,7 +357,7 @@ func getFilesNamesTarGz(rawData []byte) ([]string, error) {
 			return result, err
 		}
 
-		if strings.HasSuffix(header.Name, "/") {
+		if header.Typeflag != tar.TypeReg {
 			continue
 		}
 
@@ -319,6 +380,8 @@ func getBinaryFileNames(rawData []byte, assetName string) ([]string, error) {
 		files, err = getFilesNamesZip(rawData)
 	case TarGzArchive:
 		files, err = getFilesNamesTarGz(rawData)
+	case TarXzArchive:
+		files, err = getFilesNamesTarXz(rawData)
 	default:
 		files, err = []string{assetName}, nil
 	}

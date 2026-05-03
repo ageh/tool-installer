@@ -164,7 +164,7 @@ Please note that tool-installer supports the XDG variables on all platforms beca
 
 > Why Go?
 
-I wanted to evaluate if Go is a usable language and this project happened to fit because it is basically just doing a bunch of things which Go has a standard library package for.
+I wanted to evaluate if Go is a usable language and this project happened to fit because it is basically just doing a bunch of things which Go has a standard library package for. Since then I have decided to use a single third party dependency for handling `tar.xz` assets because unfortunately some nice tools like typst use this and it is not supported by the standard library.
 
 > Will there be support for downloading from other websites than just GitHub?
 

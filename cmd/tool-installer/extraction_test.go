@@ -12,6 +12,8 @@ import (
 	"path/filepath"
 	"slices"
 	"testing"
+
+	"github.com/ulikunitz/xz/v2"
 )
 
 const testBinaryContent = "definitely not an executable"
@@ -52,6 +54,23 @@ func makeZip(t *testing.T, files map[string][]byte) []byte {
 	return buf.Bytes()
 }
 
+func makeZipWithDirectory(t *testing.T, name string) []byte {
+	t.Helper()
+
+	var buf bytes.Buffer
+	w := zip.NewWriter(&buf)
+
+	header := &zip.FileHeader{Name: name}
+	header.SetMode(os.ModeDir | 0755)
+	if _, err := w.CreateHeader(header); err != nil {
+		t.Fatalf("unexpected error creating zip directory entry: %v", err)
+	}
+
+	w.Close()
+
+	return buf.Bytes()
+}
+
 func makeTarGz(t *testing.T, files map[string][]byte) []byte {
 	t.Helper()
 
@@ -74,6 +93,101 @@ func makeTarGz(t *testing.T, files map[string][]byte) []byte {
 
 	tw.Close()
 	gw.Close()
+
+	return buf.Bytes()
+}
+
+func makeEmptyTarGz(t *testing.T) []byte {
+	t.Helper()
+
+	var buf bytes.Buffer
+	gw := gzip.NewWriter(&buf)
+	tw := tar.NewWriter(gw)
+
+	tw.Close()
+	gw.Close()
+
+	return buf.Bytes()
+}
+
+func makeTarGzWithDirectory(t *testing.T, name string) []byte {
+	t.Helper()
+
+	var buf bytes.Buffer
+	gw := gzip.NewWriter(&buf)
+	tw := tar.NewWriter(gw)
+
+	if err := tw.WriteHeader(&tar.Header{Name: name, Typeflag: tar.TypeDir, Mode: 0755}); err != nil {
+		t.Fatalf("unexpected error writing tar directory header: %v", err)
+	}
+
+	tw.Close()
+	gw.Close()
+
+	return buf.Bytes()
+}
+
+func makeTarXz(t *testing.T, files map[string][]byte) []byte {
+	t.Helper()
+
+	var buf bytes.Buffer
+	xw, err := xz.NewWriter(&buf)
+	if err != nil {
+		t.Fatalf("unexpected error creating xz writer: %v", err)
+	}
+	tw := tar.NewWriter(xw)
+
+	keys := slices.Sorted(maps.Keys(files))
+	for _, name := range keys {
+		content := files[name]
+		err := tw.WriteHeader(&tar.Header{Name: name, Size: int64(len(content)), Mode: 0755})
+		if err != nil {
+			t.Fatalf("unexpected error writing tar header: %v", err)
+		}
+
+		if _, err := tw.Write(content); err != nil {
+			t.Fatalf("unexpected error writing tar content: %v", err)
+		}
+	}
+
+	tw.Close()
+	xw.Close()
+
+	return buf.Bytes()
+}
+
+func makeEmptyTarXz(t *testing.T) []byte {
+	t.Helper()
+
+	var buf bytes.Buffer
+	xw, err := xz.NewWriter(&buf)
+	if err != nil {
+		t.Fatalf("unexpected error creating xz writer: %v", err)
+	}
+	tw := tar.NewWriter(xw)
+
+	tw.Close()
+	xw.Close()
+
+	return buf.Bytes()
+}
+
+func makeTarXzWithDirectory(t *testing.T, name string) []byte {
+	t.Helper()
+
+	var buf bytes.Buffer
+	xw, err := xz.NewWriter(&buf)
+	if err != nil {
+		t.Fatalf("unexpected error creating xz writer: %v", err)
+	}
+	tw := tar.NewWriter(xw)
+
+	if err := tw.WriteHeader(&tar.Header{Name: name, Typeflag: tar.TypeDir, Mode: 0755}); err != nil {
+		t.Fatalf("unexpected error writing tar directory header: %v", err)
+	}
+
+	tw.Close()
+	xw.Close()
 
 	return buf.Bytes()
 }
@@ -147,6 +261,13 @@ func TestExtractFilesZip(t *testing.T) {
 			t.Error("expected error for missing binary, got nil")
 		}
 	})
+
+	t.Run("Directory does not count as extracted binary", func(t *testing.T) {
+		err := extractFilesZip(makeZipWithDirectory(t, "tooli"), expectedBinaries, t.TempDir())
+		if err == nil {
+			t.Error("expected error for directory matching binary name, got nil")
+		}
+	})
 }
 
 func TestExtractFilesTarGz(t *testing.T) {
@@ -192,6 +313,67 @@ func TestExtractFilesTarGz(t *testing.T) {
 		err := extractFilesTarGz(data, expectedBinariesMissing, t.TempDir())
 		if err == nil {
 			t.Error("expected error for missing binary, got nil")
+		}
+	})
+
+	t.Run("Directory does not count as extracted binary", func(t *testing.T) {
+		err := extractFilesTarGz(makeTarGzWithDirectory(t, "tooli"), expectedBinaries, t.TempDir())
+		if err == nil {
+			t.Error("expected error for directory matching binary name, got nil")
+		}
+	})
+}
+
+func TestExtractFilesTarXz(t *testing.T) {
+	data := makeTarXz(t, testArchiveContent)
+
+	t.Run("Extract expected binary", func(t *testing.T) {
+		outDir := t.TempDir()
+
+		err := extractFilesTarXz(data, expectedBinaries, outDir)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		result, err := os.ReadFile(filepath.Join(outDir, "tooli"))
+		if err != nil {
+			t.Fatalf("expected file not found: %v", err)
+		}
+
+		if string(result) != testBinaryContent {
+			t.Errorf("wrong file content: got %q but expected %q", result, testBinaryContent)
+		}
+	})
+
+	t.Run("Extract expected binary with rename", func(t *testing.T) {
+		outDir := t.TempDir()
+
+		err := extractFilesTarXz(data, expectedBinariesRename, outDir)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		result, err := os.ReadFile(filepath.Join(outDir, "tool-installer"))
+		if err != nil {
+			t.Fatalf("expected file not found: %v", err)
+		}
+
+		if string(result) != testBinaryContent {
+			t.Errorf("wrong file content: got %q but expected %q", result, testBinaryContent)
+		}
+	})
+
+	t.Run("Missing binary", func(t *testing.T) {
+		err := extractFilesTarXz(data, expectedBinariesMissing, t.TempDir())
+		if err == nil {
+			t.Error("expected error for missing binary, got nil")
+		}
+	})
+
+	t.Run("Directory does not count as extracted binary", func(t *testing.T) {
+		err := extractFilesTarXz(makeTarXzWithDirectory(t, "tooli"), expectedBinaries, t.TempDir())
+		if err == nil {
+			t.Error("expected error for directory matching binary name, got nil")
 		}
 	})
 }
@@ -257,10 +439,16 @@ func TestExtractFiles(t *testing.T) {
 		{"Zip content without suffix", "tooli-windows-x86_64", makeZip(t, testArchiveContent), ZipArchive, false},
 		{"Tar.gz", "tooli-windows-x86_64.tar.gz", makeTarGz(t, testArchiveContent), TarGzArchive, false},
 		{"Tar.gz content without suffix", "tooli-windows-x86_64", makeTarGz(t, testArchiveContent), TarGzArchive, false},
+		{"Tar.xz", "tooli-windows-x86_64.tar.xz", makeTarXz(t, testArchiveContent), TarXzArchive, false},
+		{"Tar.xz content without suffix", "tooli-windows-x86_64", makeTarXz(t, testArchiveContent), TarXzArchive, false},
 		{"Raw exe", "tooli-windows-x86_64.exe", testArchiveContent["tooli"], RawBinary, false},
 		{"Raw without suffix", "tooli-linux-x86_64", testArchiveContent["tooli"], RawBinary, false},
 		{"Invalid zip suffix", "tooli-windows-x86_64.zip", testArchiveContent["tooli"], RawBinary, true},
+		{"Invalid uppercase zip suffix", "tooli-windows-x86_64.ZIP", testArchiveContent["tooli"], RawBinary, true},
 		{"Invalid tar.gz suffix", "tooli-windows-x86_64.tar.gz", testArchiveContent["tooli"], RawBinary, true},
+		{"Invalid tar.xz suffix", "tooli-windows-x86_64.tar.xz", testArchiveContent["tooli"], RawBinary, true},
+		{"Empty tar.gz", "tooli-windows-x86_64.tar.gz", makeEmptyTarGz(t), RawBinary, true},
+		{"Empty tar.xz", "tooli-windows-x86_64.tar.xz", makeEmptyTarXz(t), RawBinary, true},
 	}
 
 	for _, test := range tests {
@@ -296,10 +484,16 @@ func TestExtractBinaryFileNames(t *testing.T) {
 		{"Zip content without suffix", "tooli-windows-x86_64", makeZip(t, testArchiveContent), []string{"tooli", "ignored"}, false},
 		{"Tar.gz", "tooli-windows-x86_64.tar.gz", makeTarGz(t, testArchiveContent), []string{"tooli", "ignored"}, false},
 		{"Tar.gz content without suffix", "tooli-windows-x86_64", makeTarGz(t, testArchiveContent), []string{"tooli", "ignored"}, false},
+		{"Tar.xz", "tooli-windows-x86_64.tar.xz", makeTarXz(t, testArchiveContent), []string{"tooli", "ignored"}, false},
+		{"Tar.xz content without suffix", "tooli-windows-x86_64", makeTarXz(t, testArchiveContent), []string{"tooli", "ignored"}, false},
 		{"Raw without suffix", "tooli-windows-x86_64", testArchiveContent["tooli"], []string{"tooli-windows-x86_64"}, false},
 		{"Raw exe", "tooli-windows-x86_64.exe", testArchiveContent["tooli"], []string{"tooli-windows-x86_64.exe"}, false},
 		{"Invalid zip suffix", "tooli-windows-x86_64.zip", testArchiveContent["tooli"], nil, true},
+		{"Invalid uppercase zip suffix", "tooli-windows-x86_64.ZIP", testArchiveContent["tooli"], nil, true},
 		{"Invalid tar.gz suffix", "tooli-windows-x86_64.tar.gz", testArchiveContent["tooli"], nil, true},
+		{"Invalid tar.xz suffix", "tooli-windows-x86_64.tar.xz", testArchiveContent["tooli"], nil, true},
+		{"Empty tar.gz", "tooli-windows-x86_64.tar.gz", makeEmptyTarGz(t), nil, true},
+		{"Empty tar.xz", "tooli-windows-x86_64.tar.xz", makeEmptyTarXz(t), nil, true},
 	}
 
 	for _, test := range tests {
