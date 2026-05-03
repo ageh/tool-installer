@@ -247,32 +247,34 @@ func TestExtractFilesRaw(t *testing.T) {
 
 func TestExtractFiles(t *testing.T) {
 	tests := []struct {
-		name            string
-		assetNameSuffix string
-		expectedType    AssetType
+		name         string
+		assetName    string
+		data         []byte
+		expectedType AssetType
+		shouldError  bool
 	}{
-		{"Zip", ".zip", Archive},
-		{"Tar.gz", ".tar.gz", Archive},
-		{"Raw", "", RawBinary},
+		{"Zip", "tooli-windows-x86_64.zip", makeZip(t, testArchiveContent), ZipArchive, false},
+		{"Zip content without suffix", "tooli-windows-x86_64", makeZip(t, testArchiveContent), ZipArchive, false},
+		{"Tar.gz", "tooli-windows-x86_64.tar.gz", makeTarGz(t, testArchiveContent), TarGzArchive, false},
+		{"Tar.gz content without suffix", "tooli-windows-x86_64", makeTarGz(t, testArchiveContent), TarGzArchive, false},
+		{"Raw exe", "tooli-windows-x86_64.exe", testArchiveContent["tooli"], RawBinary, false},
+		{"Raw without suffix", "tooli-linux-x86_64", testArchiveContent["tooli"], RawBinary, false},
+		{"Invalid zip suffix", "tooli-windows-x86_64.zip", testArchiveContent["tooli"], RawBinary, true},
+		{"Invalid tar.gz suffix", "tooli-windows-x86_64.tar.gz", testArchiveContent["tooli"], RawBinary, true},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			assetName := "tooli-windows-x86_64" + test.assetNameSuffix
-
-			var data []byte
-			switch test.assetNameSuffix {
-			case ".zip":
-				data = makeZip(t, testArchiveContent)
-			case ".tar.gz":
-				data = makeTarGz(t, testArchiveContent)
-			default:
-				data = testArchiveContent["tooli"]
+			assetType, err := extractFiles(test.data, test.assetName, expectedBinaries, t.TempDir())
+			if err != nil {
+				if test.shouldError {
+					return
+				}
+				t.Errorf("unexpected error extracting: %v", err)
 			}
 
-			assetType, err := extractFiles(data, assetName, expectedBinaries, t.TempDir())
-			if err != nil {
-				t.Errorf("unexpected error extracting: %v", err)
+			if test.shouldError {
+				t.Fatal("expected error but got nil")
 			}
 
 			if assetType != test.expectedType {
@@ -285,31 +287,33 @@ func TestExtractFiles(t *testing.T) {
 func TestExtractBinaryFileNames(t *testing.T) {
 	tests := []struct {
 		name              string
-		assetNameSuffix   string
+		assetName         string
+		data              []byte
 		expectedFilenames []string
+		shouldError       bool
 	}{
-		{"Zip", ".zip", []string{"tooli", "ignored"}},
-		{"Tar.gz", ".tar.gz", []string{"tooli", "ignored"}},
-		{"Raw", "", []string{"tooli-windows-x86_64"}},
+		{"Zip", "tooli-windows-x86_64.zip", makeZip(t, testArchiveContent), []string{"tooli", "ignored"}, false},
+		{"Zip content without suffix", "tooli-windows-x86_64", makeZip(t, testArchiveContent), []string{"tooli", "ignored"}, false},
+		{"Tar.gz", "tooli-windows-x86_64.tar.gz", makeTarGz(t, testArchiveContent), []string{"tooli", "ignored"}, false},
+		{"Tar.gz content without suffix", "tooli-windows-x86_64", makeTarGz(t, testArchiveContent), []string{"tooli", "ignored"}, false},
+		{"Raw without suffix", "tooli-windows-x86_64", testArchiveContent["tooli"], []string{"tooli-windows-x86_64"}, false},
+		{"Raw exe", "tooli-windows-x86_64.exe", testArchiveContent["tooli"], []string{"tooli-windows-x86_64.exe"}, false},
+		{"Invalid zip suffix", "tooli-windows-x86_64.zip", testArchiveContent["tooli"], nil, true},
+		{"Invalid tar.gz suffix", "tooli-windows-x86_64.tar.gz", testArchiveContent["tooli"], nil, true},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			assetName := "tooli-windows-x86_64" + test.assetNameSuffix
-
-			var data []byte
-			switch test.assetNameSuffix {
-			case ".zip":
-				data = makeZip(t, testArchiveContent)
-			case ".tar.gz":
-				data = makeTarGz(t, testArchiveContent)
-			default:
-				data = testArchiveContent["tooli"]
+			files, err := getBinaryFileNames(test.data, test.assetName)
+			if err != nil {
+				if test.shouldError {
+					return
+				}
+				t.Fatalf("unexpected error reading filenames: %v", err)
 			}
 
-			files, err := getBinaryFileNames(data, assetName)
-			if err != nil {
-				t.Fatalf("unexpected error reading fileNames: %v", err)
+			if test.shouldError {
+				t.Fatal("expected error but got nil")
 			}
 
 			slices.Sort(test.expectedFilenames)

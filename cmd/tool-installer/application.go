@@ -263,10 +263,10 @@ func (app *App) installTools(tools []string) ([]UserMessage, error) {
 				}
 
 				var message string
-				if assetType == Archive {
-					message = fmt.Sprintf("successfully installed version '%s' from the downloaded archive", result.tagName)
-				} else {
+				if assetType == RawBinary {
 					message = fmt.Sprintf("successfully installed version '%s' from the downloaded raw binary", result.tagName)
+				} else {
+					message = fmt.Sprintf("successfully installed version '%s' from the downloaded archive", result.tagName)
 				}
 
 				messageChannel <- UserMessage{Type: Success, Tool: name, Content: message}

@@ -20,7 +20,8 @@ import (
 type AssetType int
 
 const (
-	Archive AssetType = iota
+	ZipArchive AssetType = iota
+	TarGzArchive
 	RawBinary
 )
 
@@ -200,13 +201,55 @@ func extractFilesRaw(rawData []byte, binaries []Binary, outputPath string) error
 	return os.Chmod(filePath, 0755)
 }
 
+func hasArchiveSuffix(assetName string) bool {
+	return strings.HasSuffix(assetName, ".zip") || strings.HasSuffix(assetName, ".tar.gz")
+}
+
+func isZip(rawData []byte) bool {
+	_, err := zip.NewReader(bytes.NewReader(rawData), int64(len(rawData)))
+	return err == nil
+}
+
+func isTarGz(rawData []byte) bool {
+	gzipReader, err := gzip.NewReader(bytes.NewReader(rawData))
+	if err != nil {
+		return false
+	}
+	defer gzipReader.Close()
+
+	_, err = tar.NewReader(gzipReader).Next()
+	return err == nil || err == io.EOF
+}
+
+func detectAssetType(rawData []byte, assetName string) (AssetType, error) {
+	if isZip(rawData) {
+		return ZipArchive, nil
+	}
+
+	if isTarGz(rawData) {
+		return TarGzArchive, nil
+	}
+
+	if hasArchiveSuffix(assetName) {
+		return RawBinary, fmt.Errorf("asset %q has an archive suffix but is not a valid zip or tar.gz archive", assetName)
+	}
+
+	return RawBinary, nil
+}
+
 func extractFiles(rawData []byte, assetName string, binaries []Binary, outputPath string) (AssetType, error) {
-	if strings.HasSuffix(assetName, ".tar.gz") {
-		return Archive, extractFilesTarGz(rawData, binaries, outputPath)
-	} else if strings.HasSuffix(assetName, ".zip") {
-		return Archive, extractFilesZip(rawData, binaries, outputPath)
-	} else {
-		return RawBinary, extractFilesRaw(rawData, binaries, outputPath)
+	detectedType, err := detectAssetType(rawData, assetName)
+	if err != nil {
+		return RawBinary, err
+	}
+
+	switch detectedType {
+	case ZipArchive:
+		return detectedType, extractFilesZip(rawData, binaries, outputPath)
+	case TarGzArchive:
+		return detectedType, extractFilesTarGz(rawData, binaries, outputPath)
+	default:
+		return detectedType, extractFilesRaw(rawData, binaries, outputPath)
 	}
 }
 
@@ -265,13 +308,18 @@ func getFilesNamesTarGz(rawData []byte) ([]string, error) {
 
 func getBinaryFileNames(rawData []byte, assetName string) ([]string, error) {
 	var files []string
-	var err error
 
-	if strings.HasSuffix(assetName, ".tar.gz") {
-		files, err = getFilesNamesTarGz(rawData)
-	} else if strings.HasSuffix(assetName, ".zip") {
+	detectedType, err := detectAssetType(rawData, assetName)
+	if err != nil {
+		return nil, err
+	}
+
+	switch detectedType {
+	case ZipArchive:
 		files, err = getFilesNamesZip(rawData)
-	} else {
+	case TarGzArchive:
+		files, err = getFilesNamesTarGz(rawData)
+	default:
 		files, err = []string{assetName}, nil
 	}
 
