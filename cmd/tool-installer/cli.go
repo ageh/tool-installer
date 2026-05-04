@@ -26,6 +26,7 @@ COMMANDS:
     h,  help            Shows the help for the program or given command
     l,  list            Lists the tools in the configuration, sorted by name
     r,  remove          Uninstalls one or more tools and removes the config entries
+    s,  status          Shows config/cache paths, tool counts, and version status
     u,  update          Updates the installed tools to the latest version
 
 OPTIONS:
@@ -36,11 +37,15 @@ OPTIONS:
 Use 'tooli help <command>' for more information on a specific command.
 `
 
-const addHelp = `Adds a tool to the configuration by prompting the necessary values from the user.
+const addHelp = `Adds a tool to the configuration.
+
+Expects the "owner/repository" Github slug as an argument, optionally taking a second argument which names the tool in the configuration,
+otherwise it defaults to using the repository name for the entry.
+Takes as much information about the description, asset name, and binaries from Github as possible, prompting the user if necessary.
 
 Examples:
-tooli add ripgrep
-tooli add bat`
+tooli add burntsushi/ripgrep
+tooli add burntsushi/ripgrep rg`
 
 const checkHelp = `Checks the configured tools for version updates.
 
@@ -91,6 +96,15 @@ Examples:
 tooli remove ripgrep
 tooli remove ripgrep bat micro`
 
+const statusHelp = `Shows installation status.
+
+Displays config file, cache file, and tool installation directory paths, configured and installed tool counts, and whether a new tool-installer version is available.
+Pass 'verbose' to list tools that exist in the cache but not in the configuration.
+
+Examples:
+tooli status
+tooli status verbose`
+
 const updateHelp = `Updates all installed tools to their latest version.
 
 Examples:
@@ -116,6 +130,8 @@ func getCommandHelp(command string) string {
 		return listHelp
 	case "r", "remove":
 		return removeHelp
+	case "s", "status":
+		return statusHelp
 	case "u", "update":
 		return updateHelp
 	default:
@@ -213,14 +229,13 @@ func run() error {
 		return fmt.Errorf("failed to obtain the configuration file path: %w", err)
 	}
 
-	app, err := newApp(configPath, args.requestTimeout)
+	app, messages, err := newApp(configPath, args.requestTimeout)
 	if err != nil {
 		return err
 	}
 
-	if app.createdDefaultConfig {
-		message := UserMessage{Type: Info, Tool: "tooli", Content: "Default configuration has been created because no configuration file existed yet"}
-		message.Print()
+	for _, msg := range messages {
+		msg.Print()
 	}
 
 	var commandError error
@@ -229,7 +244,11 @@ func run() error {
 		if !hasArguments {
 			commandError = fmt.Errorf("you need to provide a tool name as the argument for 'add'")
 		} else {
-			message := app.addTool(args.commandArguments[0])
+			entryName := ""
+			if len(args.commandArguments) > 1 {
+				entryName = args.commandArguments[1]
+			}
+			message := app.addTool(args.commandArguments[0], entryName)
 			message.Print()
 		}
 	case "c", "check":
@@ -260,6 +279,9 @@ func run() error {
 			printMessages(messages)
 			commandError = err
 		}
+	case "s", "status":
+		statusVerbose := hasArguments && args.commandArguments[0] == "verbose"
+		commandError = app.showStatus(statusVerbose)
 	case "u", "update":
 		messages, err := app.updateTools()
 		printMessages(messages)

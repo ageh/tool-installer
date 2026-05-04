@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"sort"
+	"runtime"
+	"slices"
+	"strings"
 	"sync"
 )
 
@@ -31,61 +33,73 @@ func (v ToolVersionInfo) GetName() string {
 	return v.Name
 }
 
-type Named interface {
-	GetName() string
-}
+func compareNames(a string, b string) int {
+	if a < b {
+		return -1
+	}
 
-// Define a generic type that implements sort.Interface for any slice of Named
-type ByName[T Named] struct {
-	data []T
-}
+	if a > b {
+		return 1
+	}
 
-func (array ByName[T]) Len() int {
-	return len(array.data)
-}
-
-func (array ByName[T]) Less(i int, j int) bool {
-	return array.data[i].GetName() < array.data[j].GetName()
-}
-
-func (array ByName[T]) Swap(i int, j int) {
-	array.data[i], array.data[j] = array.data[j], array.data[i]
+	return 0
 }
 
 type App struct {
-	downloader           Downloader
-	config               Configuration
-	cache                Cache
-	configLocation       string
-	createdDefaultConfig bool
+	downloader     Downloader
+	config         Configuration
+	cache          Cache
+	configLocation string
 }
 
-func newApp(configPath string, timeout int) (App, error) {
+func newApp(configPath string, timeout int) (App, []UserMessage, error) {
 	var result App
+	messages := make([]UserMessage, 0)
 
-	config, defaulted, err := readConfigurationOrCreateDefault(configPath)
+	config, message, err := readConfigurationOrCreateDefault(configPath)
 	if err != nil {
-		return result, fmt.Errorf("could not obtain configuration: %w", err)
+		return result, messages, fmt.Errorf("could not obtain configuration: %w", err)
 	}
 
-	result.createdDefaultConfig = defaulted
+	if message != nil {
+		messages = append(messages, *message)
+	}
+
 	result.config = config
 
 	cache, err := getCache()
 	if err != nil {
-		return result, fmt.Errorf("could not obtain cache: %w", err)
+		return result, messages, fmt.Errorf("could not obtain cache: %w", err)
 	}
 
 	result.cache = cache
 
-	result.downloader = newDownloader(timeout)
+	downloader, message := newDownloader(timeout)
+	if message != nil {
+		messages = append(messages, *message)
+	}
+
+	result.downloader = downloader
 
 	result.configLocation = configPath
 
-	return result, nil
+	return result, messages, nil
 }
 
-func (app *App) addTool(name string) UserMessage {
+func (app *App) addTool(githubSlug string, entryName string) UserMessage {
+	parts := strings.Split(githubSlug, "/")
+	if len(parts) != 2 {
+		return UserMessage{Type: Error, Tool: "user", Content: fmt.Sprintf("%q is an invalid Github slug, expected the form 'owner/repository'", githubSlug)}
+	}
+
+	owner := parts[0]
+	repository := parts[1]
+
+	name := entryName
+	if name == "" {
+		name = repository
+	}
+
 	_, found := app.config.Tools[name]
 	if found {
 		return UserMessage{Type: Info, Tool: name, Content: "skipping addition to configuration - an entry already exists"}
@@ -93,8 +107,13 @@ func (app *App) addTool(name string) UserMessage {
 
 	tool, found := knownTools[name]
 	if found {
-		app.config.Tools[name] = tool
-		err := app.config.save(app.configLocation, false)
+		tmp, err := tool.intoToolForPlatform()
+		if err != nil {
+			return UserMessage{Type: Error, Tool: name, Content: fmt.Sprintf("error obtaining known tool: %v", err)}
+		}
+
+		app.config.Tools[name] = tmp
+		err = app.config.save(app.configLocation, false)
 		if err != nil {
 			return UserMessage{Type: Error, Tool: name, Content: "failed to write configuration to disk"}
 		} else {
@@ -102,44 +121,67 @@ func (app *App) addTool(name string) UserMessage {
 		}
 	}
 
-	fmt.Printf("Creating configuration entry for %s:\n", name)
+	var repoInfo RepositoryInfo
+	var repoError error
 
-	description := promptNonEmpty("Short description: ")
-	owner := promptNonEmpty("GitHub user/org: ")
-	repo := promptNonEmpty("Repository name: ")
+	var release Release
+	var releaseError error
 
-	windows := promptRegex("Windows asset name (regex): ")
-	linux := promptRegex("Linux asset name (regex): ")
+	var wg sync.WaitGroup
 
-	binary := promptNonEmpty("Binary name: ")
-	rename := prompt("Rename binary to (leave empty if no rename): ")
+	wg.Go(func() { repoInfo, repoError = app.downloader.downloadRepoInfo(owner, repository) })
+	wg.Go(func() { release, releaseError = app.downloader.downloadRelease(owner, repository) })
 
-	furtherEntries := prompt("Does this tool have more binaries? [y/N]: ")
+	wg.Wait()
 
-	binaries := []Binary{{Name: binary, RenameTo: rename}}
-
-	if furtherEntries == "y" || furtherEntries == "Y" {
-		for {
-			binary, ok := promptForBinary()
-
-			if !ok {
-				break
-			}
-
-			binaries = append(binaries, binary)
-		}
+	if repoError != nil {
+		return UserMessage{Type: Error, Tool: name, Content: fmt.Sprintf("failed to fetch repository info: %v", repoError)}
 	}
+
+	if releaseError != nil {
+		return UserMessage{Type: Error, Tool: name, Content: fmt.Sprintf("failed to fetch latest release: %v", releaseError)}
+	}
+
+	var asset Asset
+	var assetRegex AssetRegex
+
+	assetCandidates := matchBestAssetName(release.Assets, runtime.GOOS, runtime.GOARCH)
+
+	if len(assetCandidates) == 1 {
+		asset = assetCandidates[0].asset
+		assetRegex = assetCandidates[0].assetRegex
+
+		fmt.Printf("Automatically determined asset regex from asset name: %q\n", asset.Name)
+	} else {
+		fmt.Println("Could not determine asset name automatically.")
+		pattern := promptForUniqueAssetRegex(release.Assets)
+
+		tmp, err := stringToAssetRegex(pattern)
+		if err != nil {
+			return UserMessage{Type: Error, Tool: "tooli", Content: fmt.Sprintf("unexpected error compiling asset regex: %v", err)}
+		}
+
+		assetRegex = tmp
+	}
+
+	assetContent, err := app.downloader.downloadAsset(asset.Url)
+
+	fileNames, err := getBinaryFileNames(assetContent, asset.Name)
+	if err != nil {
+		return UserMessage{Type: Error, Tool: name, Content: fmt.Sprintf("error when trying to obtain binary file names in asset: %v", err)}
+	}
+
+	binaries := promptForBinaries(fileNames)
 
 	app.config.Tools[name] = Tool{
-		Binaries:     binaries,
-		Owner:        owner,
-		Repository:   repo,
-		LinuxAsset:   linux,
-		WindowsAsset: windows,
-		Description:  description,
+		Binaries:    binaries,
+		Owner:       owner,
+		Repository:  repository,
+		Asset:       assetRegex,
+		Description: repoInfo.Description,
 	}
 
-	err := app.config.save(app.configLocation, false)
+	err = app.config.save(app.configLocation, false)
 	if err != nil {
 		return UserMessage{Type: Error, Tool: name, Content: "failed to write configuration to disk"}
 	} else {
@@ -221,10 +263,10 @@ func (app *App) installTools(tools []string) ([]UserMessage, error) {
 				}
 
 				var message string
-				if assetType == Archive {
-					message = fmt.Sprintf("successfully installed version '%s' from the downloaded archive", result.tagName)
-				} else {
+				if assetType == RawBinary {
 					message = fmt.Sprintf("successfully installed version '%s' from the downloaded raw binary", result.tagName)
+				} else {
+					message = fmt.Sprintf("successfully installed version '%s' from the downloaded archive", result.tagName)
 				}
 
 				messageChannel <- UserMessage{Type: Success, Tool: name, Content: message}
@@ -274,7 +316,9 @@ func (app *App) listTools(longList bool) error {
 		i++
 	}
 
-	sort.Sort(ByName[ToolInfo]{tmp})
+	slices.SortFunc(tmp, func(a ToolInfo, b ToolInfo) int {
+		return compareNames(a.Name, b.Name)
+	})
 
 	var builder TableBuilder
 
@@ -318,11 +362,19 @@ func (app *App) removeTools(tools []string, removeFromConfig bool) ([]UserMessag
 			continue
 		}
 
+		allBinariesExist, err := app.allBinariesExist(toolDirectory, tool)
+		if err != nil {
+			return results, err
+		}
+
+		if !allBinariesExist {
+			results = append(results, UserMessage{Type: Info, Tool: name, Content: "tool exists in the cache but one or more binaries are missing, removing stale cache entry"})
+			app.cache.remove(name)
+			continue
+		}
+
 		for _, binary := range tool.Binaries {
-			n := binary.Name
-			if binary.RenameTo != "" {
-				n = binary.RenameTo
-			}
+			n := binary.getTargetName()
 
 			path := filepath.Join(toolDirectory, n)
 			err := os.Remove(path)
@@ -367,21 +419,149 @@ func (app *App) updateTools() ([]UserMessage, error) {
 	return messages, err
 }
 
-func (app *App) toolsFromCache() map[string]Tool {
-	tools := make(map[string]Tool, len(app.cache.Tools))
-	for name := range app.cache.Tools {
-		tools[name] = app.config.Tools[name]
+func (app *App) showStatus(verbose bool) error {
+	cachePath, err := getCacheFilePath()
+	if err != nil {
+		return fmt.Errorf("failed to obtain the cache file path: %w", err)
 	}
 
-	return tools
+	installPath, err := app.config.getSanitizedInstallationDirectory()
+	if err != nil {
+		return fmt.Errorf("failed to obtain the installation path: %w", err)
+	}
+
+	configured := len(app.config.Tools)
+
+	installedTools, cacheOnly, staleCache, err := app.toolsFromCache()
+	if err != nil {
+		return err
+	}
+
+	installed := len(installedTools)
+	cacheOnlyCount := len(cacheOnly)
+	staleCacheCount := len(staleCache)
+
+	versionStatus := "skipped (dev build)"
+	if version != "dev" {
+		release, err := app.downloader.downloadRelease("ageh", "tool-installer")
+		if err != nil {
+			versionStatus = fmt.Sprintf("check failed (%v)", err)
+		} else if release.TagName == version {
+			versionStatus = "up to date"
+		} else {
+			versionStatus = fmt.Sprintf("new version %s available", release.TagName)
+		}
+	}
+
+	statusTable := newTableBuilder([]string{"Field", "Value"})
+	statusTable.addRow([]string{"Configuration file path", app.configLocation})
+	statusTable.addRow([]string{"Cache file path", cachePath})
+	statusTable.addRow([]string{"Tool installation directory", installPath})
+	statusTable.addRow([]string{"Configured tools", fmt.Sprintf("%d", configured)})
+	statusTable.addRow([]string{"Installed tools", fmt.Sprintf("%d", installed)})
+	statusTable.addRow([]string{"Cache-only tools", fmt.Sprintf("%d", cacheOnlyCount)})
+	statusTable.addRow([]string{"Stale cache entries", fmt.Sprintf("%d", staleCacheCount)})
+	statusTable.addRow([]string{"Current version", version})
+	statusTable.addRow([]string{"Update status", versionStatus})
+
+	fmt.Print(statusTable.build())
+	if installed > configured {
+		colorPrintln(WarningYellow, "warning: installed tool count exceeds configured tool count")
+	}
+	if cacheOnlyCount != 0 {
+		if verbose {
+			fmt.Println("Cache-only tools:")
+			slices.Sort(cacheOnly)
+			for _, name := range cacheOnly {
+				fmt.Printf("- %s\n", name)
+			}
+		} else {
+			colorPrintln(HintBlue, "hint: run `status verbose` to see which tools are present in the cache but not in the configuration")
+		}
+	}
+	if staleCacheCount != 0 {
+		if verbose {
+			fmt.Println("Stale cache entries:")
+			slices.Sort(staleCache)
+			for _, name := range staleCache {
+				fmt.Printf("- %s\n", name)
+			}
+		} else {
+			colorPrintln(HintBlue, "hint: run `status verbose` to see which tools are present in the cache but missing binaries on disk")
+		}
+	}
+
+	return nil
+}
+
+func (app *App) allBinariesExist(toolDirectory string, tool Tool) (bool, error) {
+	for _, binary := range tool.Binaries {
+		path := filepath.Join(toolDirectory, binary.getTargetName())
+		_, err := os.Stat(path)
+		if err == nil {
+			continue
+		}
+
+		if os.IsNotExist(err) {
+			return false, nil
+		}
+
+		return false, fmt.Errorf("failed to stat binary '%s': %w", path, err)
+	}
+
+	return true, nil
+}
+
+func (app *App) toolsFromCache() (map[string]Tool, []string, []string, error) {
+	toolDirectory, err := app.config.getSanitizedInstallationDirectory()
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	tools := make(map[string]Tool, len(app.cache.Tools))
+	notFound := make([]string, 0)
+	stale := make([]string, 0)
+	for name := range app.cache.Tools {
+		tool, found := app.config.Tools[name]
+		if !found {
+			notFound = append(notFound, name)
+		} else {
+			allBinariesExist, err := app.allBinariesExist(toolDirectory, tool)
+			if err != nil {
+				return nil, nil, nil, err
+			}
+
+			if !allBinariesExist {
+				stale = append(stale, name)
+				continue
+			}
+
+			tools[name] = tool
+		}
+	}
+
+	return tools, notFound, stale, nil
 }
 
 func (app *App) getOutdatedTools(checkAll bool) ([]UserMessage, []ToolVersionInfo, error) {
+	messages := make([]UserMessage, 0)
+
 	var tools map[string]Tool
 	if checkAll {
 		tools = app.config.Tools
 	} else {
-		tools = app.toolsFromCache()
+		tmp, notFound, stale, err := app.toolsFromCache()
+		if err != nil {
+			return messages, nil, err
+		}
+		tools = tmp
+
+		for _, name := range notFound {
+			messages = append(messages, UserMessage{Type: Error, Tool: name, Content: "tool exists in cache but is not in configuration"})
+		}
+		for _, name := range stale {
+			messages = append(messages, UserMessage{Type: Error, Tool: name, Content: "tool exists in cache but one or more binaries are missing on disk"})
+		}
 	}
 
 	var wg sync.WaitGroup
@@ -407,7 +587,6 @@ func (app *App) getOutdatedTools(checkAll bool) ([]UserMessage, []ToolVersionInf
 	}()
 
 	result := make([]ToolVersionInfo, 0)
-	messages := make([]UserMessage, 0)
 
 	for r := range results {
 		if r.Installed != r.Available {
@@ -419,7 +598,9 @@ func (app *App) getOutdatedTools(checkAll bool) ([]UserMessage, []ToolVersionInf
 		messages = append(messages, m)
 	}
 
-	sort.Sort(ByName[ToolVersionInfo]{result})
+	slices.SortFunc(result, func(a ToolVersionInfo, b ToolVersionInfo) int {
+		return compareNames(a.Name, b.Name)
+	})
 
 	return messages, result, nil
 }

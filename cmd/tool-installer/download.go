@@ -11,9 +11,11 @@ import (
 	"net/http"
 	"os"
 	"regexp"
-	"runtime"
+	"strings"
 	"time"
 )
+
+var checksumRegex = regexp.MustCompile(`(?i)\.(sha(\d+)?(sum)?|md5(sum)?|checksums\.txt)$`)
 
 type Downloader struct {
 	client      http.Client
@@ -34,20 +36,28 @@ const (
 	rtBinary
 )
 
-const rateLimitText = `got non-OK status code '%v'.
-
-This most likely means that you hit Github's API rate limit. To increase the number of requests you can make, set the 'GITHUB_TOKEN' environment variable`
-
 func createUserAgent() string {
 	return "ageh/tool-installer-" + version
 }
 
-func newDownloader(timeoutSeconds int) Downloader {
+func httpError(statusCode int) error {
+	if statusCode == http.StatusForbidden || statusCode == http.StatusTooManyRequests {
+		return fmt.Errorf("HTTP status %d: GitHub API rate limit is likely hit, check if you have set the `GITHUB_TOKEN` environment variable", statusCode)
+	}
+
+	return fmt.Errorf("unexpected HTTP status: %d", statusCode)
+}
+
+func newDownloader(timeoutSeconds int) (Downloader, *UserMessage) {
 	githubToken := os.Getenv("GITHUB_TOKEN")
 
 	res := Downloader{client: http.Client{Timeout: time.Duration(timeoutSeconds) * time.Second}, githubToken: githubToken}
 
-	return res
+	if githubToken == "" {
+		return res, &UserMessage{Type: Info, Tool: "tooli", Content: "GITHUB_TOKEN is not set in the environment variables, consider setting it to avoid rate limiting"}
+	}
+
+	return res, nil
 }
 
 func (client *Downloader) newRequest(url string, requestFormat RequestFormat) (*http.Request, error) {
@@ -68,10 +78,43 @@ func (client *Downloader) newRequest(url string, requestFormat RequestFormat) (*
 	userAgent := createUserAgent()
 	req.Header.Add("User-Agent", userAgent)
 	if client.githubToken != "" {
-		req.Header.Add("Authorization", fmt.Sprintf("token %s", client.githubToken))
+		req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", client.githubToken))
 	}
 
 	return req, nil
+}
+
+func (client *Downloader) downloadRepoInfo(owner string, repository string) (RepositoryInfo, error) {
+	url := fmt.Sprintf("https://api.github.com/repos/%s/%s", owner, repository)
+
+	var result RepositoryInfo
+
+	req, err := client.newRequest(url, rtJson)
+	if err != nil {
+		return result, err
+	}
+
+	resp, err := client.client.Do(req)
+	if err != nil {
+		return result, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return result, httpError(resp.StatusCode)
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return result, err
+	}
+
+	err = json.Unmarshal(body, &result)
+	if err != nil {
+		return result, err
+	}
+
+	return result, nil
 }
 
 func (client *Downloader) downloadRelease(owner string, repository string) (Release, error) {
@@ -91,7 +134,7 @@ func (client *Downloader) downloadRelease(owner string, repository string) (Rele
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return result, fmt.Errorf(rateLimitText, resp.StatusCode)
+		return result, httpError(resp.StatusCode)
 	}
 
 	body, err := io.ReadAll(resp.Body)
@@ -122,7 +165,7 @@ func (client *Downloader) downloadAsset(url string) ([]byte, error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return result, fmt.Errorf(rateLimitText, resp.StatusCode)
+		return result, httpError(resp.StatusCode)
 	}
 
 	result, err = io.ReadAll(resp.Body)
@@ -145,30 +188,13 @@ func (client *Downloader) downloadTool(tool Tool, currentVersion string) (Downlo
 		return result, nil
 	}
 
-	var assetName string
-	switch os := runtime.GOOS; os {
-	case "linux":
-		assetName = tool.LinuxAsset
-	case "windows":
-		assetName = tool.WindowsAsset
-	default:
-		return result, fmt.Errorf("the platform '%s' is not supported", os)
-	}
-
-	if assetName == "" {
-		return result, errors.New("no asset name provided for the current platform")
-	}
-
-	checksumRegex, _ := regexp.Compile(`(?i)\.(sha256(sum)?|sha512(sum)?|sha1(sum)?|md5(sum)?|checksums\.txt)$`)
-
 	var res []Asset
 	for _, a := range release.Assets {
 		if checksumRegex.MatchString(a.Name) {
 			continue
 		}
 
-		matched, _ := regexp.MatchString(assetName, a.Name)
-		if matched {
+		if tool.Asset.Regex.MatchString(a.Name) {
 			res = append(res, a)
 		}
 	}
@@ -176,15 +202,18 @@ func (client *Downloader) downloadTool(tool Tool, currentVersion string) (Downlo
 	if len(res) == 0 {
 		return result, errors.New("could not find a matching asset. Did you forget to include one in the config?")
 	}
+
 	if len(res) > 1 {
-		return result, errors.New("found two or more matching assets. Please be more specific")
+		assets := make([]string, 0)
+		for _, a := range res {
+			assets = append(assets, a.Name)
+		}
+		return result, fmt.Errorf("found two or more matching assets (%v). Please be more specific", strings.Join(assets, ", "))
 	}
 
 	asset := res[0]
 
-	assetUrl := fmt.Sprintf("https://api.github.com/repos/%s/%s/releases/assets/%d", tool.Owner, tool.Repository, asset.Id)
-
-	binaryContent, err := client.downloadAsset(assetUrl)
+	binaryContent, err := client.downloadAsset(asset.Url)
 	if err != nil {
 		return result, err
 	}

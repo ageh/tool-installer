@@ -2,9 +2,44 @@
 
 All notable changes to this project will be documented in this file.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [4.0.0] - 2026-05-04
+
+### Added
+
+- If two or more matching assets are found, the names are now shown to the user so the configuration can be updated more easily
+- The user is informed about tools that exist in the cache but are not present in the configuration
+- Configuration now has a version number (for the configuration)
+- New `status` command:
+	- Shows config, cache, and installation paths
+	- Shows the number of tools in the configuration and how many are installed (based on cache entries)
+	- Warns if there are tools in the cache that are not in the configuration
+	- If an argument of `verbose` is provided, shows the names of the tools in the cache but not the configuration
+	- Shows the version of tool-installer and if a newer version is available
+- Sanity check to check if all binaries of a tool in the cache are on disk
+- Ability to handle `tar.xz` assets
+
+### Changed
+
+- BREAKING: The configuration now only contains a single `asset` entry for the asset name instead of having an entry per supported platform. This will allow more platforms to be supported in the future. Old configurations will automatically be transformed into the new format.
+- Asset name regex checking is now more performant
+- Colored output is disabled for any value of `NO_COLOR` instead of just `1`
+- Improved user output for different HTTP error codes
+- The `add` command now takes its argument in the form `owner/repository` and an optional second argument if the name in the configuration should be different from the repository name
+- The `add` command now tries to automatically deduce the asset and binary names as much as possible, reducing the amount of user prompts
+
+## Fixed
+
+- Asset regex validity checks are now performed on all platforms instead of just Windows
+- Removed invalid paragraphs from README which still described asset name regexes as suffixes
+- Improved wording in README wording and fixed typos
+
+## Removed
+
+- File listing third party licenses as none are used and the one for the compiler is not required
 
 ## [3.0.0] - 2025-12-23
 

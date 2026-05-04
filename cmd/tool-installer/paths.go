@@ -14,6 +14,10 @@ const cacheFileName = "tool-versions.json"
 const configFileName = "config.json"
 
 func addExeSuffix(fileName string) string {
+	if fileName == "" {
+		return fileName
+	}
+
 	if !strings.HasSuffix(fileName, ".exe") {
 		return fileName + ".exe"
 	}

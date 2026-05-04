@@ -14,35 +14,128 @@ import (
 	"strings"
 )
 
+const currentConfigurationVersion = 2
+
 type Binary struct {
-	Name     string `json:"name"`
-	RenameTo string `json:"rename_to"`
+	Name     string `json:"-"`
+	RenameTo string `json:"-"`
 }
 
-func (binary *Binary) MarshalJSON() ([]byte, error) {
-	if binary == nil {
-		return []byte("null"), nil
-	}
-
-	return json.Marshal(&struct {
+func (binary Binary) MarshalJSON() ([]byte, error) {
+	return json.Marshal(struct {
 		Name     string `json:"name"`
-		RenameTo string `json:"rename_to"`
+		RenameTo string `json:"rename_to,omitempty"`
 	}{
 		Name:     strings.TrimSuffix(binary.Name, ".exe"),
 		RenameTo: strings.TrimSuffix(binary.RenameTo, ".exe"),
 	})
 }
 
+func (b *Binary) UnmarshalJSON(bytes []byte) error {
+	var result struct {
+		Name     string `json:"name"`
+		RenameTo string `json:"rename_to,omitempty"`
+	}
+
+	if err := json.Unmarshal(bytes, &result); err != nil {
+		return fmt.Errorf("failed to parse JSON into Binary type: %w", err)
+	}
+
+	if result.Name == "" {
+		return errors.New("binary name must not be empty")
+	}
+
+	b.Name = result.Name
+
+	if result.RenameTo == "" {
+		return nil
+	}
+
+	baseName := filepath.Base(result.RenameTo)
+	if baseName == "." || baseName == ".." || strings.ContainsAny(result.RenameTo, `/\`) {
+		return fmt.Errorf("invalid rename_to ('%s'): must be a plain filename", b.RenameTo)
+	}
+
+	b.RenameTo = result.RenameTo
+
+	return nil
+}
+
+func (binary Binary) getTargetName() string {
+	if binary.RenameTo != "" {
+		return binary.RenameTo
+	}
+
+	return binary.Name
+}
+
+type AssetRegex struct {
+	Pattern string         `json:"-"`
+	Regex   *regexp.Regexp `json:"-"`
+}
+
+func (a AssetRegex) MarshalJSON() ([]byte, error) {
+	return json.Marshal(a.Pattern)
+}
+
+func (a *AssetRegex) UnmarshalJSON(bytes []byte) error {
+	var s string
+	if err := json.Unmarshal(bytes, &s); err != nil {
+		return fmt.Errorf("regex must be a string: %w", err)
+	}
+
+	if s == "" {
+		return errors.New("invalid regex pattern: must not be empty")
+	}
+
+	re, err := regexp.Compile(s)
+	if err != nil {
+		return fmt.Errorf("invalid regex %q: %w", s, err)
+	}
+
+	a.Pattern = s
+	a.Regex = re
+
+	return nil
+}
+
+func stringToAssetRegex(input string) (AssetRegex, error) {
+	re, err := regexp.Compile(input)
+	if err != nil {
+		return AssetRegex{}, err
+	}
+
+	return AssetRegex{Pattern: input, Regex: re}, nil
+}
+
 type Tool struct {
-	Binaries     []Binary `json:"binaries"`
-	Owner        string   `json:"owner"`
-	Repository   string   `json:"repository"`
-	LinuxAsset   string   `json:"linux_asset"`
-	WindowsAsset string   `json:"windows_asset"`
-	Description  string   `json:"description"`
+	Binaries    []Binary   `json:"binaries"`
+	Owner       string     `json:"owner"`
+	Repository  string     `json:"repository"`
+	Asset       AssetRegex `json:"asset"`
+	Description string     `json:"description"`
+}
+
+func (t Tool) forCurrentPlatform(goos string) Tool {
+	if goos != "windows" {
+		return t
+	}
+
+	result := t
+	result.Binaries = make([]Binary, len(t.Binaries))
+
+	for i, binary := range t.Binaries {
+		result.Binaries[i] = Binary{
+			Name:     addExeSuffix(binary.Name),
+			RenameTo: addExeSuffix(binary.RenameTo),
+		}
+	}
+
+	return result
 }
 
 type Configuration struct {
+	Version               int             `json:"version"`
 	InstallationDirectory string          `json:"install_dir"`
 	Tools                 map[string]Tool `json:"tools"`
 }
@@ -60,58 +153,6 @@ func (c *Configuration) getSanitizedInstallationDirectory() (string, error) {
 	} else {
 		return filepath.Clean(c.InstallationDirectory), nil
 	}
-}
-
-func parseConfiguration(input []byte) (Configuration, error) {
-	var config Configuration
-
-	err := json.Unmarshal(input, &config)
-	if err != nil {
-		return config, fmt.Errorf("failed to parse configuration: %w", err)
-	}
-
-	if runtime.GOOS == "windows" {
-		for name, tool := range config.Tools {
-			_, err := regexp.Compile(tool.WindowsAsset)
-			if err != nil {
-				return config, fmt.Errorf("error in Windows asset regex for tool '%s': %w", name, err)
-			}
-			_, err = regexp.Compile(tool.LinuxAsset)
-			if err != nil {
-				return config, fmt.Errorf("error in Linux asset regex for tool '%s': %w", name, err)
-			}
-
-			for i, b := range tool.Binaries {
-				config.Tools[name].Binaries[i].Name = addExeSuffix(b.Name)
-				if b.RenameTo != "" {
-					config.Tools[name].Binaries[i].RenameTo = addExeSuffix(b.RenameTo)
-				}
-			}
-		}
-	}
-
-	return config, nil
-}
-
-func readConfigurationOrCreateDefault(path string) (Configuration, bool, error) {
-	bytes, err := os.ReadFile(path)
-	if err != nil {
-		if errors.Is(err, fs.ErrNotExist) {
-			config := getDefaultConfiguration()
-			err := config.save(path, false)
-			if err != nil {
-				return Configuration{}, true, fmt.Errorf("failed to write default configuration to disk: %w", err)
-			}
-
-			return config, true, nil
-		}
-
-		return Configuration{}, false, err
-	}
-
-	config, err := parseConfiguration(bytes)
-
-	return config, false, err
 }
 
 func (config *Configuration) save(path string, promptOverride bool) error {
@@ -157,6 +198,158 @@ func (config *Configuration) save(path string, promptOverride bool) error {
 	return nil
 }
 
+func parseConfiguration(input []byte) (Configuration, error) {
+	var config Configuration
+
+	err := json.Unmarshal(input, &config)
+	if err != nil {
+		return config, fmt.Errorf("failed to parse configuration: %w", err)
+	}
+
+	return config, nil
+}
+
+func normalizeConfiguration(config Configuration, goos string) Configuration {
+	result := config
+	result.Tools = make(map[string]Tool, len(config.Tools))
+
+	for name, tool := range config.Tools {
+		result.Tools[name] = tool.forCurrentPlatform(goos)
+	}
+
+	return result
+}
+
+func getConfigurationVersion(input []byte) (int, error) {
+	var versionTester struct {
+		Version int `json:"version"`
+	}
+
+	if err := json.Unmarshal(input, &versionTester); err != nil {
+		return -1, err
+	}
+
+	return versionTester.Version, nil
+}
+
+func readConfigurationOrCreateDefault(path string) (Configuration, *UserMessage, error) {
+	var message *UserMessage = nil
+	bytes, err := os.ReadFile(path)
+	if err != nil {
+		if errors.Is(err, fs.ErrNotExist) {
+			config, err := getDefaultConfiguration()
+			message = &UserMessage{Type: Info, Tool: "tooli", Content: "Default configuration has been created because no configuration file existed yet"}
+			if err != nil {
+				return Configuration{}, message, err
+			}
+
+			err = config.save(path, false)
+			if err != nil {
+				return Configuration{}, message, fmt.Errorf("failed to write default configuration to disk: %w", err)
+			}
+
+			return normalizeConfiguration(config, runtime.GOOS), message, nil
+		}
+
+		return Configuration{}, message, err
+	}
+
+	version, err := getConfigurationVersion(bytes)
+	if err != nil {
+		return Configuration{}, message, fmt.Errorf("failed to obtain configuration version: %w", err)
+	}
+
+	if version > currentConfigurationVersion {
+		return Configuration{}, message, fmt.Errorf("invalid version (%d), the latest supported configuration version is %d", version, currentConfigurationVersion)
+	}
+
+	if version < currentConfigurationVersion {
+		config, err := migrateConfiguration(bytes)
+		if err != nil {
+			return Configuration{}, message, err
+		}
+
+		message = &UserMessage{Type: Info, Tool: "tooli", Content: "Configuration has been automatically migrated from the old format, please check it"}
+
+		err = config.save(path, false)
+		if err != nil {
+			return Configuration{}, message, fmt.Errorf("could not save automatically migrated configuration: %w", err)
+		}
+
+		return normalizeConfiguration(config, runtime.GOOS), message, nil
+	}
+
+	config, err := parseConfiguration(bytes)
+
+	return normalizeConfiguration(config, runtime.GOOS), message, err
+}
+
+type ToolV1 struct {
+	Binaries     []Binary `json:"binaries"`
+	Owner        string   `json:"owner"`
+	Repository   string   `json:"repository"`
+	LinuxAsset   string   `json:"linux_asset"`
+	WindowsAsset string   `json:"windows_asset"`
+	Description  string   `json:"description"`
+}
+
+type ConfigurationV1 struct {
+	InstallationDirectory string            `json:"install_dir"`
+	Tools                 map[string]ToolV1 `json:"tools"`
+}
+
+func migrateConfiguration(input []byte) (Configuration, error) {
+	var oldConfig ConfigurationV1
+
+	err := json.Unmarshal(input, &oldConfig)
+	if err != nil {
+		return Configuration{}, fmt.Errorf("failed to parse old configuration: %w", err)
+	}
+
+	var result = Configuration{
+		Version:               currentConfigurationVersion,
+		InstallationDirectory: oldConfig.InstallationDirectory,
+		Tools:                 make(map[string]Tool),
+	}
+
+	switch runtime.GOOS {
+	case "windows":
+		for name, tool := range oldConfig.Tools {
+			re, err := regexp.Compile(tool.WindowsAsset)
+			if err != nil {
+				return Configuration{}, fmt.Errorf("invalid Windows asset in old configuration for tool '%s': %w", name, err)
+			}
+
+			result.Tools[name] = Tool{
+				Binaries:    tool.Binaries,
+				Owner:       tool.Owner,
+				Repository:  tool.Repository,
+				Asset:       AssetRegex{Pattern: tool.WindowsAsset, Regex: re},
+				Description: tool.Description,
+			}
+		}
+	case "linux":
+		for name, tool := range oldConfig.Tools {
+			re, err := regexp.Compile(tool.LinuxAsset)
+			if err != nil {
+				return Configuration{}, fmt.Errorf("invalid Linux asset in old configuration for tool '%s': %w", name, err)
+			}
+
+			result.Tools[name] = Tool{
+				Binaries:    tool.Binaries,
+				Owner:       tool.Owner,
+				Repository:  tool.Repository,
+				Asset:       AssetRegex{Pattern: tool.LinuxAsset, Regex: re},
+				Description: tool.Description,
+			}
+		}
+	default:
+		return Configuration{}, errors.New("failed to convert old configuration, this platform was not supported in the old format")
+	}
+
+	return result, nil
+}
+
 var defaultTools = []string{
 	"bat",
 	"bun",
@@ -178,16 +371,21 @@ var defaultTools = []string{
 	"uv",
 }
 
-func getDefaultConfiguration() Configuration {
+func getDefaultConfiguration() (Configuration, error) {
 	tools := make(map[string]Tool)
 	for _, name := range defaultTools {
 		tool, found := knownTools[name]
 		if !found {
-			panic(fmt.Sprintf("Could not find default tool '%s' in known tools", name))
+			return Configuration{}, fmt.Errorf("could not find default tool '%s' in known tools", name)
 		}
 
-		tools[name] = tool
+		tmp, err := tool.intoToolForPlatform()
+		if err != nil {
+			return Configuration{}, fmt.Errorf("failed to obtain tool from known tools: %w", err)
+		}
+
+		tools[name] = tmp
 	}
 
-	return Configuration{InstallationDirectory: "~/.local/bin", Tools: tools}
+	return Configuration{Version: currentConfigurationVersion, InstallationDirectory: "~/.local/bin", Tools: tools}, nil
 }
