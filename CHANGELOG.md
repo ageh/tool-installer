@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 ## [Unreleased]
 
+## [4.0.0] - 2026-05-04
+
 ### Added
 
 - If two or more matching assets are found, the names are now shown to the user so the configuration can be updated more easily
