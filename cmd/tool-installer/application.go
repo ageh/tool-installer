@@ -19,18 +19,10 @@ type ToolInfo struct {
 	Version     string
 }
 
-func (t ToolInfo) GetName() string {
-	return t.Name
-}
-
 type ToolVersionInfo struct {
 	Name      string
 	Installed string
 	Available string
-}
-
-func (v ToolVersionInfo) GetName() string {
-	return v.Name
 }
 
 type App struct {
