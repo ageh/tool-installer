@@ -253,6 +253,9 @@ func run() error {
 		}
 	case "c", "check":
 		checkAll := hasArguments && args.commandArguments[0] == "all"
+		if hasArguments && !checkAll {
+			return fmt.Errorf("unknown argument '%s' for 'check'", args.commandArguments[0])
+		}
 		messages, err := app.checkToolVersions(checkAll)
 		printMessages(messages)
 		commandError = err
@@ -270,6 +273,9 @@ func run() error {
 		commandError = err
 	case "l", "list":
 		listLong := hasArguments && args.commandArguments[0] == "long"
+		if hasArguments && !listLong {
+			return fmt.Errorf("unknown argument '%s' for 'list'", args.commandArguments[0])
+		}
 		commandError = app.listTools(listLong)
 	case "r", "remove":
 		if !hasArguments {
@@ -281,6 +287,9 @@ func run() error {
 		}
 	case "s", "status":
 		statusVerbose := hasArguments && args.commandArguments[0] == "verbose"
+		if hasArguments && !statusVerbose {
+			return fmt.Errorf("unknown argument '%s' for 'status'", args.commandArguments[0])
+		}
 		commandError = app.showStatus(statusVerbose)
 	case "u", "update":
 		messages, err := app.updateTools()
