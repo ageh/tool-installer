@@ -281,18 +281,13 @@ func (app *App) installTools(tools []string) ([]UserMessage, error) {
 }
 
 func (app *App) listTools(longList bool) error {
-	cache, err := getCache()
-	if err != nil {
-		return err
-	}
-
 	tmp := make([]ToolInfo, len(app.config.Tools))
 
 	i := 0
 	for k, v := range app.config.Tools {
 		tmp[i] = ToolInfo{Name: k, Link: fmt.Sprintf("%s/%s", v.Owner, v.Repository), Description: v.Description, Version: ""}
 
-		if version, found := cache.Tools[k]; found {
+		if version, found := app.cache.Tools[k]; found {
 			tmp[i].Version = version
 		}
 
