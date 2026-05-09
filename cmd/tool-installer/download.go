@@ -26,7 +26,7 @@ type DownloadResult struct {
 	data      []byte
 	assetName string
 	tagName   string
-	updated   bool
+	upToDate  bool
 }
 
 type RequestFormat int
@@ -184,7 +184,7 @@ func (client *Downloader) downloadTool(tool Tool, currentVersion string) (Downlo
 	}
 
 	if currentVersion == release.TagName {
-		result.updated = true
+		result.upToDate = true
 		return result, nil
 	}
 

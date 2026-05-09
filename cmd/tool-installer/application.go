@@ -256,7 +256,7 @@ func (app *App) installTools(tools []string) ([]UserMessage, error) {
 			result, err := app.downloader.downloadTool(tool, currentVersion)
 			if err != nil {
 				messageChannel <- UserMessage{Type: Error, Tool: name, Content: fmt.Sprintf("failed to download tool: %v\n", err)}
-			} else if result.updated {
+			} else if result.upToDate {
 				messageChannel <- UserMessage{Type: Info, Tool: name, Content: "skipping download - already up to date"}
 			} else {
 				assetType, err := extractFiles(result.data, result.assetName, tool.Binaries, toolDirectory)
