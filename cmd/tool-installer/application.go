@@ -33,18 +33,6 @@ func (v ToolVersionInfo) GetName() string {
 	return v.Name
 }
 
-func compareNames(a string, b string) int {
-	if a < b {
-		return -1
-	}
-
-	if a > b {
-		return 1
-	}
-
-	return 0
-}
-
 type App struct {
 	downloader     Downloader
 	config         Configuration
@@ -320,7 +308,7 @@ func (app *App) listTools(longList bool) error {
 	}
 
 	slices.SortFunc(tmp, func(a ToolInfo, b ToolInfo) int {
-		return compareNames(a.Name, b.Name)
+		return strings.Compare(a.Name, b.Name)
 	})
 
 	var builder TableBuilder
@@ -602,7 +590,7 @@ func (app *App) getOutdatedTools(checkAll bool) ([]UserMessage, []ToolVersionInf
 	}
 
 	slices.SortFunc(result, func(a ToolVersionInfo, b ToolVersionInfo) int {
-		return compareNames(a.Name, b.Name)
+		return strings.Compare(a.Name, b.Name)
 	})
 
 	return messages, result, nil
