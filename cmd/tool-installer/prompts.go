@@ -139,7 +139,7 @@ func promptForUniqueAssetRegex(assets []Asset) string {
 			return pattern
 		}
 
-		fmt.Println("The provided pattern matches more than one asset name, please be more specific.")
+		fmt.Println("The provided pattern does not match exactly one asset. Please be more specific.")
 		fmt.Println("The following asset names would be matched by this regex:")
 		for _, name := range matches {
 			fmt.Printf("  - %s", name)

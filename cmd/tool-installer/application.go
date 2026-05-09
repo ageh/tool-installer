@@ -165,6 +165,9 @@ func (app *App) addTool(githubSlug string, entryName string) UserMessage {
 	}
 
 	assetContent, err := app.downloader.downloadAsset(asset.Url)
+	if err != nil {
+		return UserMessage{Type: Error, Tool: name, Content: fmt.Sprintf("error when trying to download asset: %v", err)}
+	}
 
 	fileNames, err := getBinaryFileNames(assetContent, asset.Name)
 	if err != nil {
