@@ -78,7 +78,7 @@ func (client *Downloader) newRequest(url string, requestFormat RequestFormat) (*
 	userAgent := createUserAgent()
 	req.Header.Add("User-Agent", userAgent)
 	if client.githubToken != "" {
-		req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", client.githubToken))
+		req.Header.Add("Authorization", "Bearer "+client.githubToken)
 	}
 
 	return req, nil

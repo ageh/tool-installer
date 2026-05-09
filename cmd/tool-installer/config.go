@@ -233,7 +233,7 @@ func getConfigurationVersion(input []byte) (int, error) {
 }
 
 func readConfigurationOrCreateDefault(path string) (Configuration, *UserMessage, error) {
-	var message *UserMessage = nil
+	var message *UserMessage
 	bytes, err := os.ReadFile(path)
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
