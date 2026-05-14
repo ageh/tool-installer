@@ -14,5 +14,6 @@ type Asset struct {
 
 type Release struct {
 	Assets  []Asset `json:"assets"`
+	Name    string  `json:"name"`
 	TagName string  `json:"tag_name"`
 }

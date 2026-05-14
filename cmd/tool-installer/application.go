@@ -424,10 +424,10 @@ func (app *App) showStatus(verbose bool) error {
 		release, err := app.downloader.downloadRelease("ageh", "tool-installer")
 		if err != nil {
 			versionStatus = fmt.Sprintf("check failed (%v)", err)
-		} else if release.TagName == version {
+		} else if release.Name == version {
 			versionStatus = "up to date"
 		} else {
-			versionStatus = fmt.Sprintf("new version %s available", release.TagName)
+			versionStatus = fmt.Sprintf("new version %s available", release.Name)
 		}
 	}
 

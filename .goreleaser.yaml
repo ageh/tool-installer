@@ -35,6 +35,7 @@ archives:
         formats: [zip]
 
 release:
+  name_template: "{{ .Version }}"
   footer: >-
 
     ---
