@@ -53,7 +53,7 @@ type UserMessage struct {
 	Content string
 }
 
-func (m *UserMessage) Print() {
+func (m UserMessage) Print() {
 	switch m.Type {
 	case Success:
 		colorPrintln(SuccessGreen, fmt.Sprintf("%s: %s", m.Tool, m.Content))

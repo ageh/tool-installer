@@ -194,27 +194,25 @@ func (app *App) checkToolVersions(checkAll bool) ([]UserMessage, error) {
 	return messages, nil
 }
 
-func (app *App) installTools(tools []string) ([]UserMessage, error) {
+func (app *App) installTools(tools []string) error {
 	toolDirectory, err := app.config.getSanitizedInstallationDirectory()
 	if err != nil {
-		return nil, fmt.Errorf("failed to obtain installation path: %w", err)
+		return fmt.Errorf("failed to obtain installation path: %w", err)
 	}
 
 	err = makeOutputDirectory(toolDirectory)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	var toInstall map[string]Tool
-
-	messages := make([]UserMessage, 0)
 
 	if len(tools) > 0 {
 		toInstall = make(map[string]Tool, len(tools))
 		for _, name := range tools {
 			tool, found := app.config.Tools[name]
 			if !found {
-				messages = append(messages, UserMessage{Type: Error, Tool: name, Content: "tool not found in the configuration"})
+				UserMessage{Type: Error, Tool: name, Content: "tool not found in the configuration"}.Print()
 				continue
 			}
 
@@ -225,59 +223,54 @@ func (app *App) installTools(tools []string) ([]UserMessage, error) {
 	}
 
 	var wg sync.WaitGroup
-
-	messageChannel := make(chan UserMessage, len(toInstall))
-	versionInfoChannel := make(chan ToolVersionInfo, len(toInstall))
+	messageChannel := make(chan UserMessage)
+	var mu sync.Mutex
 
 	for name, tool := range toInstall {
+		currentVersion := app.cache.Tools[name]
 		wg.Go(func() {
-			currentVersion := app.cache.Tools[name]
-
 			result, err := app.downloader.downloadTool(tool, currentVersion)
 			if err != nil {
 				messageChannel <- UserMessage{Type: Error, Tool: name, Content: fmt.Sprintf("failed to download tool: %v\n", err)}
-			} else if result.upToDate {
-				messageChannel <- UserMessage{Type: Info, Tool: name, Content: "skipping download - already up to date"}
-			} else {
-				assetType, err := extractFiles(result.data, result.assetName, tool.Binaries, toolDirectory)
-				if err != nil {
-					messageChannel <- UserMessage{Type: Error, Tool: name, Content: fmt.Sprintf("failed to extract files: %v", err)}
-					return
-				}
-
-				var message string
-				if assetType == RawBinary {
-					message = fmt.Sprintf("successfully installed version '%s' from the downloaded raw binary", result.tagName)
-				} else {
-					message = fmt.Sprintf("successfully installed version '%s' from the downloaded archive", result.tagName)
-				}
-
-				messageChannel <- UserMessage{Type: Success, Tool: name, Content: message}
-				versionInfoChannel <- ToolVersionInfo{Name: name, Installed: result.tagName}
+				return
 			}
+
+			if result.upToDate {
+				messageChannel <- UserMessage{Type: Info, Tool: name, Content: "skipping download - already up to date"}
+				return
+			}
+
+			assetType, err := extractFiles(result.data, result.assetName, tool.Binaries, toolDirectory)
+			if err != nil {
+				messageChannel <- UserMessage{Type: Error, Tool: name, Content: fmt.Sprintf("failed to extract files: %v", err)}
+				return
+			}
+
+			var content string
+			if assetType == RawBinary {
+				content = fmt.Sprintf("successfully installed version '%s' from the downloaded raw binary", result.tagName)
+			} else {
+				content = fmt.Sprintf("successfully installed version '%s' from the downloaded archive", result.tagName)
+			}
+
+			messageChannel <- UserMessage{Type: Success, Tool: name, Content: content}
+
+			mu.Lock()
+			app.cache.add(name, result.tagName)
+			mu.Unlock()
 		})
 	}
 
 	go func() {
 		wg.Wait()
 		close(messageChannel)
-		close(versionInfoChannel)
 	}()
 
 	for m := range messageChannel {
-		messages = append(messages, m)
+		m.Print()
 	}
 
-	for info := range versionInfoChannel {
-		app.cache.add(info.Name, info.Installed)
-	}
-
-	err = app.cache.writeCache()
-	if err != nil {
-		return messages, err
-	}
-
-	return messages, nil
+	return app.cache.writeCache()
 }
 
 func (app *App) listTools(longList bool) error {
@@ -391,8 +384,7 @@ func (app *App) updateTools() ([]UserMessage, error) {
 		tools[i] = tmp.Name
 	}
 
-	installMessages, err := app.installTools(tools)
-	messages = append(messages, installMessages...)
+	err = app.installTools(tools)
 
 	return messages, err
 }

@@ -268,9 +268,7 @@ func run() error {
 			commandError = err
 		}
 	case "i", "install":
-		messages, err := app.installTools(args.commandArguments)
-		printMessages(messages)
-		commandError = err
+		commandError = app.installTools(args.commandArguments)
 	case "l", "list":
 		listLong := hasArguments && args.commandArguments[0] == "long"
 		if hasArguments && !listLong {
