@@ -543,38 +543,23 @@ func (app *App) getOutdatedTools(checkAll bool) ([]UserMessage, []ToolVersionInf
 	}
 
 	var wg sync.WaitGroup
-
-	results := make(chan ToolVersionInfo, len(tools))
-	messageChannel := make(chan UserMessage, len(tools))
+	var mu sync.Mutex
+	var result []ToolVersionInfo
 
 	for name, tool := range tools {
 		wg.Go(func() {
 			release, err := app.downloader.downloadRelease(tool.Owner, tool.Repository)
+			mu.Lock()
+			defer mu.Unlock()
 			if err != nil {
-				messageChannel <- UserMessage{Type: Error, Tool: name, Content: fmt.Sprintf("failed to download release info: %v", err)}
-			} else {
-				results <- ToolVersionInfo{Name: name, Installed: app.cache.Tools[name], Available: release.TagName}
+				messages = append(messages, UserMessage{Type: Error, Tool: name, Content: fmt.Sprintf("failed to download release info: %v", err)})
+			} else if app.cache.Tools[name] != release.TagName {
+				result = append(result, ToolVersionInfo{Name: name, Installed: app.cache.Tools[name], Available: release.TagName})
 			}
 		})
 	}
 
-	go func() {
-		wg.Wait()
-		close(results)
-		close(messageChannel)
-	}()
-
-	result := make([]ToolVersionInfo, 0)
-
-	for r := range results {
-		if r.Installed != r.Available {
-			result = append(result, r)
-		}
-	}
-
-	for m := range messageChannel {
-		messages = append(messages, m)
-	}
+	wg.Wait()
 
 	slices.SortFunc(result, func(a ToolVersionInfo, b ToolVersionInfo) int {
 		return strings.Compare(a.Name, b.Name)
