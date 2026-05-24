@@ -73,7 +73,7 @@ func promptForBinary() (Binary, bool) {
 
 	rename := prompt("Rename binary to (leave empty if no rename): ")
 
-	return Binary{Name: strings.TrimSuffix(binary, ".exe"), RenameTo: strings.TrimSuffix(rename, ".exe")}, true
+	return Binary{Name: stripExeSuffix(binary), RenameTo: stripExeSuffix(rename)}, true
 }
 
 func promptForBinaries(fileNames []string) []Binary {
@@ -90,7 +90,7 @@ func promptForBinaries(fileNames []string) []Binary {
 				continue
 			}
 
-			result = append(result, Binary{Name: strings.TrimSuffix(file, ".exe"), RenameTo: strings.TrimSuffix(rename, ".exe")})
+			result = append(result, Binary{Name: stripExeSuffix(file), RenameTo: stripExeSuffix(rename)})
 		}
 	}
 

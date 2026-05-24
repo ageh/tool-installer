@@ -25,6 +25,10 @@ func addExeSuffix(fileName string) string {
 	return fileName
 }
 
+func stripExeSuffix(fileName string) string {
+	return strings.TrimSuffix(fileName, ".exe")
+}
+
 func getCacheFilePath() (string, error) {
 	if cacheDir := os.Getenv("TOOLI_CACHE_DIRECTORY"); cacheDir != "" {
 		return filepath.Clean(filepath.Join(cacheDir, cacheFileName)), nil

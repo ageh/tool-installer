@@ -26,8 +26,8 @@ func (binary Binary) MarshalJSON() ([]byte, error) {
 		Name     string `json:"name"`
 		RenameTo string `json:"rename_to,omitempty"`
 	}{
-		Name:     strings.TrimSuffix(binary.Name, ".exe"),
-		RenameTo: strings.TrimSuffix(binary.RenameTo, ".exe"),
+		Name:     stripExeSuffix(binary.Name),
+		RenameTo: stripExeSuffix(binary.RenameTo),
 	})
 }
 

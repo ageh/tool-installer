@@ -30,6 +30,28 @@ func TestAddExeSuffix(t *testing.T) {
 	}
 }
 
+func TestStripExeSuffix(t *testing.T) {
+	var tests = []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{"No suffix", "ripgrep", "ripgrep"},
+		{"With suffix", "ripgrep.exe", "ripgrep"},
+		{"Empty string", "", ""},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			result := stripExeSuffix(test.input)
+
+			if result != test.expected {
+				t.Errorf("stripExeSuffix failed, got %q, expected %q", result, test.expected)
+			}
+		})
+	}
+}
+
 func TestGetCacheFilePath(t *testing.T) {
 	t.Run("Tooli environment variable set", func(t *testing.T) {
 		t.Setenv("TOOLI_CACHE_DIRECTORY", "/tooli/cache")
