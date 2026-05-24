@@ -126,15 +126,6 @@ func (a *AssetRegex) UnmarshalJSON(bytes []byte) error {
 	return nil
 }
 
-func stringToAssetRegex(input string) (AssetRegex, error) {
-	re, err := regexp.Compile(input)
-	if err != nil {
-		return AssetRegex{}, err
-	}
-
-	return AssetRegex{Pattern: input, Regex: re}, nil
-}
-
 type Tool struct {
 	Binaries    []Binary   `json:"binaries"`
 	Owner       string     `json:"owner"`

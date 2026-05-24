@@ -125,7 +125,7 @@ func promptForBinaries(fileNames []string) []Binary {
 	return result
 }
 
-func promptForUniqueAssetRegex(assets []Asset) string {
+func promptForUniqueAssetRegex(assets []Asset) (Asset, AssetRegex) {
 	assetNames := make([]string, len(assets))
 
 	for i, asset := range assets {
@@ -135,21 +135,24 @@ func promptForUniqueAssetRegex(assets []Asset) string {
 	for {
 		regex, pattern := promptRegex("Enter asset regex: ")
 
-		matches := make([]string, 0)
-		for _, name := range assetNames {
+		matches := make([]int, 0)
+		for i, name := range assetNames {
 			if regex.MatchString(name) {
-				matches = append(matches, name)
+				matches = append(matches, i)
 			}
 		}
 
-		if len(matches) == 1 {
-			return pattern
-		}
-
-		fmt.Println("The provided pattern does not match exactly one asset. Please be more specific.")
-		fmt.Println("The following asset names would be matched by this regex:")
-		for _, name := range matches {
-			fmt.Printf("  - %s\n", name)
+		switch len(matches) {
+		case 0:
+			fmt.Println("The provided pattern does not match any asset. Please try again.")
+		case 1:
+			return assets[matches[0]], AssetRegex{Pattern: pattern, Regex: regex}
+		default:
+			fmt.Println("The provided pattern matches more than one asset. Please be more specific.")
+			fmt.Println("The following asset names would be matched by this regex:")
+			for _, i := range matches {
+				fmt.Printf("  - %s\n", assetNames[i])
+			}
 		}
 	}
 }

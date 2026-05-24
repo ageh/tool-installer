@@ -134,14 +134,7 @@ func (app *App) addTool(githubSlug string, entryName string) UserMessage {
 		fmt.Printf("Automatically determined asset regex from asset name: %q\n", asset.Name)
 	} else {
 		fmt.Println("Could not determine asset name automatically.")
-		pattern := promptForUniqueAssetRegex(release.Assets)
-
-		tmp, err := stringToAssetRegex(pattern)
-		if err != nil {
-			return UserMessage{Type: Error, Tool: name, Content: fmt.Sprintf("unexpected error compiling asset regex: %v", err)}
-		}
-
-		assetRegex = tmp
+		asset, assetRegex = promptForUniqueAssetRegex(release.Assets)
 	}
 
 	assetContent, err := app.downloader.downloadAsset(asset.Url)

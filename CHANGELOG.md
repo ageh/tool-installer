@@ -16,6 +16,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 - Version comparison for showing if an update is available
 - Handle overlooked error when downloading asset
+- Fix error in prompting for asset if autodetection fails
 
 ## [4.0.0] - 2026-05-04
 
