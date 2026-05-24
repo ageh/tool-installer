@@ -4,7 +4,9 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 )
@@ -61,7 +63,7 @@ func getCache() (Cache, error) {
 		return result, fmt.Errorf("error getting cache path: %w", err)
 	}
 
-	if _, err := os.Stat(filePath); os.IsNotExist(err) {
+	if _, err := os.Stat(filePath); errors.Is(err, fs.ErrNotExist) {
 		return result, nil
 	} else if err != nil {
 		return result, fmt.Errorf("error getting cache file stats: %w", err)

@@ -146,7 +146,7 @@ func extractFromTar(uncompressReader io.Reader, binaries []Binary, outputPath st
 
 	for {
 		header, err := tarReader.Next()
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			break
 		}
 		if err != nil {
@@ -316,7 +316,7 @@ func getFilesNamesTarGz(rawData []byte) ([]string, error) {
 
 	gzipReader, err := gzip.NewReader(byteReader)
 	if err != nil {
-		return make([]string, 0), err
+		return nil, err
 	}
 	defer gzipReader.Close()
 
@@ -328,7 +328,7 @@ func getFilesNamesTarXz(rawData []byte) ([]string, error) {
 
 	xzReader, err := xz.NewReader(byteReader)
 	if err != nil {
-		return make([]string, 0), err
+		return nil, err
 	}
 	defer xzReader.Close()
 
@@ -342,7 +342,7 @@ func getFilesNamesFromTar(uncompressReader io.Reader) ([]string, error) {
 
 	for {
 		header, err := tarReader.Next()
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			break
 		}
 		if err != nil {

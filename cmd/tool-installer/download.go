@@ -204,9 +204,9 @@ func (client *Downloader) downloadTool(tool Tool, currentVersion string) (Downlo
 	}
 
 	if len(res) > 1 {
-		assets := make([]string, 0)
-		for _, a := range res {
-			assets = append(assets, a.Name)
+		assets := make([]string, len(res))
+		for i, a := range res {
+			assets[i] = a.Name
 		}
 		return result, fmt.Errorf("found two or more matching assets (%v). Please be more specific", strings.Join(assets, ", "))
 	}

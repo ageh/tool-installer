@@ -45,7 +45,7 @@ const standardAssetLinuxArm = "aarch64-unknown-linux-gnu\\.tar\\.gz$"
 const standardAssetLinuxMuslArm = "aarch64-unknown-linux-musl\\.tar\\.gz$"
 const standardAssetLinuxx64 = "x86_64-unknown-linux-gnu\\.tar\\.gz$"
 const standardAssetLinuxMuslx64 = "x86_64-unknown-linux-musl\\.tar\\.gz$"
-const standardAssetWindowsArm = "aarch-pc-windows-msvc\\.zip$"
+const standardAssetWindowsArm = "aarch64-pc-windows-msvc\\.zip$"
 const standardAssetWindowsx64 = "x86_64-pc-windows-msvc\\.zip$"
 const standardAssetWindowsGnux64 = "x86_64-pc-windows-gnu\\.zip$"
 const standardAssetAppleArm = "aarch64-apple-darwin\\.tar\\.gz$"
@@ -336,7 +336,7 @@ var knownTools = map[string]KnownTool{
 		Binaries:    []Binary{{Name: "lune"}},
 		Owner:       "lune-org",
 		Repository:  "lune",
-		Description: "A standalone Luau runtime ",
+		Description: "A standalone Luau runtime",
 		AssetNames: map[string]string{
 			"linux/amd64":   "linux-x86_64\\.zip$",
 			"linux/arm64":   "linux-aarch64\\.zip$",

@@ -138,7 +138,7 @@ func (app *App) addTool(githubSlug string, entryName string) UserMessage {
 
 		tmp, err := stringToAssetRegex(pattern)
 		if err != nil {
-			return UserMessage{Type: Error, Tool: "tooli", Content: fmt.Sprintf("unexpected error compiling asset regex: %v", err)}
+			return UserMessage{Type: Error, Tool: name, Content: fmt.Sprintf("unexpected error compiling asset regex: %v", err)}
 		}
 
 		assetRegex = tmp
