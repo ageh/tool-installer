@@ -29,7 +29,10 @@ The configuration for tool-installer is a simple JSON file with the following st
 			"binaries": [
 				{
 					"name": "cool-binary",
-					"rename_to": ""
+					"source_names": [
+						"cool-binary-linux-x64",
+						"cool-binary-windows-x64",
+					]
 				}
 			],
 			"owner": "owner1",
@@ -40,8 +43,7 @@ The configuration for tool-installer is a simple JSON file with the following st
 		"tool2": {
 			"binaries": [
 				{
-					"name": "awesome-tool",
-					"rename_to": "atx"
+					"name": "awesome-tool"
 				}
 			],
 			"owner": "owner2",
@@ -53,7 +55,7 @@ The configuration for tool-installer is a simple JSON file with the following st
 }
 ```
 
-The `rename_to` field is optional, if you do not need it, you can safely omit it.
+The `source_names` field is optional, if you do not need it, you can safely omit it.
 
 To change the installation directory, set the value of `install_dir` to a different path. To add or remove tools, you can use the `add` and `remove` commands or directly change the entries in the configuration file. Each entry of `tools` should be a struct with the entries:
 
@@ -61,8 +63,8 @@ To change the installation directory, set the value of `install_dir` to a differ
 - `repository`: Name of the repository
 - `asset`: Regular expression to match the name of the asset to download
 - `binaries`: A list of structs where each struct has these entries:
-	- `name`: Name of the file to extract
-	- `rename_to`: The name which the file should have after extraction, if left empty or omitted the file is not renamed. Do _not_ include the `.exe` file ending here, tool-installer handles this automatically on Windows.
+	- `name`: Name of the executable _after extraction_
+	- `source_names`: An optional list of names the executable can possibly have before extraction so it can be properly renamed. If the executable already has the proper name in the asset, simply omit this field
 - `description`: A (short) description of what the tool does
 
 ### Default configuration

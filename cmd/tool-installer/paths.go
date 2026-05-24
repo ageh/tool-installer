@@ -25,8 +25,28 @@ func addExeSuffix(fileName string) string {
 	return fileName
 }
 
+func addExeSuffixes(names []string) []string {
+	result := make([]string, len(names))
+
+	for i, n := range names {
+		result[i] = addExeSuffix(n)
+	}
+
+	return result
+}
+
 func stripExeSuffix(fileName string) string {
 	return strings.TrimSuffix(fileName, ".exe")
+}
+
+func stripExeSuffixes(names []string) []string {
+	result := make([]string, len(names))
+
+	for i, n := range names {
+		result[i] = stripExeSuffix(n)
+	}
+
+	return result
 }
 
 func getCacheFilePath() (string, error) {

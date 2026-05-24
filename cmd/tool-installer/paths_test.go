@@ -5,6 +5,7 @@ package main
 import (
 	"os"
 	"path/filepath"
+	"slices"
 	"testing"
 )
 
@@ -30,6 +31,16 @@ func TestAddExeSuffix(t *testing.T) {
 	}
 }
 
+func TestAddExeSuffixes(t *testing.T) {
+	input := []string{"a", "b", "c.exe"}
+	expected := []string{"a.exe", "b.exe", "c.exe"}
+
+	result := addExeSuffixes(input)
+	if !slices.Equal(result, expected) {
+		t.Errorf("addExeSuffixes failed, got %v, expected %v", result, expected)
+	}
+}
+
 func TestStripExeSuffix(t *testing.T) {
 	var tests = []struct {
 		name     string
@@ -49,6 +60,16 @@ func TestStripExeSuffix(t *testing.T) {
 				t.Errorf("stripExeSuffix failed, got %q, expected %q", result, test.expected)
 			}
 		})
+	}
+}
+
+func TestStripExeSuffixes(t *testing.T) {
+	input := []string{"a", "b", "c.exe"}
+	expected := []string{"a", "b", "c"}
+
+	result := stripExeSuffixes(input)
+	if !slices.Equal(result, expected) {
+		t.Errorf("stripExeSuffixes failed, got %v, expected %v", result, expected)
 	}
 }
 

@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"testing"
 )
 
@@ -47,7 +48,7 @@ const testFutureConfig = `{
 }`
 
 const testConfig = `{
-	"version": 2,
+	"version": 3,
 	"install_dir": "~/.local/bin",
 	"tools": {
 		"ripgrep": {
@@ -85,9 +86,9 @@ func TestBinaryMarshalJSON(t *testing.T) {
 		input    Binary
 		expected string
 	}{
-		{name: "No rename_to", input: Binary{Name: "rg"}, expected: `{"name":"rg"}`},
-		{name: "Empty rename_to", input: Binary{Name: "fd", RenameTo: ""}, expected: `{"name":"fd"}`},
-		{name: "With rename_to", input: Binary{Name: "fd.exe", RenameTo: "fd.exe"}, expected: `{"name":"fd","rename_to":"fd"}`},
+		{name: "No source_names", input: Binary{Name: "rg"}, expected: `{"name":"rg"}`},
+		{name: "Empty source_names", input: Binary{Name: "fd", SourceNames: []string{}}, expected: `{"name":"fd"}`},
+		{name: "Non-empty source_names", input: Binary{Name: "fd", SourceNames: []string{"find"}}, expected: `{"name":"fd","source_names":["find"]}`},
 		{name: "Windows exe suffix stripped", input: Binary{Name: "rg.exe"}, expected: `{"name":"rg"}`},
 	}
 
@@ -172,7 +173,7 @@ func TestBinaryUnmarshalJSON(t *testing.T) {
 func TestBinaryMarshalUnmarshalJSON(t *testing.T) {
 	tests := []Binary{
 		{Name: "rg"},
-		{Name: "tool-installer", RenameTo: "tooli"},
+		{Name: "tooli", SourceNames: []string{"tool-installer"}},
 	}
 
 	for _, original := range tests {
@@ -190,8 +191,8 @@ func TestBinaryMarshalUnmarshalJSON(t *testing.T) {
 			t.Errorf("Name mismatch: got %q, expected %q", restored.Name, original.Name)
 		}
 
-		if restored.RenameTo != original.RenameTo {
-			t.Errorf("RenameTo mismatch: got %q, expected %q", restored.RenameTo, original.RenameTo)
+		if !slices.Equal(restored.SourceNames, original.SourceNames) {
+			t.Errorf("SourceNames mismatch: got %v, expected %v", restored.SourceNames, original.SourceNames)
 		}
 	}
 }
@@ -324,8 +325,8 @@ func TestAssetRegexMarshalUnmarshalJSON(t *testing.T) {
 func TestToolForCurrentPlatform(t *testing.T) {
 	testTool := Tool{
 		Binaries: []Binary{
-			{Name: "rg", RenameTo: ""},
-			{Name: "fd", RenameTo: "finder"},
+			{Name: "rg"},
+			{Name: "fd"},
 		},
 	}
 
@@ -334,8 +335,8 @@ func TestToolForCurrentPlatform(t *testing.T) {
 		goos             string
 		expectedBinaries []Binary
 	}{
-		{"Windows has exe suffix", "windows", []Binary{{Name: "rg.exe", RenameTo: ""}, {Name: "fd.exe", RenameTo: "finder.exe"}}},
-		{"Non-Windows has no effect", "linux", []Binary{{Name: "rg", RenameTo: ""}, {Name: "fd", RenameTo: "finder"}}},
+		{"Windows has exe suffix", "windows", []Binary{{Name: "rg.exe"}, {Name: "fd.exe"}}},
+		{"Non-Windows has no effect", "linux", []Binary{{Name: "rg"}, {Name: "fd"}}},
 	}
 
 	for _, test := range tests {
@@ -423,7 +424,7 @@ func TestMigrateConfiguration(t *testing.T) {
 		}
 	}`)
 
-	config, err := migrateConfiguration(input)
+	config, err := migrateConfiguration(input, 0)
 	if err != nil {
 		t.Fatalf("migrateConfiguration() error = %v", err)
 	}
@@ -530,7 +531,7 @@ func TestReadConfigurationOrCreateDefault(t *testing.T) {
 		}
 
 		if config.Version != currentConfigurationVersion {
-			t.Errorf("migrated configuration should have the latest version but it has %q", config.Version)
+			t.Errorf("migrated configuration should have the latest version but it has %d", config.Version)
 		}
 	})
 
