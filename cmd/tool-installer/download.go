@@ -37,7 +37,7 @@ const (
 )
 
 func createUserAgent() string {
-	return "ageh/tool-installer-" + version
+	return tooliRepoOwner + "/" + tooliRepoName + "-" + version
 }
 
 func httpError(statusCode int) error {

@@ -12,6 +12,9 @@ import (
 	"sync"
 )
 
+const tooliRepoOwner = "ageh"
+const tooliRepoName = "tool-installer"
+
 type ToolInfo struct {
 	Name        string
 	Link        string
@@ -406,7 +409,7 @@ func (app *App) showStatus(verbose bool) error {
 
 	versionStatus := "skipped (dev build)"
 	if version != "dev" {
-		release, err := app.downloader.downloadRelease("ageh", "tool-installer")
+		release, err := app.downloader.downloadRelease(tooliRepoOwner, tooliRepoName)
 		if err != nil {
 			versionStatus = fmt.Sprintf("check failed (%v)", err)
 		} else if release.Name == version {
