@@ -26,7 +26,7 @@ func TestTruncateText(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			got := truncateText(test.text, test.maxLength)
 			if got != test.expected {
-				t.Errorf("wrong truncation result: got %q but expected %q", got, test.expected)
+				t.Errorf("wrong truncation result: got %q, expected %q", got, test.expected)
 			}
 		})
 	}

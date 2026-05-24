@@ -210,7 +210,7 @@ func TestGetRenameTarget(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			renamed := getRenameTarget(test.fullBinaryName, test.binaries)
 			if renamed != test.expectedName {
-				t.Errorf("wrong rename target: got %q but expected %q", renamed, test.expectedName)
+				t.Errorf("wrong rename target: got %q, expected %q", renamed, test.expectedName)
 			}
 		})
 	}
@@ -233,7 +233,7 @@ func TestExtractFilesZip(t *testing.T) {
 		}
 
 		if string(result) != testBinaryContent {
-			t.Errorf("wrong file content: got %q but expected %q", result, testBinaryContent)
+			t.Errorf("wrong file content: got %q, expected %q", result, testBinaryContent)
 		}
 	})
 
@@ -251,7 +251,7 @@ func TestExtractFilesZip(t *testing.T) {
 		}
 
 		if string(result) != testBinaryContent {
-			t.Errorf("wrong file content: got %q but expected %q", result, testBinaryContent)
+			t.Errorf("wrong file content: got %q, expected %q", result, testBinaryContent)
 		}
 	})
 
@@ -288,7 +288,7 @@ func TestExtractFilesTarGz(t *testing.T) {
 		}
 
 		if string(result) != testBinaryContent {
-			t.Errorf("wrong file content: got %q but expected %q", result, testBinaryContent)
+			t.Errorf("wrong file content: got %q, expected %q", result, testBinaryContent)
 		}
 	})
 
@@ -306,7 +306,7 @@ func TestExtractFilesTarGz(t *testing.T) {
 		}
 
 		if string(result) != testBinaryContent {
-			t.Errorf("wrong file content: got %q but expected %q", result, testBinaryContent)
+			t.Errorf("wrong file content: got %q, expected %q", result, testBinaryContent)
 		}
 	})
 
@@ -342,7 +342,7 @@ func TestExtractFilesTarXz(t *testing.T) {
 		}
 
 		if string(result) != testBinaryContent {
-			t.Errorf("wrong file content: got %q but expected %q", result, testBinaryContent)
+			t.Errorf("wrong file content: got %q, expected %q", result, testBinaryContent)
 		}
 	})
 
@@ -360,7 +360,7 @@ func TestExtractFilesTarXz(t *testing.T) {
 		}
 
 		if string(result) != testBinaryContent {
-			t.Errorf("wrong file content: got %q but expected %q", result, testBinaryContent)
+			t.Errorf("wrong file content: got %q, expected %q", result, testBinaryContent)
 		}
 	})
 
@@ -396,7 +396,7 @@ func TestExtractFilesRaw(t *testing.T) {
 		}
 
 		if string(result) != testBinaryContent {
-			t.Errorf("wrong file content: got %q but expected %q", result, testBinaryContent)
+			t.Errorf("wrong file content: got %q, expected %q", result, testBinaryContent)
 		}
 	})
 
@@ -414,7 +414,7 @@ func TestExtractFilesRaw(t *testing.T) {
 		}
 
 		if string(result) != testBinaryContent {
-			t.Errorf("wrong file content: got %q but expected %q", result, testBinaryContent)
+			t.Errorf("wrong file content: got %q, expected %q", result, testBinaryContent)
 		}
 	})
 
@@ -467,7 +467,7 @@ func TestExtractFiles(t *testing.T) {
 			}
 
 			if assetType != test.expectedType {
-				t.Errorf("wrong detected asset type: got %d but expected %d", assetType, test.expectedType)
+				t.Errorf("wrong detected asset type: got %d, expected %d", assetType, test.expectedType)
 			}
 		})
 	}
@@ -511,9 +511,10 @@ func TestExtractBinaryFileNames(t *testing.T) {
 				t.Fatal("expected error but got nil")
 			}
 
+			slices.Sort(files)
 			slices.Sort(test.expectedFilenames)
 			if !slices.Equal(files, test.expectedFilenames) {
-				t.Errorf("mismatch in extracted filenames, got %v but expected %v", files, test.expectedFilenames)
+				t.Errorf("mismatch in extracted filenames: got %v, expected %v", files, test.expectedFilenames)
 			}
 		})
 	}

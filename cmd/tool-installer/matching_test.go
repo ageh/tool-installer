@@ -39,7 +39,7 @@ func TestMatchBestAssetName(t *testing.T) {
 			slices.Sort(test.expectedAssetNames)
 
 			if !slices.Equal(names, test.expectedAssetNames) {
-				t.Errorf("matched assets are wrong, got %v but expected %v", names, test.expectedAssetNames)
+				t.Errorf("matched assets are wrong: got %v, expected %v", names, test.expectedAssetNames)
 			}
 		})
 	}

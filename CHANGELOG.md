@@ -11,12 +11,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 - BREAKING: Configuration format has been reworked: Binary names are now the final name of the binary and the `rename_to` field has been replaced by `source_names` which takes an array of possible names the binary can have inside the archive. This is necessary because some programs keep platform specific parts in their binary names...
 - Improved some error messages for better clarity
 - Print installed tools information directly and not collectively afterwards
+- Unified wording in tests
 
 ## Fixed
 
 - Version comparison for showing if an update is available
 - Handle overlooked error when downloading asset
 - Fix error in prompting for asset if autodetection fails
+- Fix index error in tests
 
 ## [4.0.0] - 2026-05-04
 

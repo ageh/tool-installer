@@ -16,7 +16,7 @@ func TestCacheWriteRead(t *testing.T) {
 		}
 
 		if len(cache.Tools) != 0 {
-			t.Errorf("unexpected amount of tools in new cache: got %d but expected 0", len(cache.Tools))
+			t.Errorf("unexpected amount of tools in new cache: got %d, expected 0", len(cache.Tools))
 		}
 	})
 

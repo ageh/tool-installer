@@ -132,11 +132,11 @@ func TestBinaryUnmarshalJSON(t *testing.T) {
 			}
 
 			if b.Name != test.expected.Name {
-				t.Errorf("got name %q but expected %q", b.Name, test.expected.Name)
+				t.Errorf("got name %q, expected %q", b.Name, test.expected.Name)
 			}
 
 			if b.RenameTo != test.expected.RenameTo {
-				t.Errorf("got rename_to %q but expected %q", b.RenameTo, test.expected.RenameTo)
+				t.Errorf("got rename_to %q, expected %q", b.RenameTo, test.expected.RenameTo)
 			}
 		})
 	}
@@ -144,28 +144,28 @@ func TestBinaryUnmarshalJSON(t *testing.T) {
 	t.Run("Invalid name: empty string", func(t *testing.T) {
 		var b Binary
 		if err := json.Unmarshal([]byte(`{"name": ""}`), &b); err == nil {
-			t.Error("expected an error for name, got nil")
+			t.Error("expected an error for empty name, got nil")
 		}
 	})
 
 	t.Run("Invalid rename_to: contains period", func(t *testing.T) {
 		var b Binary
 		if err := json.Unmarshal([]byte(`{"name": "rg", "rename_to": "."}`), &b); err == nil {
-			t.Error("expected an error for rename_to, got nil")
+			t.Error("expected an error for rename_to '.', got nil")
 		}
 	})
 
 	t.Run("Invalid rename_to: path separator", func(t *testing.T) {
 		var b Binary
 		if err := json.Unmarshal([]byte(`{"name": "rg", "rename_to": "rip/grep"}`), &b); err == nil {
-			t.Error("expected an error for rename_to, got nil")
+			t.Error("expected an error for rename_to with slash, got nil")
 		}
 	})
 
 	t.Run("Invalid rename_to: Windows path separator", func(t *testing.T) {
 		var b Binary
 		if err := json.Unmarshal([]byte(`{"name": "rg", "rename_to": "rip\\grep"}`), &b); err == nil {
-			t.Error("expected an error for rename_to, got nil")
+			t.Error("expected an error for rename_to with backslash, got nil")
 		}
 	})
 }
@@ -345,7 +345,7 @@ func TestToolForCurrentPlatform(t *testing.T) {
 
 			for i := range result.Binaries {
 				if result.Binaries[i].Name != test.expectedBinaries[i].Name {
-					t.Errorf("wrong Name: got %q, expected %q", result.Binaries[0].Name, test.expectedBinaries[i].Name)
+					t.Errorf("wrong Name: got %q, expected %q", result.Binaries[i].Name, test.expectedBinaries[i].Name)
 				}
 
 				if result.Binaries[i].RenameTo != test.expectedBinaries[i].RenameTo {
@@ -372,7 +372,7 @@ func TestGetSanitizedInstallationDirectory(t *testing.T) {
 
 		expected := homeDir
 		if result != expected {
-			t.Errorf("got installation directory %q but expected %q", result, expected)
+			t.Errorf("got installation directory %q, expected %q", result, expected)
 		}
 	})
 
@@ -386,7 +386,7 @@ func TestGetSanitizedInstallationDirectory(t *testing.T) {
 
 		expected := filepath.Join(homeDir, ".localbin")
 		if result != expected {
-			t.Errorf("got installation directory %q but expected %q", result, expected)
+			t.Errorf("got installation directory %q, expected %q", result, expected)
 		}
 	})
 
@@ -400,7 +400,7 @@ func TestGetSanitizedInstallationDirectory(t *testing.T) {
 
 		expected := filepath.Clean("/usr/bin/test")
 		if result != expected {
-			t.Errorf("got installation directory %q but expected %q", result, expected)
+			t.Errorf("got installation directory %q, expected %q", result, expected)
 		}
 	})
 }
@@ -426,7 +426,7 @@ func TestMigrateConfiguration(t *testing.T) {
 
 	config, err := migrateConfiguration(input, 0)
 	if err != nil {
-		t.Fatalf("migrateConfiguration() error = %v", err)
+		t.Fatalf("unexpected error in migrateConfiguration: %v", err)
 	}
 
 	tool := config.Tools["ripgrep"]
@@ -450,15 +450,15 @@ func TestMigrateConfiguration(t *testing.T) {
 func TestDefaultConfiguration(t *testing.T) {
 	config, err := getDefaultConfiguration()
 	if err != nil {
-		t.Errorf("getDefaultConfiguration returned an error: %v", err)
+		t.Fatalf("unexpected error getting default configuration: %v", err)
 	}
 
 	if config.Version != currentConfigurationVersion {
-		t.Errorf("getDefaultConfiguration returned a wrong version number, got %d, expected %d", config.Version, currentConfigurationVersion)
+		t.Errorf("wrong version number: got %d, expected %d", config.Version, currentConfigurationVersion)
 	}
 
 	if config.InstallationDirectory != "~/.local/bin" {
-		t.Errorf("getDefaultConfiguration returned a wrong installation directory, got %q, expected '~/.local/bin'", config.InstallationDirectory)
+		t.Errorf("wrong installation directory: got %q, expected '~/.local/bin'", config.InstallationDirectory)
 	}
 
 	for _, name := range defaultTools {
