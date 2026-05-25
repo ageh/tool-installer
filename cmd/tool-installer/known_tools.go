@@ -445,8 +445,8 @@ var knownTools = map[string]KnownTool{
 			"linux/amd64":   "linux-amd64\\.tar\\.gz$",
 			"linux/arm64":   "linux-arm64\\.tar\\.gz$",
 			"windows/amd64": "windows-x86_64\\.zip$",
-			"darwin/amd64":  "x86_64-maxOS\\.zip$",
-			"darwin/arm64":  "arm64-maxOS\\.zip$",
+			"darwin/amd64":  "x86_64-macOS\\.zip$",
+			"darwin/arm64":  "arm64-macOS\\.zip$",
 		},
 	},
 	"typst": {

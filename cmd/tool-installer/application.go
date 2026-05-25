@@ -227,7 +227,7 @@ func (app *App) installTools(tools []string) error {
 		wg.Go(func() {
 			result, err := app.downloader.downloadTool(tool, currentVersion)
 			if err != nil {
-				messageChannel <- UserMessage{Type: Error, Tool: name, Content: fmt.Sprintf("failed to download tool: %v\n", err)}
+				messageChannel <- UserMessage{Type: Error, Tool: name, Content: fmt.Sprintf("failed to download tool: %v", err)}
 				return
 			}
 
