@@ -39,11 +39,16 @@ Use 'tooli help <command>' for more information on a specific command.
 
 const addHelp = `Adds a tool to the configuration.
 
-Expects the "owner/repository" Github slug as an argument, optionally taking a second argument which names the tool in the configuration,
+Usable in two ways, the first one is adding a known tool by simply providing its name.
+
+The second way expects the "owner/repository" GitHub slug as an argument,
+optionally taking a second argument which names the tool in the configuration,
 otherwise it defaults to using the repository name for the entry.
-Takes as much information about the description, asset name, and binaries from Github as possible, prompting the user if necessary.
+Takes as much information about the description, asset name, and binaries from GitHub as possible,
+prompting the user if necessary.
 
 Examples:
+tooli add ripgrep
 tooli add burntsushi/ripgrep
 tooli add burntsushi/ripgrep rg`
 

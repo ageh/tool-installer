@@ -22,7 +22,7 @@ The configuration for tool-installer is a simple JSON file with the following st
 
 ```json
 {
-	"version": 2,
+	"version": 3,
 	"install_dir": "~/.local/bin",
 	"tools": {
 		"tool1": {
@@ -110,9 +110,9 @@ The `timeout` parameter's default value should work fine for most tools on norma
 
 ### `add`
 
-This command allows you to easily add a new tool to the configuration without needing to edit the configuration file directly. It takes the Github `owner/repository` slug as an argument and optionally the name the tool should have in the configuration instead of the `repository` part as a second argument.
+This command allows you to easily add a new tool to the configuration without needing to edit the configuration file directly. It takes either the name of a tool in case it is one of tool-installer's known tools or the GitHub `owner/repository` slug as an argument. In the latter case it also optionally takes the name the tool should have in the configuration instead of the `repository` part as a second argument.
 
-If the name of the tool is one of the well-known tools baked into tool-installer, it will automatically be added to the configuration. If not, tool-installer will automatically try to deduce the correct asset name (regex) and binary names, prompting the user if more information is required.
+When called with a GitHub slug tool-installer will automatically try to deduce the correct asset name (regex) and binary names, prompting the user if more information is required.
 
 ### `check`
 
