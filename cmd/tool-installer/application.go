@@ -69,10 +69,40 @@ func newApp(configPath string, timeout int) (App, []UserMessage, error) {
 	return result, messages, nil
 }
 
+func (app *App) addKnownTool(name string) UserMessage {
+	_, found := app.config.Tools[name]
+	if found {
+		return UserMessage{Type: Info, Tool: name, Content: "skipping addition to configuration - an entry already exists"}
+	}
+
+	tool, found := knownTools[name]
+	if !found {
+		return UserMessage{Type: Error, Tool: name, Content: "the provided tool name is not in the list of known tools, please provide the full owner/repository slug to continue"}
+	}
+
+	tmp, err := tool.intoToolForPlatform()
+	if err != nil {
+		return UserMessage{Type: Error, Tool: name, Content: fmt.Sprintf("error obtaining known tool: %v", err)}
+	}
+
+	app.config.Tools[name] = tmp
+	err = app.config.save(app.configLocation, false)
+	if err != nil {
+		return UserMessage{Type: Error, Tool: name, Content: "failed to write configuration to disk"}
+	} else {
+		return UserMessage{Type: Success, Tool: name, Content: "successfully added to the configuration with values taken from well-known tools list"}
+	}
+}
+
 func (app *App) addTool(githubSlug string, entryName string) UserMessage {
 	parts := strings.Split(githubSlug, "/")
+
+	if len(parts) == 1 {
+		return app.addKnownTool(githubSlug)
+	}
+
 	if len(parts) != 2 {
-		return UserMessage{Type: Error, Tool: "user", Content: fmt.Sprintf("%q is an invalid Github slug, expected the form 'owner/repository'", githubSlug)}
+		return UserMessage{Type: Error, Tool: "user", Content: fmt.Sprintf("%q is an invalid GitHub slug, expected the form 'owner/repository'", githubSlug)}
 	}
 
 	owner := parts[0]
@@ -86,22 +116,6 @@ func (app *App) addTool(githubSlug string, entryName string) UserMessage {
 	_, found := app.config.Tools[name]
 	if found {
 		return UserMessage{Type: Info, Tool: name, Content: "skipping addition to configuration - an entry already exists"}
-	}
-
-	tool, found := knownTools[name]
-	if found {
-		tmp, err := tool.intoToolForPlatform()
-		if err != nil {
-			return UserMessage{Type: Error, Tool: name, Content: fmt.Sprintf("error obtaining known tool: %v", err)}
-		}
-
-		app.config.Tools[name] = tmp
-		err = app.config.save(app.configLocation, false)
-		if err != nil {
-			return UserMessage{Type: Error, Tool: name, Content: "failed to write configuration to disk"}
-		} else {
-			return UserMessage{Type: Success, Tool: name, Content: "successfully added to the configuration with values taken from well-known tools list"}
-		}
 	}
 
 	var repoInfo RepositoryInfo

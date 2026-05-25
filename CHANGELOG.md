@@ -9,6 +9,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 ### Fixed
 
 - Upgraded current configuration version number in README
+- Restored the ability of the `add` command to add a known tool by just providing the name of the tool, not requiring the full `owner/repository` slug
 
 ## [5.0.0] - 2026-05-25
 
