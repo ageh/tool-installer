@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 ## [Unreleased]
 
+## [5.0.0] - 2026-05-25
+
 ### Changed
 
 - BREAKING: Configuration format has been reworked: Binary names are now the final name of the binary and the `rename_to` field has been replaced by `source_names` which takes an array of possible names the binary can have inside the archive. This is necessary because some programs keep platform specific parts in their binary names...
