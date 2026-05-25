@@ -358,6 +358,20 @@ var knownTools = map[string]KnownTool{
 	},
 
 	// Build tools and command runners
+	"goreleaser": {
+		Binaries:    []Binary{{Name: "goreleaser"}},
+		Owner:       "goreleaser",
+		Repository:  "goreleaser",
+		Description: "Release engineering, simplified",
+		AssetNames: map[string]string{
+			"linux/amd64":   "goreleaser_Linux_x86_64\\.tar\\.gz$",
+			"linux/arm64":   "goreleaser_Linux_arm64\\.tar\\.gz$",
+			"windows/amd64": "goreleaser_Windows_x86_64\\.zip$",
+			"windows/arm64": "goreleaser_Windows_arm64\\.zip$",
+			"darwin/amd64":  "goreleaser_Darwin_x86_64\\.tar\\.gz$",
+			"darwin/arm64":  "goreleaser_Darwin_arm64\\.tar\\.gz$",
+		},
+	},
 	"just": {
 		Binaries:    []Binary{{Name: "just"}},
 		Owner:       "casey",
