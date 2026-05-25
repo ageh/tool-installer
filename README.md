@@ -22,7 +22,7 @@ The configuration for tool-installer is a simple JSON file with the following st
 
 ```json
 {
-	"version": 2,
+	"version": 3,
 	"install_dir": "~/.local/bin",
 	"tools": {
 		"tool1": {
