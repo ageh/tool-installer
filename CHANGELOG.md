@@ -13,7 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 - Print installed tools information directly and not collectively afterwards
 - Unified wording in tests
 
-## Fixed
+### Fixed
 
 - Version comparison for showing if an update is available
 - Handle overlooked error when downloading asset
@@ -45,13 +45,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 - The `add` command now takes its argument in the form `owner/repository` and an optional second argument if the name in the configuration should be different from the repository name
 - The `add` command now tries to automatically deduce the asset and binary names as much as possible, reducing the amount of user prompts
 
-## Fixed
+### Fixed
 
 - Asset regex validity checks are now performed on all platforms instead of just Windows
 - Removed invalid paragraphs from README which still described asset name regexes as suffixes
 - Improved wording in README wording and fixed typos
 
-## Removed
+### Removed
 
 - File listing third party licenses as none are used and the one for the compiler is not required
 
