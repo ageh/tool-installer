@@ -5,6 +5,7 @@ package main
 import (
 	"os"
 	"path/filepath"
+	"slices"
 	"testing"
 )
 
@@ -24,9 +25,51 @@ func TestAddExeSuffix(t *testing.T) {
 			result := addExeSuffix(test.input)
 
 			if result != test.expected {
-				t.Errorf("addExeSuffix failed, got %q, expected %q", result, test.expected)
+				t.Errorf("addExeSuffix failed: got %q, expected %q", result, test.expected)
 			}
 		})
+	}
+}
+
+func TestAddExeSuffixes(t *testing.T) {
+	input := []string{"a", "b", "c.exe"}
+	expected := []string{"a.exe", "b.exe", "c.exe"}
+
+	result := addExeSuffixes(input)
+	if !slices.Equal(result, expected) {
+		t.Errorf("addExeSuffixes failed: got %v, expected %v", result, expected)
+	}
+}
+
+func TestStripExeSuffix(t *testing.T) {
+	var tests = []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{"No suffix", "ripgrep", "ripgrep"},
+		{"With suffix", "ripgrep.exe", "ripgrep"},
+		{"Empty string", "", ""},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			result := stripExeSuffix(test.input)
+
+			if result != test.expected {
+				t.Errorf("stripExeSuffix failed: got %q, expected %q", result, test.expected)
+			}
+		})
+	}
+}
+
+func TestStripExeSuffixes(t *testing.T) {
+	input := []string{"a", "b", "c.exe"}
+	expected := []string{"a", "b", "c"}
+
+	result := stripExeSuffixes(input)
+	if !slices.Equal(result, expected) {
+		t.Errorf("stripExeSuffixes failed: got %v, expected %v", result, expected)
 	}
 }
 
@@ -36,12 +79,12 @@ func TestGetCacheFilePath(t *testing.T) {
 
 		path, err := getCacheFilePath()
 		if err != nil {
-			t.Fatalf("got unexpected error: %v", err)
+			t.Fatalf("unexpected error: %v", err)
 		}
 
 		expected := filepath.Join("/tooli/cache", cacheFileName)
 		if path != expected {
-			t.Errorf("invalid cache path: got %q but expected %q", path, expected)
+			t.Errorf("invalid cache path: got %q, expected %q", path, expected)
 		}
 	})
 
@@ -51,12 +94,12 @@ func TestGetCacheFilePath(t *testing.T) {
 
 		path, err := getCacheFilePath()
 		if err != nil {
-			t.Fatalf("got unexpected error: %v", err)
+			t.Fatalf("unexpected error: %v", err)
 		}
 
 		expected := filepath.Join("/mycache", appName, cacheFileName)
 		if path != expected {
-			t.Errorf("invalid cache path: got %q but expected %q", path, expected)
+			t.Errorf("invalid cache path: got %q, expected %q", path, expected)
 		}
 	})
 
@@ -71,12 +114,12 @@ func TestGetCacheFilePath(t *testing.T) {
 
 		path, err := getCacheFilePath()
 		if err != nil {
-			t.Fatalf("got unexpected error: %v", err)
+			t.Fatalf("unexpected error: %v", err)
 		}
 
 		expected := filepath.Join(userCacheDir, appName, cacheFileName)
 		if path != expected {
-			t.Errorf("invalid cache path: got %q but expected %q", path, expected)
+			t.Errorf("invalid cache path: got %q, expected %q", path, expected)
 		}
 	})
 }
@@ -87,12 +130,12 @@ func TestGetConfigFilePath(t *testing.T) {
 
 		path, err := getConfigFilePath()
 		if err != nil {
-			t.Fatalf("got unexpected error: %v", err)
+			t.Fatalf("unexpected error: %v", err)
 		}
 
 		expected := filepath.Join("/tooli/config", configFileName)
 		if path != expected {
-			t.Errorf("invalid config path: got %q but expected %q", path, expected)
+			t.Errorf("invalid config path: got %q, expected %q", path, expected)
 		}
 	})
 
@@ -107,7 +150,7 @@ func TestGetConfigFilePath(t *testing.T) {
 
 		expected := filepath.Join("/myconfig", appName, configFileName)
 		if path != expected {
-			t.Errorf("invalid config path: got %q but expected %q", path, expected)
+			t.Errorf("invalid config path: got %q, expected %q", path, expected)
 		}
 	})
 
@@ -127,7 +170,7 @@ func TestGetConfigFilePath(t *testing.T) {
 
 		expected := filepath.Join(userConfigDir, appName, configFileName)
 		if path != expected {
-			t.Errorf("invalid config path: got %q but expected %q", path, expected)
+			t.Errorf("invalid config path: got %q, expected %q", path, expected)
 		}
 	})
 }

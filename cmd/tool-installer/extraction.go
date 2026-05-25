@@ -51,12 +51,8 @@ func getRenameTarget(fullName string, binaries []Binary) string {
 	fileName := path.Base(fullName)
 
 	for _, binary := range binaries {
-		if fileName == binary.Name {
-			if binary.RenameTo != "" {
-				return filepath.Base(binary.RenameTo)
-			} else {
-				return fileName
-			}
+		if binary.hasSourceName(fileName) {
+			return binary.getTargetName()
 		}
 	}
 
@@ -150,7 +146,7 @@ func extractFromTar(uncompressReader io.Reader, binaries []Binary, outputPath st
 
 	for {
 		header, err := tarReader.Next()
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			break
 		}
 		if err != nil {
@@ -202,14 +198,10 @@ func extractFromTar(uncompressReader io.Reader, binaries []Binary, outputPath st
 
 func extractFilesRaw(rawData []byte, binaries []Binary, outputPath string) error {
 	if len(binaries) != 1 {
-		return errors.New("invalid number of binaries provided. Non-archive type assets can only be one binary")
+		return errors.New("invalid number of binaries provided. Non-archive type assets can only have one binary")
 	}
 
-	fileName := binaries[0].Name
-	if binaries[0].RenameTo != "" {
-		fileName = filepath.Base(binaries[0].RenameTo)
-	}
-
+	fileName := binaries[0].getTargetName()
 	filePath := filepath.Join(outputPath, fileName)
 
 	file, err := os.Create(filePath)
@@ -324,7 +316,7 @@ func getFilesNamesTarGz(rawData []byte) ([]string, error) {
 
 	gzipReader, err := gzip.NewReader(byteReader)
 	if err != nil {
-		return make([]string, 0), err
+		return nil, err
 	}
 	defer gzipReader.Close()
 
@@ -336,7 +328,7 @@ func getFilesNamesTarXz(rawData []byte) ([]string, error) {
 
 	xzReader, err := xz.NewReader(byteReader)
 	if err != nil {
-		return make([]string, 0), err
+		return nil, err
 	}
 	defer xzReader.Close()
 
@@ -350,7 +342,7 @@ func getFilesNamesFromTar(uncompressReader io.Reader) ([]string, error) {
 
 	for {
 		header, err := tarReader.Next()
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			break
 		}
 		if err != nil {

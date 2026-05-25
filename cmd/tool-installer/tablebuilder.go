@@ -39,18 +39,13 @@ func newTableBuilderWithLimits(headers []string, maximumWidths map[int]int) Tabl
 	return result
 }
 
-func (t *TableBuilder) addRow(row []string) error {
-	n := len(t.headers)
-
-	if len(row) != n {
-		return fmt.Errorf("column count must match")
+func (t *TableBuilder) addRow(row []string) {
+	if len(row) != len(t.headers) {
+		panic(fmt.Sprintf("TableBuilder::addRow called with %d columns, expected %d", len(row), len(t.headers)))
 	}
 
 	t.updateColumnWidths(row)
-
 	t.rows = append(t.rows, row)
-
-	return nil
 }
 
 func (t *TableBuilder) updateColumnWidths(row []string) {

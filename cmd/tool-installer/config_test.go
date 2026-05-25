@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"testing"
 )
 
@@ -47,7 +48,7 @@ const testFutureConfig = `{
 }`
 
 const testConfig = `{
-	"version": 2,
+	"version": 3,
 	"install_dir": "~/.local/bin",
 	"tools": {
 		"ripgrep": {
@@ -85,9 +86,9 @@ func TestBinaryMarshalJSON(t *testing.T) {
 		input    Binary
 		expected string
 	}{
-		{name: "No rename_to", input: Binary{Name: "rg"}, expected: `{"name":"rg"}`},
-		{name: "Empty rename_to", input: Binary{Name: "fd", RenameTo: ""}, expected: `{"name":"fd"}`},
-		{name: "With rename_to", input: Binary{Name: "fd.exe", RenameTo: "fd.exe"}, expected: `{"name":"fd","rename_to":"fd"}`},
+		{name: "No source_names", input: Binary{Name: "rg"}, expected: `{"name":"rg"}`},
+		{name: "Empty source_names", input: Binary{Name: "fd", SourceNames: []string{}}, expected: `{"name":"fd"}`},
+		{name: "Non-empty source_names", input: Binary{Name: "fd", SourceNames: []string{"find"}}, expected: `{"name":"fd","source_names":["find"]}`},
 		{name: "Windows exe suffix stripped", input: Binary{Name: "rg.exe"}, expected: `{"name":"rg"}`},
 	}
 
@@ -131,11 +132,11 @@ func TestBinaryUnmarshalJSON(t *testing.T) {
 			}
 
 			if b.Name != test.expected.Name {
-				t.Errorf("got name %q but expected %q", b.Name, test.expected.Name)
+				t.Errorf("got name %q, expected %q", b.Name, test.expected.Name)
 			}
 
 			if b.RenameTo != test.expected.RenameTo {
-				t.Errorf("got rename_to %q but expected %q", b.RenameTo, test.expected.RenameTo)
+				t.Errorf("got rename_to %q, expected %q", b.RenameTo, test.expected.RenameTo)
 			}
 		})
 	}
@@ -143,28 +144,28 @@ func TestBinaryUnmarshalJSON(t *testing.T) {
 	t.Run("Invalid name: empty string", func(t *testing.T) {
 		var b Binary
 		if err := json.Unmarshal([]byte(`{"name": ""}`), &b); err == nil {
-			t.Error("expected an error for name, got nil")
+			t.Error("expected an error for empty name, got nil")
 		}
 	})
 
 	t.Run("Invalid rename_to: contains period", func(t *testing.T) {
 		var b Binary
 		if err := json.Unmarshal([]byte(`{"name": "rg", "rename_to": "."}`), &b); err == nil {
-			t.Error("expected an error for rename_to, got nil")
+			t.Error("expected an error for rename_to '.', got nil")
 		}
 	})
 
 	t.Run("Invalid rename_to: path separator", func(t *testing.T) {
 		var b Binary
 		if err := json.Unmarshal([]byte(`{"name": "rg", "rename_to": "rip/grep"}`), &b); err == nil {
-			t.Error("expected an error for rename_to, got nil")
+			t.Error("expected an error for rename_to with slash, got nil")
 		}
 	})
 
 	t.Run("Invalid rename_to: Windows path separator", func(t *testing.T) {
 		var b Binary
 		if err := json.Unmarshal([]byte(`{"name": "rg", "rename_to": "rip\\grep"}`), &b); err == nil {
-			t.Error("expected an error for rename_to, got nil")
+			t.Error("expected an error for rename_to with backslash, got nil")
 		}
 	})
 }
@@ -172,7 +173,7 @@ func TestBinaryUnmarshalJSON(t *testing.T) {
 func TestBinaryMarshalUnmarshalJSON(t *testing.T) {
 	tests := []Binary{
 		{Name: "rg"},
-		{Name: "tool-installer", RenameTo: "tooli"},
+		{Name: "tooli", SourceNames: []string{"tool-installer"}},
 	}
 
 	for _, original := range tests {
@@ -190,8 +191,8 @@ func TestBinaryMarshalUnmarshalJSON(t *testing.T) {
 			t.Errorf("Name mismatch: got %q, expected %q", restored.Name, original.Name)
 		}
 
-		if restored.RenameTo != original.RenameTo {
-			t.Errorf("RenameTo mismatch: got %q, expected %q", restored.RenameTo, original.RenameTo)
+		if !slices.Equal(restored.SourceNames, original.SourceNames) {
+			t.Errorf("SourceNames mismatch: got %v, expected %v", restored.SourceNames, original.SourceNames)
 		}
 	}
 }
@@ -324,8 +325,8 @@ func TestAssetRegexMarshalUnmarshalJSON(t *testing.T) {
 func TestToolForCurrentPlatform(t *testing.T) {
 	testTool := Tool{
 		Binaries: []Binary{
-			{Name: "rg", RenameTo: ""},
-			{Name: "fd", RenameTo: "finder"},
+			{Name: "rg"},
+			{Name: "fd"},
 		},
 	}
 
@@ -334,8 +335,8 @@ func TestToolForCurrentPlatform(t *testing.T) {
 		goos             string
 		expectedBinaries []Binary
 	}{
-		{"Windows has exe suffix", "windows", []Binary{{Name: "rg.exe", RenameTo: ""}, {Name: "fd.exe", RenameTo: "finder.exe"}}},
-		{"Non-Windows has no effect", "linux", []Binary{{Name: "rg", RenameTo: ""}, {Name: "fd", RenameTo: "finder"}}},
+		{"Windows has exe suffix", "windows", []Binary{{Name: "rg.exe"}, {Name: "fd.exe"}}},
+		{"Non-Windows has no effect", "linux", []Binary{{Name: "rg"}, {Name: "fd"}}},
 	}
 
 	for _, test := range tests {
@@ -344,7 +345,7 @@ func TestToolForCurrentPlatform(t *testing.T) {
 
 			for i := range result.Binaries {
 				if result.Binaries[i].Name != test.expectedBinaries[i].Name {
-					t.Errorf("wrong Name: got %q, expected %q", result.Binaries[0].Name, test.expectedBinaries[i].Name)
+					t.Errorf("wrong Name: got %q, expected %q", result.Binaries[i].Name, test.expectedBinaries[i].Name)
 				}
 
 				if result.Binaries[i].RenameTo != test.expectedBinaries[i].RenameTo {
@@ -371,7 +372,7 @@ func TestGetSanitizedInstallationDirectory(t *testing.T) {
 
 		expected := homeDir
 		if result != expected {
-			t.Errorf("got installation directory %q but expected %q", result, expected)
+			t.Errorf("got installation directory %q, expected %q", result, expected)
 		}
 	})
 
@@ -385,7 +386,7 @@ func TestGetSanitizedInstallationDirectory(t *testing.T) {
 
 		expected := filepath.Join(homeDir, ".localbin")
 		if result != expected {
-			t.Errorf("got installation directory %q but expected %q", result, expected)
+			t.Errorf("got installation directory %q, expected %q", result, expected)
 		}
 	})
 
@@ -399,7 +400,7 @@ func TestGetSanitizedInstallationDirectory(t *testing.T) {
 
 		expected := filepath.Clean("/usr/bin/test")
 		if result != expected {
-			t.Errorf("got installation directory %q but expected %q", result, expected)
+			t.Errorf("got installation directory %q, expected %q", result, expected)
 		}
 	})
 }
@@ -423,9 +424,9 @@ func TestMigrateConfiguration(t *testing.T) {
 		}
 	}`)
 
-	config, err := migrateConfiguration(input)
+	config, err := migrateConfiguration(input, 0)
 	if err != nil {
-		t.Fatalf("migrateConfiguration() error = %v", err)
+		t.Fatalf("unexpected error in migrateConfiguration: %v", err)
 	}
 
 	tool := config.Tools["ripgrep"]
@@ -449,15 +450,15 @@ func TestMigrateConfiguration(t *testing.T) {
 func TestDefaultConfiguration(t *testing.T) {
 	config, err := getDefaultConfiguration()
 	if err != nil {
-		t.Errorf("getDefaultConfiguration returned an error: %v", err)
+		t.Fatalf("unexpected error getting default configuration: %v", err)
 	}
 
 	if config.Version != currentConfigurationVersion {
-		t.Errorf("getDefaultConfiguration returned a wrong version number, got %d, expected %d", config.Version, currentConfigurationVersion)
+		t.Errorf("wrong version number: got %d, expected %d", config.Version, currentConfigurationVersion)
 	}
 
 	if config.InstallationDirectory != "~/.local/bin" {
-		t.Errorf("getDefaultConfiguration returned a wrong installation directory, got %q, expected '~/.local/bin'", config.InstallationDirectory)
+		t.Errorf("wrong installation directory: got %q, expected '~/.local/bin'", config.InstallationDirectory)
 	}
 
 	for _, name := range defaultTools {
@@ -530,7 +531,7 @@ func TestReadConfigurationOrCreateDefault(t *testing.T) {
 		}
 
 		if config.Version != currentConfigurationVersion {
-			t.Errorf("migrated configuration should have the latest version but it has %q", config.Version)
+			t.Errorf("migrated configuration should have the latest version but it has %d", config.Version)
 		}
 	})
 

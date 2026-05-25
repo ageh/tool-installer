@@ -45,7 +45,7 @@ const standardAssetLinuxArm = "aarch64-unknown-linux-gnu\\.tar\\.gz$"
 const standardAssetLinuxMuslArm = "aarch64-unknown-linux-musl\\.tar\\.gz$"
 const standardAssetLinuxx64 = "x86_64-unknown-linux-gnu\\.tar\\.gz$"
 const standardAssetLinuxMuslx64 = "x86_64-unknown-linux-musl\\.tar\\.gz$"
-const standardAssetWindowsArm = "aarch-pc-windows-msvc\\.zip$"
+const standardAssetWindowsArm = "aarch64-pc-windows-msvc\\.zip$"
 const standardAssetWindowsx64 = "x86_64-pc-windows-msvc\\.zip$"
 const standardAssetWindowsGnux64 = "x86_64-pc-windows-gnu\\.zip$"
 const standardAssetAppleArm = "aarch64-apple-darwin\\.tar\\.gz$"
@@ -54,7 +54,7 @@ const standardAssetApplex64 = "x86_64-apple-darwin\\.tar\\.gz$"
 var knownTools = map[string]KnownTool{
 	// Shells and common shell command/tool replacements/upgrades
 	"bat": {
-		Binaries:    []Binary{{Name: "bat", RenameTo: ""}},
+		Binaries:    []Binary{{Name: "bat"}},
 		Owner:       "sharkdp",
 		Repository:  "bat",
 		Description: "A cat(1) clone with wings.",
@@ -68,7 +68,7 @@ var knownTools = map[string]KnownTool{
 		},
 	},
 	"dua": {
-		Binaries:    []Binary{{Name: "dua", RenameTo: ""}},
+		Binaries:    []Binary{{Name: "dua"}},
 		Owner:       "Byron",
 		Repository:  "dua-cli",
 		Description: "View disk space usage and delete unwanted data, fast.",
@@ -80,7 +80,7 @@ var knownTools = map[string]KnownTool{
 		},
 	},
 	"dust": {
-		Binaries:    []Binary{{Name: "dust", RenameTo: ""}},
+		Binaries:    []Binary{{Name: "dust"}},
 		Owner:       "bootandy",
 		Repository:  "dust",
 		Description: "A more intuitive version of du in rust",
@@ -91,7 +91,7 @@ var knownTools = map[string]KnownTool{
 		},
 	},
 	"eza": {
-		Binaries:    []Binary{{Name: "eza", RenameTo: ""}},
+		Binaries:    []Binary{{Name: "eza"}},
 		Owner:       "eza-community",
 		Repository:  "eza",
 		Description: "A modern alternative to ls",
@@ -102,7 +102,7 @@ var knownTools = map[string]KnownTool{
 		},
 	},
 	"fd": {
-		Binaries:    []Binary{{Name: "fd", RenameTo: ""}},
+		Binaries:    []Binary{{Name: "fd"}},
 		Owner:       "sharkdp",
 		Repository:  "fd",
 		Description: "A simple, fast and user-friendly alternative to 'find'",
@@ -114,7 +114,7 @@ var knownTools = map[string]KnownTool{
 		},
 	},
 	"fzf": {
-		Binaries:    []Binary{{Name: "fzf", RenameTo: ""}},
+		Binaries:    []Binary{{Name: "fzf"}},
 		Owner:       "junegunn",
 		Repository:  "fzf",
 		Description: "A command-line fuzzy finder",
@@ -126,7 +126,7 @@ var knownTools = map[string]KnownTool{
 		},
 	},
 	"numbat": {
-		Binaries:    []Binary{{Name: "numbat", RenameTo: ""}},
+		Binaries:    []Binary{{Name: "numbat"}},
 		Owner:       "sharkdp",
 		Repository:  "numbat",
 		Description: "A statically typed programming language for scientific computations with first class support for physical dimensions and units",
@@ -140,16 +140,16 @@ var knownTools = map[string]KnownTool{
 	},
 	"nushell": {
 		Binaries: []Binary{
-			{Name: "nu", RenameTo: ""},
-			{Name: "nu_plugin_stress_internals", RenameTo: ""},
-			{Name: "nu_plugin_query", RenameTo: ""},
-			{Name: "nu_plugin_polars", RenameTo: ""},
-			{Name: "nu_plugin_inc", RenameTo: ""},
-			{Name: "nu_plugin_gstat", RenameTo: ""},
-			{Name: "nu_plugin_formats", RenameTo: ""},
-			{Name: "nu_plugin_example", RenameTo: ""},
-			{Name: "nu_plugin_custom_values", RenameTo: ""},
-			{Name: "less", RenameTo: ""},
+			{Name: "nu"},
+			{Name: "nu_plugin_stress_internals"},
+			{Name: "nu_plugin_query"},
+			{Name: "nu_plugin_polars"},
+			{Name: "nu_plugin_inc"},
+			{Name: "nu_plugin_gstat"},
+			{Name: "nu_plugin_formats"},
+			{Name: "nu_plugin_example"},
+			{Name: "nu_plugin_custom_values"},
+			{Name: "less"},
 		},
 		Owner:       "nushell",
 		Repository:  "nushell",
@@ -164,7 +164,7 @@ var knownTools = map[string]KnownTool{
 		},
 	},
 	"ouch": {
-		Binaries:    []Binary{{Name: "ouch", RenameTo: ""}},
+		Binaries:    []Binary{{Name: "ouch"}},
 		Owner:       "ouch-org",
 		Repository:  "ouch",
 		Description: "(De)compression for your terminal",
@@ -177,7 +177,7 @@ var knownTools = map[string]KnownTool{
 		},
 	},
 	"ripgrep": {
-		Binaries:    []Binary{{Name: "rg", RenameTo: ""}},
+		Binaries:    []Binary{{Name: "rg"}},
 		Owner:       "burntsushi",
 		Repository:  "ripgrep",
 		Description: "Better grep",
@@ -191,7 +191,7 @@ var knownTools = map[string]KnownTool{
 		},
 	},
 	"sd": {
-		Binaries:    []Binary{{Name: "sd", RenameTo: ""}},
+		Binaries:    []Binary{{Name: "sd"}},
 		Owner:       "chmln",
 		Repository:  "sd",
 		Description: "Better sed",
@@ -204,7 +204,7 @@ var knownTools = map[string]KnownTool{
 		},
 	},
 	"starship": {
-		Binaries:    []Binary{{Name: "starship", RenameTo: ""}},
+		Binaries:    []Binary{{Name: "starship"}},
 		Owner:       "starship",
 		Repository:  "starship",
 		Description: "Cross-shell custom prompt",
@@ -220,7 +220,7 @@ var knownTools = map[string]KnownTool{
 
 	// Linters, formatters, and LSPs
 	"biome": {
-		Binaries:    []Binary{{Name: "biome", RenameTo: "biome"}},
+		Binaries:    []Binary{{Name: "biome"}},
 		Owner:       "biomejs",
 		Repository:  "biome",
 		Description: "Web Dev formatter and linter",
@@ -234,7 +234,7 @@ var knownTools = map[string]KnownTool{
 		},
 	},
 	"ruff": {
-		Binaries:    []Binary{{Name: "ruff", RenameTo: ""}},
+		Binaries:    []Binary{{Name: "ruff"}},
 		Owner:       "astral-sh",
 		Repository:  "ruff",
 		Description: "An extremely fast Python linter and code formatter",
@@ -248,7 +248,7 @@ var knownTools = map[string]KnownTool{
 		},
 	},
 	"ty": {
-		Binaries:    []Binary{{Name: "ty", RenameTo: ""}},
+		Binaries:    []Binary{{Name: "ty"}},
 		Owner:       "astral-sh",
 		Repository:  "ty",
 		Description: "An extremely fast Python type checker and language server, written in Rust.",
@@ -262,7 +262,7 @@ var knownTools = map[string]KnownTool{
 		},
 	},
 	"uv": {
-		Binaries:    []Binary{{Name: "uv", RenameTo: ""}},
+		Binaries:    []Binary{{Name: "uv"}},
 		Owner:       "astral-sh",
 		Repository:  "uv",
 		Description: "An extremely fast Python package installer and resolver, written in Rust.",
@@ -276,7 +276,7 @@ var knownTools = map[string]KnownTool{
 		},
 	},
 	"vale": {
-		Binaries:    []Binary{{Name: "vale", RenameTo: ""}},
+		Binaries:    []Binary{{Name: "vale"}},
 		Owner:       "errata-ai",
 		Repository:  "vale",
 		Description: "Text linter",
@@ -291,7 +291,7 @@ var knownTools = map[string]KnownTool{
 
 	// Compilers and interpreters
 	"bun": {
-		Binaries:    []Binary{{Name: "bun", RenameTo: ""}},
+		Binaries:    []Binary{{Name: "bun"}},
 		Owner:       "oven-sh",
 		Repository:  "bun",
 		Description: "Javascript runtime written in Zig",
@@ -304,7 +304,7 @@ var knownTools = map[string]KnownTool{
 		},
 	},
 	"deno": {
-		Binaries:    []Binary{{Name: "deno", RenameTo: ""}},
+		Binaries:    []Binary{{Name: "deno"}},
 		Owner:       "denoland",
 		Repository:  "deno",
 		Description: "A modern runtime for JavaScript and TypeScript",
@@ -319,9 +319,9 @@ var knownTools = map[string]KnownTool{
 	},
 	"luau": {
 		Binaries: []Binary{
-			{Name: "luau", RenameTo: ""},
-			{Name: "luau-analyze", RenameTo: ""},
-			{Name: "luau-compile", RenameTo: ""},
+			{Name: "luau"},
+			{Name: "luau-analyze"},
+			{Name: "luau-compile"},
 		},
 		Owner:       "luau-lang",
 		Repository:  "luau",
@@ -333,10 +333,10 @@ var knownTools = map[string]KnownTool{
 		},
 	},
 	"lune": {
-		Binaries:    []Binary{{Name: "lune", RenameTo: ""}},
+		Binaries:    []Binary{{Name: "lune"}},
 		Owner:       "lune-org",
 		Repository:  "lune",
-		Description: "A standalone Luau runtime ",
+		Description: "A standalone Luau runtime",
 		AssetNames: map[string]string{
 			"linux/amd64":   "linux-x86_64\\.zip$",
 			"linux/arm64":   "linux-aarch64\\.zip$",
@@ -347,7 +347,7 @@ var knownTools = map[string]KnownTool{
 		},
 	},
 	"teal": {
-		Binaries:    []Binary{{Name: "tl", RenameTo: ""}},
+		Binaries:    []Binary{{Name: "tl"}},
 		Owner:       "teal-language",
 		Repository:  "tl",
 		Description: "The compiler for Teal, a typed dialect of Lua",
@@ -358,8 +358,22 @@ var knownTools = map[string]KnownTool{
 	},
 
 	// Build tools and command runners
+	"goreleaser": {
+		Binaries:    []Binary{{Name: "goreleaser"}},
+		Owner:       "goreleaser",
+		Repository:  "goreleaser",
+		Description: "Release engineering, simplified",
+		AssetNames: map[string]string{
+			"linux/amd64":   "goreleaser_Linux_x86_64\\.tar\\.gz$",
+			"linux/arm64":   "goreleaser_Linux_arm64\\.tar\\.gz$",
+			"windows/amd64": "goreleaser_Windows_x86_64\\.zip$",
+			"windows/arm64": "goreleaser_Windows_arm64\\.zip$",
+			"darwin/amd64":  "goreleaser_Darwin_x86_64\\.tar\\.gz$",
+			"darwin/arm64":  "goreleaser_Darwin_arm64\\.tar\\.gz$",
+		},
+	},
 	"just": {
-		Binaries:    []Binary{{Name: "just", RenameTo: ""}},
+		Binaries:    []Binary{{Name: "just"}},
 		Owner:       "casey",
 		Repository:  "just",
 		Description: "Just a command runner",
@@ -373,7 +387,7 @@ var knownTools = map[string]KnownTool{
 		},
 	},
 	"ninja": {
-		Binaries:    []Binary{{Name: "ninja", RenameTo: ""}},
+		Binaries:    []Binary{{Name: "ninja"}},
 		Owner:       "ninja-build",
 		Repository:  "ninja",
 		Description: "A small build system with a focus on speed",
@@ -388,7 +402,7 @@ var knownTools = map[string]KnownTool{
 
 	// Text processors and static site generators
 	"hugo": {
-		Binaries:    []Binary{{Name: "hugo", RenameTo: ""}},
+		Binaries:    []Binary{{Name: "hugo"}},
 		Owner:       "gohugoio",
 		Repository:  "hugo",
 		Description: "Single binary static site generator",
@@ -398,7 +412,7 @@ var knownTools = map[string]KnownTool{
 		},
 	},
 	"mdbook": {
-		Binaries:    []Binary{{Name: "mdbook", RenameTo: ""}},
+		Binaries:    []Binary{{Name: "mdbook"}},
 		Owner:       "rust-lang",
 		Repository:  "mdBook",
 		Description: "Create a book from markdown files",
@@ -411,7 +425,7 @@ var knownTools = map[string]KnownTool{
 		},
 	},
 	"mdbook-admonish": {
-		Binaries:    []Binary{{Name: "mdbook-admonish", RenameTo: ""}},
+		Binaries:    []Binary{{Name: "mdbook-admonish"}},
 		Owner:       "tommilligan",
 		Repository:  "mdbook-admonish",
 		Description: "A preprocessor for mdbook to add Material Design admonishments",
@@ -423,7 +437,7 @@ var knownTools = map[string]KnownTool{
 		},
 	},
 	"pandoc": {
-		Binaries:    []Binary{{Name: "pandoc", RenameTo: ""}},
+		Binaries:    []Binary{{Name: "pandoc"}},
 		Owner:       "jgm",
 		Repository:  "pandoc",
 		Description: "Universal markup converter",
@@ -431,12 +445,12 @@ var knownTools = map[string]KnownTool{
 			"linux/amd64":   "linux-amd64\\.tar\\.gz$",
 			"linux/arm64":   "linux-arm64\\.tar\\.gz$",
 			"windows/amd64": "windows-x86_64\\.zip$",
-			"darwin/amd64":  "x86_64-maxOS\\.zip$",
-			"darwin/arm64":  "arm64-maxOS\\.zip$",
+			"darwin/amd64":  "x86_64-macOS\\.zip$",
+			"darwin/arm64":  "arm64-macOS\\.zip$",
 		},
 	},
 	"typst": {
-		Binaries:    []Binary{{Name: "typst", RenameTo: ""}},
+		Binaries:    []Binary{{Name: "typst"}},
 		Owner:       "typst",
 		Repository:  "typst",
 		Description: "A new markup-based typesetting system",
@@ -450,7 +464,7 @@ var knownTools = map[string]KnownTool{
 		},
 	},
 	"zola": {
-		Binaries:    []Binary{{Name: "zola", RenameTo: ""}},
+		Binaries:    []Binary{{Name: "zola"}},
 		Owner:       "getzola",
 		Repository:  "zola",
 		Description: "Fast single binary static site generator",
@@ -465,7 +479,7 @@ var knownTools = map[string]KnownTool{
 
 	// Git/VCS
 	"delta": {
-		Binaries:    []Binary{{Name: "delta", RenameTo: ""}},
+		Binaries:    []Binary{{Name: "delta"}},
 		Owner:       "dandavison",
 		Repository:  "delta",
 		Description: "A syntax-highlighting pager for git, diff, grep, and blame output",
@@ -478,7 +492,7 @@ var knownTools = map[string]KnownTool{
 		},
 	},
 	"github": {
-		Binaries:    []Binary{{Name: "gh", RenameTo: ""}},
+		Binaries:    []Binary{{Name: "gh"}},
 		Owner:       "cli",
 		Repository:  "cli",
 		Description: "GitHub's official command line tool",
@@ -492,7 +506,7 @@ var knownTools = map[string]KnownTool{
 		},
 	},
 	"gitui": {
-		Binaries:    []Binary{{Name: "gitui", RenameTo: ""}},
+		Binaries:    []Binary{{Name: "gitui"}},
 		Owner:       "gitui-org",
 		Repository:  "gitui",
 		Description: "Blazing fast terminal-ui for git written in rust",
@@ -504,7 +518,7 @@ var knownTools = map[string]KnownTool{
 		},
 	},
 	"jujutsu": {
-		Binaries:    []Binary{{Name: "jj", RenameTo: ""}},
+		Binaries:    []Binary{{Name: "jj"}},
 		Owner:       "martinvonz",
 		Repository:  "jj",
 		Description: "A Git-compatible VCS that is both simple and powerful",
@@ -518,7 +532,7 @@ var knownTools = map[string]KnownTool{
 		},
 	},
 	"lazygit": {
-		Binaries:    []Binary{{Name: "lg", RenameTo: ""}},
+		Binaries:    []Binary{{Name: "lg"}},
 		Owner:       "jesseduffield",
 		Repository:  "lazygit",
 		Description: "Simple terminal UI for git commands",
@@ -534,7 +548,7 @@ var knownTools = map[string]KnownTool{
 
 	// Text editors
 	"micro": {
-		Binaries:    []Binary{{Name: "micro", RenameTo: ""}},
+		Binaries:    []Binary{{Name: "micro"}},
 		Owner:       "micro-editor",
 		Repository:  "micro",
 		Description: "A modern and intuitive terminal-based text editor",
@@ -550,7 +564,7 @@ var knownTools = map[string]KnownTool{
 
 	// Multimedia
 	"freeze": {
-		Binaries:    []Binary{{Name: "freeze", RenameTo: ""}},
+		Binaries:    []Binary{{Name: "freeze"}},
 		Owner:       "charmbracelet",
 		Repository:  "freeze",
 		Description: "Generate images of code and terminal output",
@@ -563,7 +577,7 @@ var knownTools = map[string]KnownTool{
 		},
 	},
 	"vhs": {
-		Binaries:    []Binary{{Name: "vhs", RenameTo: ""}},
+		Binaries:    []Binary{{Name: "vhs"}},
 		Owner:       "charmbracelet",
 		Repository:  "vhs",
 		Description: "Your CLI home video recorder",
@@ -576,7 +590,7 @@ var knownTools = map[string]KnownTool{
 		},
 	},
 	"yt-dlp": {
-		Binaries:    []Binary{{Name: "yt-dlp", RenameTo: ""}},
+		Binaries:    []Binary{{Name: "yt-dlp"}},
 		Owner:       "yt-dlp",
 		Repository:  "yt-dlp",
 		Description: "A feature-rich command-line audio/video downloader",
@@ -592,8 +606,8 @@ var knownTools = map[string]KnownTool{
 	// Cryptography
 	"age": {
 		Binaries: []Binary{
-			{Name: "age", RenameTo: ""},
-			{Name: "age-keygen", RenameTo: ""},
+			{Name: "age"},
+			{Name: "age-keygen"},
 		},
 		Owner:       "FiloSottile",
 		Repository:  "age",
@@ -607,7 +621,7 @@ var knownTools = map[string]KnownTool{
 		},
 	},
 	"minisign": {
-		Binaries:    []Binary{{Name: "minisign", RenameTo: ""}},
+		Binaries:    []Binary{{Name: "minisign"}},
 		Owner:       "jedisct1",
 		Repository:  "minisign",
 		Description: "A dead simple tool to sign files and verify digital signatures.",
@@ -618,7 +632,7 @@ var knownTools = map[string]KnownTool{
 		},
 	},
 	"mkcert": {
-		Binaries:    []Binary{{Name: "mkcert", RenameTo: ""}},
+		Binaries:    []Binary{{Name: "mkcert"}},
 		Owner:       "FiloSottile",
 		Repository:  "mkcert",
 		Description: "A simple zero-config tool to make locally trusted development certificates with any names you'd like.",
@@ -635,8 +649,7 @@ var knownTools = map[string]KnownTool{
 	// AI
 	"codex": {
 		Binaries: []Binary{
-			{Name: "codex-x86_64-pc-windows-msvc", RenameTo: "codex"},
-			{Name: "codex-x86_64-unknown-linux-gnu", RenameTo: "codex"},
+			{Name: "codex", SourceNames: []string{"codex-x86_64-pc-windows-msvc", "codex-x86_64-unknown-linux-gnu"}},
 		},
 		Owner:       "openai",
 		Repository:  "codex",
@@ -651,7 +664,7 @@ var knownTools = map[string]KnownTool{
 		},
 	},
 	"crush": {
-		Binaries:    []Binary{{Name: "crush", RenameTo: ""}},
+		Binaries:    []Binary{{Name: "crush"}},
 		Owner:       "charmbracelet",
 		Repository:  "crush",
 		Description: "The glamourous AI coding agent for your favourite terminal",
@@ -665,7 +678,7 @@ var knownTools = map[string]KnownTool{
 		},
 	},
 	"opencode": {
-		Binaries:    []Binary{{Name: "opencode", RenameTo: ""}},
+		Binaries:    []Binary{{Name: "opencode"}},
 		Owner:       "sst",
 		Repository:  "opencode",
 		Description: "The open source coding agent.",
@@ -681,9 +694,9 @@ var knownTools = map[string]KnownTool{
 	// Miscellaneous
 	"hledger": {
 		Binaries: []Binary{
-			{Name: "hledger", RenameTo: ""},
-			{Name: "hledger-ui", RenameTo: ""},
-			{Name: "hledger-web", RenameTo: ""},
+			{Name: "hledger"},
+			{Name: "hledger-ui"},
+			{Name: "hledger-web"},
 		},
 		Owner:       "simonmichael",
 		Repository:  "hledger",
@@ -696,7 +709,7 @@ var knownTools = map[string]KnownTool{
 		},
 	},
 	"hyperfine": {
-		Binaries:    []Binary{{Name: "hyperfine", RenameTo: ""}},
+		Binaries:    []Binary{{Name: "hyperfine"}},
 		Owner:       "sharkdp",
 		Repository:  "hyperfine",
 		Description: "A command-line benchmarking tool",
@@ -709,7 +722,7 @@ var knownTools = map[string]KnownTool{
 		},
 	},
 	"miniserve": {
-		Binaries:    []Binary{{Name: "miniserve", RenameTo: ""}},
+		Binaries:    []Binary{{Name: "miniserve"}},
 		Owner:       "svenstaro",
 		Repository:  "miniserve",
 		Description: "For when you really just want to serve some files over HTTP right now!",
@@ -722,7 +735,7 @@ var knownTools = map[string]KnownTool{
 		},
 	},
 	"tealdeer": {
-		Binaries:    []Binary{{Name: "tealdeer", RenameTo: "tldr"}},
+		Binaries:    []Binary{{Name: "tldr", SourceNames: []string{"tealdeer"}}},
 		Owner:       "dbrgn",
 		Repository:  "tealdeer",
 		Description: "A very fast implementation of tldr in Rust.",
@@ -735,7 +748,7 @@ var knownTools = map[string]KnownTool{
 		},
 	},
 	"tokei": {
-		Binaries:    []Binary{{Name: "tokei", RenameTo: ""}},
+		Binaries:    []Binary{{Name: "tokei"}},
 		Owner:       "XAMPPRocky",
 		Repository:  "tokei",
 		Description: "Count your code, quickly.",
@@ -747,7 +760,7 @@ var knownTools = map[string]KnownTool{
 		},
 	},
 	"tailwind": {
-		Binaries:    []Binary{{Name: "tailwind", RenameTo: ""}},
+		Binaries:    []Binary{{Name: "tailwind"}},
 		Owner:       "tailwindlabs",
 		Repository:  "tailwindcss",
 		Description: "Tailwind CSS standalone CLI tool",

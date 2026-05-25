@@ -26,7 +26,7 @@ func TestTruncateText(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			got := truncateText(test.text, test.maxLength)
 			if got != test.expected {
-				t.Errorf("wrong truncation result: got %q but expected %q", got, test.expected)
+				t.Errorf("wrong truncation result: got %q, expected %q", got, test.expected)
 			}
 		})
 	}
@@ -35,18 +35,17 @@ func TestTruncateText(t *testing.T) {
 func TestTableBuilderAddRow(t *testing.T) {
 	t.Run("Correct column count", func(t *testing.T) {
 		tb := newTableBuilder([]string{"A", "B", "C"})
-		err := tb.addRow([]string{"x", "y", "z"})
-		if err != nil {
-			t.Errorf("unexpected error: %v", err)
-		}
+		tb.addRow([]string{"x", "y", "z"})
 	})
 
 	t.Run("Incorrect column count", func(t *testing.T) {
 		tb := newTableBuilder([]string{"A", "B", "C"})
-		err := tb.addRow([]string{"x", "y"})
-		if err == nil {
-			t.Error("expected error for wrong column count, got nil")
-		}
+		defer func() {
+			if recover() == nil {
+				t.Errorf("expected panic for wrong column count")
+			}
+		}()
+		tb.addRow([]string{"x", "y"})
 	})
 }
 

@@ -65,48 +65,55 @@ func promptRegex(text string) (*regexp.Regexp, string) {
 	}
 }
 
-func promptForBinary() (Binary, bool) {
-	binary := prompt("Binary name: ")
-	if binary == "" {
-		return Binary{}, false
+func promptForBinary(allowEmpty bool) (Binary, bool) {
+	var binary string
+
+	if allowEmpty {
+		binary = prompt("Binary name (result): ")
+		if binary == "" {
+			return Binary{}, false
+		}
+	} else {
+		binary = promptNonEmpty("Binary name (result): ")
 	}
 
-	rename := prompt("Rename binary to (leave empty if no rename): ")
+	binary = stripExeSuffix(binary)
 
-	return Binary{Name: strings.TrimSuffix(binary, ".exe"), RenameTo: strings.TrimSuffix(rename, ".exe")}, true
+	sourceNames := make([]string, 0)
+
+	fmt.Println("Enter all possible source names of the binary (leave empty if the name is identical/to quit):")
+
+	for {
+		source := stripExeSuffix(prompt("Source name: "))
+		if source == "" {
+			break
+		}
+
+		if source != binary {
+			sourceNames = append(sourceNames, source)
+		}
+	}
+
+	return Binary{Name: binary, SourceNames: sourceNames}, true
 }
 
 func promptForBinaries(fileNames []string) []Binary {
 	result := make([]Binary, 0)
 
 	if len(fileNames) != 0 {
-		fmt.Println("Found some files inside the asset, please enter which ones are the binaries to add.")
-		fmt.Println("For each file, input a name if it is a binary and should be renamed, press enter if it is a binary to add without a rename, and input 's' if you want to skip the file")
-
-		for _, file := range fileNames {
-			rename := prompt(fmt.Sprintf("For file %q:", file))
-
-			if rename == "s" || rename == "S" {
-				continue
-			}
-
-			result = append(result, Binary{Name: strings.TrimSuffix(file, ".exe"), RenameTo: strings.TrimSuffix(rename, ".exe")})
+		fmt.Println("Found the following potential binary files in the archive:")
+		for i, file := range fileNames {
+			fmt.Printf("%d: %q\n", i, file)
 		}
-	}
-
-	if len(result) != 0 {
-		return result
 	}
 
 	fmt.Println("Please provide the binaries to extract from the asset. Pressing enter (empty binary name) will finish the process:")
 
-	binary := promptNonEmpty("Binary name: ")
-	rename := prompt("Rename binary to (leave empty if no rename): ")
-
-	result = append(result, Binary{Name: binary, RenameTo: rename})
+	binary, _ := promptForBinary(false)
+	result = append(result, binary)
 
 	for {
-		binary, ok := promptForBinary()
+		binary, ok := promptForBinary(true)
 
 		if !ok {
 			break
@@ -118,7 +125,7 @@ func promptForBinaries(fileNames []string) []Binary {
 	return result
 }
 
-func promptForUniqueAssetRegex(assets []Asset) string {
+func promptForUniqueAssetRegex(assets []Asset) (Asset, AssetRegex) {
 	assetNames := make([]string, len(assets))
 
 	for i, asset := range assets {
@@ -128,21 +135,24 @@ func promptForUniqueAssetRegex(assets []Asset) string {
 	for {
 		regex, pattern := promptRegex("Enter asset regex: ")
 
-		matches := make([]string, 0)
-		for _, name := range assetNames {
+		matches := make([]int, 0)
+		for i, name := range assetNames {
 			if regex.MatchString(name) {
-				matches = append(matches, name)
+				matches = append(matches, i)
 			}
 		}
 
-		if len(matches) == 1 {
-			return pattern
-		}
-
-		fmt.Println("The provided pattern matches more than one asset name, please be more specific.")
-		fmt.Println("The following asset names would be matched by this regex:")
-		for _, name := range matches {
-			fmt.Printf("  - %s", name)
+		switch len(matches) {
+		case 0:
+			fmt.Println("The provided pattern does not match any asset. Please try again.")
+		case 1:
+			return assets[matches[0]], AssetRegex{Pattern: pattern, Regex: regex}
+		default:
+			fmt.Println("The provided pattern matches more than one asset. Please be more specific.")
+			fmt.Println("The following asset names would be matched by this regex:")
+			for _, i := range matches {
+				fmt.Printf("  - %s\n", assetNames[i])
+			}
 		}
 	}
 }

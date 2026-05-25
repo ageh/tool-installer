@@ -21,13 +21,14 @@ const testBinaryContent = "definitely not an executable"
 var testArchiveContent = map[string][]byte{
 	"tooli":                []byte(testBinaryContent),
 	"ignored":              []byte(testBinaryContent),
+	"tooli-helper":         []byte(testBinaryContent),
 	"README.md":            []byte(testBinaryContent),
 	"LICENSE":              []byte(testBinaryContent),
 	"completions/shell.sh": []byte(testBinaryContent),
 }
 
 var expectedBinaries = []Binary{{Name: "tooli"}}
-var expectedBinariesRename = []Binary{{Name: "tooli", RenameTo: "tool-installer"}}
+var expectedBinariesRename = []Binary{{Name: "helpi", SourceNames: []string{"tooli-helper"}}}
 var expectedBinariesMissing = []Binary{{Name: "tooli"}, {Name: "tooli2"}, {Name: "tooli3"}}
 
 func makeZip(t *testing.T, files map[string][]byte) []byte {
@@ -199,17 +200,17 @@ func TestGetRenameTarget(t *testing.T) {
 		binaries       []Binary
 		expectedName   string
 	}{
-		{"Directory", "some_directory/", []Binary{{Name: "unrelated", RenameTo: "ignored"}}, ""},
-		{"Without rename", "tooli", []Binary{{Name: "unrelated", RenameTo: "ignored"}, {Name: "tooli"}}, "tooli"},
-		{"With rename", "tooli", []Binary{{Name: "unrelated", RenameTo: "ignored"}, {Name: "tooli", RenameTo: "tool-installer"}}, "tool-installer"},
-		{"No match", "tooli", []Binary{{Name: "unrelated", RenameTo: "ignored"}, {Name: "tool-installer", RenameTo: ""}}, ""},
+		{"Directory", "some_directory/", []Binary{{Name: "unrelated"}}, ""},
+		{"Without rename", "tooli", []Binary{{Name: "unrelated"}, {Name: "tooli"}}, "tooli"},
+		{"With rename", "tooli", []Binary{{Name: "unrelated"}, {Name: "tooli", SourceNames: []string{"tool-installer"}}}, "tooli"},
+		{"No match", "tooli", []Binary{{Name: "unrelated"}, {Name: "tool-installer"}}, ""},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			renamed := getRenameTarget(test.fullBinaryName, test.binaries)
 			if renamed != test.expectedName {
-				t.Errorf("wrong rename target: got %q but expected %q", renamed, test.expectedName)
+				t.Errorf("wrong rename target: got %q, expected %q", renamed, test.expectedName)
 			}
 		})
 	}
@@ -232,7 +233,7 @@ func TestExtractFilesZip(t *testing.T) {
 		}
 
 		if string(result) != testBinaryContent {
-			t.Errorf("wrong file content: got %q but expected %q", result, testBinaryContent)
+			t.Errorf("wrong file content: got %q, expected %q", result, testBinaryContent)
 		}
 	})
 
@@ -244,13 +245,13 @@ func TestExtractFilesZip(t *testing.T) {
 			t.Fatalf("unexpected error: %v", err)
 		}
 
-		result, err := os.ReadFile(filepath.Join(outDir, "tool-installer"))
+		result, err := os.ReadFile(filepath.Join(outDir, "helpi"))
 		if err != nil {
 			t.Fatalf("expected file not found: %v", err)
 		}
 
 		if string(result) != testBinaryContent {
-			t.Errorf("wrong file content: got %q but expected %q", result, testBinaryContent)
+			t.Errorf("wrong file content: got %q, expected %q", result, testBinaryContent)
 		}
 	})
 
@@ -287,7 +288,7 @@ func TestExtractFilesTarGz(t *testing.T) {
 		}
 
 		if string(result) != testBinaryContent {
-			t.Errorf("wrong file content: got %q but expected %q", result, testBinaryContent)
+			t.Errorf("wrong file content: got %q, expected %q", result, testBinaryContent)
 		}
 	})
 
@@ -299,13 +300,13 @@ func TestExtractFilesTarGz(t *testing.T) {
 			t.Fatalf("unexpected error: %v", err)
 		}
 
-		result, err := os.ReadFile(filepath.Join(outDir, "tool-installer"))
+		result, err := os.ReadFile(filepath.Join(outDir, "helpi"))
 		if err != nil {
 			t.Fatalf("expected file not found: %v", err)
 		}
 
 		if string(result) != testBinaryContent {
-			t.Errorf("wrong file content: got %q but expected %q", result, testBinaryContent)
+			t.Errorf("wrong file content: got %q, expected %q", result, testBinaryContent)
 		}
 	})
 
@@ -341,7 +342,7 @@ func TestExtractFilesTarXz(t *testing.T) {
 		}
 
 		if string(result) != testBinaryContent {
-			t.Errorf("wrong file content: got %q but expected %q", result, testBinaryContent)
+			t.Errorf("wrong file content: got %q, expected %q", result, testBinaryContent)
 		}
 	})
 
@@ -353,13 +354,13 @@ func TestExtractFilesTarXz(t *testing.T) {
 			t.Fatalf("unexpected error: %v", err)
 		}
 
-		result, err := os.ReadFile(filepath.Join(outDir, "tool-installer"))
+		result, err := os.ReadFile(filepath.Join(outDir, "helpi"))
 		if err != nil {
 			t.Fatalf("expected file not found: %v", err)
 		}
 
 		if string(result) != testBinaryContent {
-			t.Errorf("wrong file content: got %q but expected %q", result, testBinaryContent)
+			t.Errorf("wrong file content: got %q, expected %q", result, testBinaryContent)
 		}
 	})
 
@@ -395,7 +396,7 @@ func TestExtractFilesRaw(t *testing.T) {
 		}
 
 		if string(result) != testBinaryContent {
-			t.Errorf("wrong file content: got %q but expected %q", result, testBinaryContent)
+			t.Errorf("wrong file content: got %q, expected %q", result, testBinaryContent)
 		}
 	})
 
@@ -407,13 +408,13 @@ func TestExtractFilesRaw(t *testing.T) {
 			t.Fatalf("unexpected error: %v", err)
 		}
 
-		result, err := os.ReadFile(filepath.Join(outDir, "tool-installer"))
+		result, err := os.ReadFile(filepath.Join(outDir, "helpi"))
 		if err != nil {
 			t.Fatalf("expected file not found: %v", err)
 		}
 
 		if string(result) != testBinaryContent {
-			t.Errorf("wrong file content: got %q but expected %q", result, testBinaryContent)
+			t.Errorf("wrong file content: got %q, expected %q", result, testBinaryContent)
 		}
 	})
 
@@ -466,7 +467,7 @@ func TestExtractFiles(t *testing.T) {
 			}
 
 			if assetType != test.expectedType {
-				t.Errorf("wrong detected asset type: got %d but expected %d", assetType, test.expectedType)
+				t.Errorf("wrong detected asset type: got %d, expected %d", assetType, test.expectedType)
 			}
 		})
 	}
@@ -480,12 +481,12 @@ func TestExtractBinaryFileNames(t *testing.T) {
 		expectedFilenames []string
 		shouldError       bool
 	}{
-		{"Zip", "tooli-windows-x86_64.zip", makeZip(t, testArchiveContent), []string{"tooli", "ignored"}, false},
-		{"Zip content without suffix", "tooli-windows-x86_64", makeZip(t, testArchiveContent), []string{"tooli", "ignored"}, false},
-		{"Tar.gz", "tooli-windows-x86_64.tar.gz", makeTarGz(t, testArchiveContent), []string{"tooli", "ignored"}, false},
-		{"Tar.gz content without suffix", "tooli-windows-x86_64", makeTarGz(t, testArchiveContent), []string{"tooli", "ignored"}, false},
-		{"Tar.xz", "tooli-windows-x86_64.tar.xz", makeTarXz(t, testArchiveContent), []string{"tooli", "ignored"}, false},
-		{"Tar.xz content without suffix", "tooli-windows-x86_64", makeTarXz(t, testArchiveContent), []string{"tooli", "ignored"}, false},
+		{"Zip", "tooli-windows-x86_64.zip", makeZip(t, testArchiveContent), []string{"tooli", "ignored", "tooli-helper"}, false},
+		{"Zip content without suffix", "tooli-windows-x86_64", makeZip(t, testArchiveContent), []string{"tooli", "ignored", "tooli-helper"}, false},
+		{"Tar.gz", "tooli-windows-x86_64.tar.gz", makeTarGz(t, testArchiveContent), []string{"tooli", "ignored", "tooli-helper"}, false},
+		{"Tar.gz content without suffix", "tooli-windows-x86_64", makeTarGz(t, testArchiveContent), []string{"tooli", "ignored", "tooli-helper"}, false},
+		{"Tar.xz", "tooli-windows-x86_64.tar.xz", makeTarXz(t, testArchiveContent), []string{"tooli", "ignored", "tooli-helper"}, false},
+		{"Tar.xz content without suffix", "tooli-windows-x86_64", makeTarXz(t, testArchiveContent), []string{"tooli", "ignored", "tooli-helper"}, false},
 		{"Raw without suffix", "tooli-windows-x86_64", testArchiveContent["tooli"], []string{"tooli-windows-x86_64"}, false},
 		{"Raw exe", "tooli-windows-x86_64.exe", testArchiveContent["tooli"], []string{"tooli-windows-x86_64.exe"}, false},
 		{"Invalid zip suffix", "tooli-windows-x86_64.zip", testArchiveContent["tooli"], nil, true},
@@ -510,9 +511,10 @@ func TestExtractBinaryFileNames(t *testing.T) {
 				t.Fatal("expected error but got nil")
 			}
 
+			slices.Sort(files)
 			slices.Sort(test.expectedFilenames)
 			if !slices.Equal(files, test.expectedFilenames) {
-				t.Errorf("mismatch in extracted filenames, got %v but expected %v", files, test.expectedFilenames)
+				t.Errorf("mismatch in extracted filenames: got %v, expected %v", files, test.expectedFilenames)
 			}
 		})
 	}

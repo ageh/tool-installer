@@ -26,7 +26,7 @@ type DownloadResult struct {
 	data      []byte
 	assetName string
 	tagName   string
-	updated   bool
+	upToDate  bool
 }
 
 type RequestFormat int
@@ -37,7 +37,7 @@ const (
 )
 
 func createUserAgent() string {
-	return "ageh/tool-installer-" + version
+	return tooliRepoOwner + "/" + tooliRepoName + "-" + version
 }
 
 func httpError(statusCode int) error {
@@ -78,7 +78,7 @@ func (client *Downloader) newRequest(url string, requestFormat RequestFormat) (*
 	userAgent := createUserAgent()
 	req.Header.Add("User-Agent", userAgent)
 	if client.githubToken != "" {
-		req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", client.githubToken))
+		req.Header.Add("Authorization", "Bearer "+client.githubToken)
 	}
 
 	return req, nil
@@ -184,7 +184,7 @@ func (client *Downloader) downloadTool(tool Tool, currentVersion string) (Downlo
 	}
 
 	if currentVersion == release.TagName {
-		result.updated = true
+		result.upToDate = true
 		return result, nil
 	}
 
@@ -204,9 +204,9 @@ func (client *Downloader) downloadTool(tool Tool, currentVersion string) (Downlo
 	}
 
 	if len(res) > 1 {
-		assets := make([]string, 0)
-		for _, a := range res {
-			assets = append(assets, a.Name)
+		assets := make([]string, len(res))
+		for i, a := range res {
+			assets[i] = a.Name
 		}
 		return result, fmt.Errorf("found two or more matching assets (%v). Please be more specific", strings.Join(assets, ", "))
 	}

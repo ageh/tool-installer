@@ -15,19 +15,19 @@ func TestAllBinariesExist(t *testing.T) {
 	tool := Tool{
 		Binaries: []Binary{
 			{Name: "rg"},
-			{Name: "fd", RenameTo: "finder"},
+			{Name: "fd"},
 		},
 	}
 
 	t.Run("All binaries present", func(t *testing.T) {
 		err := os.WriteFile(filepath.Join(tempDir, "rg"), []byte("binary"), 0755)
 		if err != nil {
-			t.Fatalf("unexpected error creating test binary: %v", err)
+			t.Fatalf("unexpected error creating test binary rg: %v", err)
 		}
 
-		err = os.WriteFile(filepath.Join(tempDir, "finder"), []byte("binary"), 0755)
+		err = os.WriteFile(filepath.Join(tempDir, "fd"), []byte("binary"), 0755)
 		if err != nil {
-			t.Fatalf("unexpected error creating renamed test binary: %v", err)
+			t.Fatalf("unexpected error creating test binary fd: %v", err)
 		}
 
 		found, err := app.allBinariesExist(tempDir, tool)
@@ -41,7 +41,7 @@ func TestAllBinariesExist(t *testing.T) {
 	})
 
 	t.Run("Missing binary returns false", func(t *testing.T) {
-		err := os.Remove(filepath.Join(tempDir, "finder"))
+		err := os.Remove(filepath.Join(tempDir, "fd"))
 		if err != nil {
 			t.Fatalf("unexpected error removing test binary: %v", err)
 		}

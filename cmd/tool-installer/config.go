@@ -11,41 +11,45 @@ import (
 	"path/filepath"
 	"regexp"
 	"runtime"
+	"slices"
 	"strings"
 )
 
-const currentConfigurationVersion = 2
+const currentConfigurationVersion = 3
 
 type Binary struct {
-	Name     string `json:"-"`
-	RenameTo string `json:"-"`
+	Name        string   `json:"name"`
+	RenameTo    string   `json:"rename_to,omitempty"` // Deprecated, only kept for migration
+	SourceNames []string `json:"source_names,omitempty"`
 }
 
 func (binary Binary) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
-		Name     string `json:"name"`
-		RenameTo string `json:"rename_to,omitempty"`
+		Name        string   `json:"name"`
+		SourceNames []string `json:"source_names,omitempty"`
 	}{
-		Name:     strings.TrimSuffix(binary.Name, ".exe"),
-		RenameTo: strings.TrimSuffix(binary.RenameTo, ".exe"),
+		Name:        stripExeSuffix(binary.Name),
+		SourceNames: stripExeSuffixes(binary.SourceNames),
 	})
 }
 
 func (b *Binary) UnmarshalJSON(bytes []byte) error {
 	var result struct {
-		Name     string `json:"name"`
-		RenameTo string `json:"rename_to,omitempty"`
+		Name        string   `json:"name"`
+		RenameTo    string   `json:"rename_to,omitempty"`
+		SourceNames []string `json:"source_names,omitempty"`
 	}
 
 	if err := json.Unmarshal(bytes, &result); err != nil {
 		return fmt.Errorf("failed to parse JSON into Binary type: %w", err)
 	}
 
-	if result.Name == "" {
+	b.Name = result.Name
+	if b.Name == "" {
 		return errors.New("binary name must not be empty")
 	}
 
-	b.Name = result.Name
+	b.SourceNames = result.SourceNames
 
 	if result.RenameTo == "" {
 		return nil
@@ -53,7 +57,7 @@ func (b *Binary) UnmarshalJSON(bytes []byte) error {
 
 	baseName := filepath.Base(result.RenameTo)
 	if baseName == "." || baseName == ".." || strings.ContainsAny(result.RenameTo, `/\`) {
-		return fmt.Errorf("invalid rename_to ('%s'): must be a plain filename", b.RenameTo)
+		return fmt.Errorf("invalid rename_to ('%s'): must be a plain filename", result.RenameTo)
 	}
 
 	b.RenameTo = result.RenameTo
@@ -62,11 +66,34 @@ func (b *Binary) UnmarshalJSON(bytes []byte) error {
 }
 
 func (binary Binary) getTargetName() string {
+	return binary.Name
+}
+
+func (binary Binary) hasSourceName(name string) bool {
+	return name == binary.Name || slices.Contains(binary.SourceNames, name)
+}
+
+func migrateBinary(binary Binary) Binary {
+	var result Binary
+
 	if binary.RenameTo != "" {
-		return binary.RenameTo
+		result.Name = binary.RenameTo
+		result.SourceNames = append(result.SourceNames, binary.Name)
+	} else {
+		result.Name = binary.Name
 	}
 
-	return binary.Name
+	return result
+}
+
+func migrateBinaries(binaries []Binary) []Binary {
+	result := make([]Binary, len(binaries))
+
+	for i, binary := range binaries {
+		result[i] = migrateBinary(binary)
+	}
+
+	return result
 }
 
 type AssetRegex struct {
@@ -99,15 +126,6 @@ func (a *AssetRegex) UnmarshalJSON(bytes []byte) error {
 	return nil
 }
 
-func stringToAssetRegex(input string) (AssetRegex, error) {
-	re, err := regexp.Compile(input)
-	if err != nil {
-		return AssetRegex{}, err
-	}
-
-	return AssetRegex{Pattern: input, Regex: re}, nil
-}
-
 type Tool struct {
 	Binaries    []Binary   `json:"binaries"`
 	Owner       string     `json:"owner"`
@@ -126,8 +144,8 @@ func (t Tool) forCurrentPlatform(goos string) Tool {
 
 	for i, binary := range t.Binaries {
 		result.Binaries[i] = Binary{
-			Name:     addExeSuffix(binary.Name),
-			RenameTo: addExeSuffix(binary.RenameTo),
+			Name:        addExeSuffix(binary.Name),
+			SourceNames: addExeSuffixes(binary.SourceNames),
 		}
 	}
 
@@ -233,7 +251,7 @@ func getConfigurationVersion(input []byte) (int, error) {
 }
 
 func readConfigurationOrCreateDefault(path string) (Configuration, *UserMessage, error) {
-	var message *UserMessage = nil
+	var message *UserMessage
 	bytes, err := os.ReadFile(path)
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
@@ -264,12 +282,16 @@ func readConfigurationOrCreateDefault(path string) (Configuration, *UserMessage,
 	}
 
 	if version < currentConfigurationVersion {
-		config, err := migrateConfiguration(bytes)
+		config, err := migrateConfiguration(bytes, version)
 		if err != nil {
 			return Configuration{}, message, err
 		}
 
-		message = &UserMessage{Type: Info, Tool: "tooli", Content: "Configuration has been automatically migrated from the old format, please check it"}
+		if config.Version != currentConfigurationVersion {
+			return Configuration{}, message, fmt.Errorf("incomplete configuration migration: expected version %d but only migrated to version %d", currentConfigurationVersion, config.Version)
+		}
+
+		message = &UserMessage{Type: Info, Tool: "tooli", Content: fmt.Sprintf("Configuration has been automatically migrated from the old format, please check it (%d -> %d)", version, currentConfigurationVersion)}
 
 		err = config.save(path, false)
 		if err != nil {
@@ -298,7 +320,7 @@ type ConfigurationV1 struct {
 	Tools                 map[string]ToolV1 `json:"tools"`
 }
 
-func migrateConfiguration(input []byte) (Configuration, error) {
+func migrateConfigV1toV3(input []byte) (Configuration, error) {
 	var oldConfig ConfigurationV1
 
 	err := json.Unmarshal(input, &oldConfig)
@@ -307,7 +329,7 @@ func migrateConfiguration(input []byte) (Configuration, error) {
 	}
 
 	var result = Configuration{
-		Version:               currentConfigurationVersion,
+		Version:               3,
 		InstallationDirectory: oldConfig.InstallationDirectory,
 		Tools:                 make(map[string]Tool),
 	}
@@ -321,7 +343,7 @@ func migrateConfiguration(input []byte) (Configuration, error) {
 			}
 
 			result.Tools[name] = Tool{
-				Binaries:    tool.Binaries,
+				Binaries:    migrateBinaries(tool.Binaries),
 				Owner:       tool.Owner,
 				Repository:  tool.Repository,
 				Asset:       AssetRegex{Pattern: tool.WindowsAsset, Regex: re},
@@ -336,7 +358,7 @@ func migrateConfiguration(input []byte) (Configuration, error) {
 			}
 
 			result.Tools[name] = Tool{
-				Binaries:    tool.Binaries,
+				Binaries:    migrateBinaries(tool.Binaries),
 				Owner:       tool.Owner,
 				Repository:  tool.Repository,
 				Asset:       AssetRegex{Pattern: tool.LinuxAsset, Regex: re},
@@ -348,6 +370,32 @@ func migrateConfiguration(input []byte) (Configuration, error) {
 	}
 
 	return result, nil
+}
+
+func migrateConfigV2toV3(input []byte) (Configuration, error) {
+	config, err := parseConfiguration(input)
+	if err != nil {
+		return Configuration{}, err
+	}
+
+	config.Version = 3
+	for name, tool := range config.Tools {
+		tool.Binaries = migrateBinaries(tool.Binaries)
+		config.Tools[name] = tool
+	}
+
+	return config, nil
+}
+
+func migrateConfiguration(input []byte, oldVersion int) (Configuration, error) {
+	switch oldVersion {
+	case 0, 1:
+		return migrateConfigV1toV3(input)
+	case 2:
+		return migrateConfigV2toV3(input)
+	default:
+		return Configuration{}, fmt.Errorf("invalid version %d passed to migrateConfiguration", oldVersion)
+	}
 }
 
 var defaultTools = []string{
