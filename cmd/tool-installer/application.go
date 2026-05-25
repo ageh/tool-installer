@@ -72,7 +72,7 @@ func newApp(configPath string, timeout int) (App, []UserMessage, error) {
 func (app *App) addKnownTool(name string) UserMessage {
 	_, found := app.config.Tools[name]
 	if found {
-		return UserMessage{Type: Info, Tool: name, Content: "skipping addition to configuration - an entry already exists"}
+		return UserMessage{Type: Info, Tool: name, Content: "skipping addition to configuration: an entry already exists"}
 	}
 
 	tool, found := knownTools[name]
@@ -115,7 +115,7 @@ func (app *App) addTool(githubSlug string, entryName string) UserMessage {
 
 	_, found := app.config.Tools[name]
 	if found {
-		return UserMessage{Type: Info, Tool: name, Content: "skipping addition to configuration - an entry already exists"}
+		return UserMessage{Type: Info, Tool: name, Content: "skipping addition to configuration: an entry already exists"}
 	}
 
 	var repoInfo RepositoryInfo
@@ -246,7 +246,7 @@ func (app *App) installTools(tools []string) error {
 			}
 
 			if result.upToDate {
-				messageChannel <- UserMessage{Type: Info, Tool: name, Content: "skipping download - already up to date"}
+				messageChannel <- UserMessage{Type: Info, Tool: name, Content: "skipping download: already up to date"}
 				return
 			}
 
@@ -339,7 +339,7 @@ func (app *App) removeTools(tools []string, removeFromConfig bool) ([]UserMessag
 
 		isInstalled := app.cache.contains(name)
 		if !isInstalled {
-			results = append(results, UserMessage{Type: Info, Tool: name, Content: "skipping uninstall - tool exists in the configuration but is not installed"})
+			results = append(results, UserMessage{Type: Info, Tool: name, Content: "skipping uninstall: tool exists in the configuration but is not installed"})
 			continue
 		}
 
