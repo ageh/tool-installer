@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 ## [Unreleased]
 
+### Added
+
+- Added esp-rs CLI tools to the list of known tools
+
 ## [5.1.0] - 2026-05-25
 
 ### Fixed

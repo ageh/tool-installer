@@ -691,6 +691,34 @@ var knownTools = map[string]KnownTool{
 		},
 	},
 
+	// Embedded
+	"espflash": {
+		Binaries:    []Binary{{Name: "espflash"}},
+		Owner:       "esp-rs",
+		Repository:  "espflash",
+		Description: "Serial flasher utility for Espressif SoCs and modules based on esptool.py",
+		AssetNames: map[string]string{
+			"linux/amd64":   "^espflash-x86_64-unknown-linux-gnu\\.zip$",
+			"linux/arm64":   "^espflash-aarch64-unknown-linux-gnu\\.zip$",
+			"windows/amd64": "^espflash-x86_64-pc-windows-msvc\\.zip$",
+			"darwin/amd64":  "^espflash-x86_64-apple-darwin\\.zip$",
+			"darwin/arm64":  "^espflash-aarch64-apple-darwin\\.zip$",
+		},
+	},
+	"esp-generate": {
+		Binaries:    []Binary{{Name: "esp-generate"}},
+		Owner:       "esp-rs",
+		Repository:  "esp-generate",
+		Description: "Template generation tool to create no_std applications targeting Espressif's chips.",
+		AssetNames: map[string]string{
+			"linux/amd64":   "x86_64-unknown-linux-gnu\\.zip$",
+			"linux/arm64":   "aarch64-unknown-linux-gnu\\.zip$",
+			"windows/amd64": standardAssetWindowsx64,
+			"darwin/amd64":  "x86_64-apple-darwin\\.zip$",
+			"darwin/arm64":  "aarch64-apple-darwin\\.zip$",
+		},
+	},
+
 	// Miscellaneous
 	"hledger": {
 		Binaries: []Binary{
