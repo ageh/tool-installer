@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 )
 
@@ -98,4 +99,32 @@ func makeOutputDirectory(path string) error {
 	}
 
 	return nil
+}
+
+var forbiddenChars = regexp.MustCompile(`[\<\>\:\"\/\\\|\?\*\x00-\x1F]`)
+var reservedWindowsNames = regexp.MustCompile(`^(?i)(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])(\..*)?$`)
+
+func isPlainFilename(filename string) bool {
+	if len(strings.TrimSpace(filename)) == 0 || strings.ContainsRune(filename, 0) {
+		return false
+	}
+
+	if strings.HasPrefix(filename, ".") {
+		return false
+	}
+
+	if forbiddenChars.MatchString(filename) {
+		return false
+	}
+
+	if reservedWindowsNames.MatchString(filename) {
+		return false
+	}
+
+	cleaned := filepath.Clean(filename)
+	if filepath.Base(cleaned) != filename {
+		return false
+	}
+
+	return true
 }

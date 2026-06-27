@@ -195,3 +195,32 @@ func TestMakeOutputDirectory(t *testing.T) {
 		t.Errorf("unexpected error when attempting to recreate test output directory: %v", err)
 	}
 }
+
+func TestIsPlainFilename(t *testing.T) {
+	var tests = []struct {
+		filename string
+		expected bool
+	}{
+		{"test", true},
+		{"test.exe", true},
+		{".test", false},
+		{"../test", false},
+		{"foo/test", false},
+		{"foo/../test.exe", false},
+		{".", false},
+		{"..", false},
+		{"C:\\Program Files\\test.exe", false},
+		{"/test", false},
+		{"foo:bar", false},
+		{"CON", false},
+		{"COM1.exe", false},
+		{"NUL.tar.gz", false},
+	}
+
+	for _, test := range tests {
+		result := isPlainFilename(test.filename)
+		if result != test.expected {
+			t.Errorf("isPlainFilename failed: got %t, expected %t", result, test.expected)
+		}
+	}
+}

@@ -44,19 +44,18 @@ func (b *Binary) UnmarshalJSON(bytes []byte) error {
 		return fmt.Errorf("failed to parse JSON into Binary type: %w", err)
 	}
 
-	b.Name = result.Name
-	if b.Name == "" {
-		return errors.New("binary name must not be empty")
+	if !isPlainFilename(result.Name) {
+		return fmt.Errorf("invalid name ('%s'): must be a plain filename", result.Name)
 	}
 
+	b.Name = result.Name
 	b.SourceNames = result.SourceNames
 
 	if result.RenameTo == "" {
 		return nil
 	}
 
-	baseName := filepath.Base(result.RenameTo)
-	if baseName == "." || baseName == ".." || strings.ContainsAny(result.RenameTo, `/\`) {
+	if !isPlainFilename(result.RenameTo) {
 		return fmt.Errorf("invalid rename_to ('%s'): must be a plain filename", result.RenameTo)
 	}
 
