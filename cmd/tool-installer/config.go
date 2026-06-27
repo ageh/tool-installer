@@ -155,6 +155,7 @@ func (t Tool) forCurrentPlatform(goos string) Tool {
 type Configuration struct {
 	Version               int             `json:"version"`
 	InstallationDirectory string          `json:"install_dir"`
+	GitHubToken           string          `json:"github_token,omitempty"`
 	Tools                 map[string]Tool `json:"tools"`
 }
 

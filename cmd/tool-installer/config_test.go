@@ -50,6 +50,7 @@ const testFutureConfig = `{
 const testConfig = `{
 	"version": 3,
 	"install_dir": "~/.local/bin",
+	"github_token": "configured-token",
 	"tools": {
 		"ripgrep": {
 			"owner": "BurntSushi",
@@ -460,6 +461,9 @@ func TestDefaultConfiguration(t *testing.T) {
 	if config.InstallationDirectory != "~/.local/bin" {
 		t.Errorf("wrong installation directory: got %q, expected '~/.local/bin'", config.InstallationDirectory)
 	}
+	if config.GitHubToken != "" {
+		t.Errorf("default GitHub token should be empty but got %q", config.GitHubToken)
+	}
 
 	for _, name := range defaultTools {
 		tool, found := config.Tools[name]
@@ -562,6 +566,9 @@ func TestReadConfigurationOrCreateDefault(t *testing.T) {
 
 		if len(config.Tools) != 1 {
 			t.Errorf("expected exactly one tool in example configuration but got %d", len(config.Tools))
+		}
+		if config.GitHubToken != "configured-token" {
+			t.Errorf("got GitHub token %q, expected %q", config.GitHubToken, "configured-token")
 		}
 	})
 }

@@ -24,6 +24,7 @@ The configuration for tool-installer is a simple JSON file with the following st
 {
 	"version": 3,
 	"install_dir": "~/.local/bin",
+	"github_token": "",
 	"tools": {
 		"tool1": {
 			"binaries": [
@@ -57,7 +58,7 @@ The configuration for tool-installer is a simple JSON file with the following st
 
 The `source_names` field is optional, if you do not need it, you can safely omit it.
 
-To change the installation directory, set the value of `install_dir` to a different path. To add or remove tools, you can use the `add` and `remove` commands or directly change the entries in the configuration file. Each entry of `tools` should be a struct with the entries:
+The `github_token` field is optional and defaults to an empty string. To change the installation directory, set the value of `install_dir` to a different path. To add or remove tools, you can use the `add` and `remove` commands or directly change the entries in the configuration file. Each entry of `tools` should be a struct with the entries:
 
 - `owner`: Name of the GitHub account under which the repository is located
 - `repository`: Name of the repository
@@ -73,7 +74,15 @@ On the first run without a configuration file present, tool-installer will use i
 
 ### Access Token
 
-Since GitHub's API is subject to rate limits, you should create a [personal access token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token#creating-a-fine-grained-personal-access-token) and set that as the `GITHUB_TOKEN` environment variable. This also allows you to download from (your own) private repositories.
+Since GitHub's API is subject to rate limits, you should create a [personal access token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token#creating-a-fine-grained-personal-access-token). This also allows you to download from (your own) private repositories.
+
+tool-installer checks for an access token in the following order and places, the first non-empty one is taken:
+
+1. The optional `github_token` configuration field
+2. The environment variable `TOOLI_GITHUB_TOKEN`
+3. The environment variable `GITHUB_TOKEN`
+
+`GITHUB_TOKEN` comes last in order to not interfere with other tools that might need tokens with more permissions, for example the GitHub copilot CLI.
 
 ## Usage
 

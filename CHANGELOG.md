@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 ### Added
 
+- Optional `github_token` configuration field to set the GitHub access token. If left empty, it falls back to the environment variables `TOOLI_GITHUB_TOKEN` and then `GITHUB_TOKEN` (which was the only way to set the access token previously)
 - Added esp-rs CLI tools to the list of known tools
 
 ## [5.1.0] - 2026-05-25

@@ -57,7 +57,7 @@ func newApp(configPath string, timeout int) (App, []UserMessage, error) {
 
 	result.cache = cache
 
-	downloader, message := newDownloader(timeout)
+	downloader, message := newDownloader(timeout, config.GitHubToken)
 	if message != nil {
 		messages = append(messages, *message)
 	}

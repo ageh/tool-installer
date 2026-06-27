@@ -42,19 +42,25 @@ func createUserAgent() string {
 
 func httpError(statusCode int) error {
 	if statusCode == http.StatusForbidden || statusCode == http.StatusTooManyRequests {
-		return fmt.Errorf("HTTP status %d: GitHub API rate limit is likely hit, check if you have set the `GITHUB_TOKEN` environment variable", statusCode)
+		return fmt.Errorf("HTTP status %d: GitHub API rate limit is likely hit, check if you have configured a GitHub token", statusCode)
 	}
 
 	return fmt.Errorf("unexpected HTTP status: %d", statusCode)
 }
 
-func newDownloader(timeoutSeconds int) (Downloader, *UserMessage) {
-	githubToken := os.Getenv("GITHUB_TOKEN")
+func newDownloader(timeoutSeconds int, configuredGitHubToken string) (Downloader, *UserMessage) {
+	githubToken := configuredGitHubToken
+	if githubToken == "" {
+		githubToken = os.Getenv("TOOLI_GITHUB_TOKEN")
+	}
+	if githubToken == "" {
+		githubToken = os.Getenv("GITHUB_TOKEN")
+	}
 
 	res := Downloader{client: http.Client{Timeout: time.Duration(timeoutSeconds) * time.Second}, githubToken: githubToken}
 
 	if githubToken == "" {
-		return res, &UserMessage{Type: Info, Tool: "tooli", Content: "GITHUB_TOKEN is not set in the environment variables, consider setting it to avoid rate limiting"}
+		return res, &UserMessage{Type: Info, Tool: "tooli", Content: "No GitHub token is configured; consider setting github_token in the config, or an environment variable TOOLI_GITHUB_TOKEN or GITHUB_TOKEN to avoid rate limiting"}
 	}
 
 	return res, nil
