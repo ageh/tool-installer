@@ -93,7 +93,7 @@ func getConfigFilePath() (string, error) {
 }
 
 func makeOutputDirectory(path string) error {
-	err := os.MkdirAll(path, 0755)
+	err := os.MkdirAll(path, 0o755)
 	if err != nil {
 		return fmt.Errorf("error creating output directory ('%s'): %w", path, err)
 	}

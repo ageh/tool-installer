@@ -62,7 +62,7 @@ func makeZipWithDirectory(t *testing.T, name string) []byte {
 	w := zip.NewWriter(&buf)
 
 	header := &zip.FileHeader{Name: name}
-	header.SetMode(os.ModeDir | 0755)
+	header.SetMode(os.ModeDir | 0o755)
 	if _, err := w.CreateHeader(header); err != nil {
 		t.Fatalf("unexpected error creating zip directory entry: %v", err)
 	}
@@ -82,7 +82,7 @@ func makeTarGz(t *testing.T, files map[string][]byte) []byte {
 	keys := slices.Sorted(maps.Keys(files))
 	for _, name := range keys {
 		content := files[name]
-		err := tw.WriteHeader(&tar.Header{Name: name, Size: int64(len(content)), Mode: 0755})
+		err := tw.WriteHeader(&tar.Header{Name: name, Size: int64(len(content)), Mode: 0o755})
 		if err != nil {
 			t.Fatalf("unexpected error writing tar header: %v", err)
 		}
@@ -118,7 +118,7 @@ func makeTarGzWithDirectory(t *testing.T, name string) []byte {
 	gw := gzip.NewWriter(&buf)
 	tw := tar.NewWriter(gw)
 
-	if err := tw.WriteHeader(&tar.Header{Name: name, Typeflag: tar.TypeDir, Mode: 0755}); err != nil {
+	if err := tw.WriteHeader(&tar.Header{Name: name, Typeflag: tar.TypeDir, Mode: 0o755}); err != nil {
 		t.Fatalf("unexpected error writing tar directory header: %v", err)
 	}
 
@@ -141,7 +141,7 @@ func makeTarXz(t *testing.T, files map[string][]byte) []byte {
 	keys := slices.Sorted(maps.Keys(files))
 	for _, name := range keys {
 		content := files[name]
-		err := tw.WriteHeader(&tar.Header{Name: name, Size: int64(len(content)), Mode: 0755})
+		err := tw.WriteHeader(&tar.Header{Name: name, Size: int64(len(content)), Mode: 0o755})
 		if err != nil {
 			t.Fatalf("unexpected error writing tar header: %v", err)
 		}
@@ -183,7 +183,7 @@ func makeTarXzWithDirectory(t *testing.T, name string) []byte {
 	}
 	tw := tar.NewWriter(xw)
 
-	if err := tw.WriteHeader(&tar.Header{Name: name, Typeflag: tar.TypeDir, Mode: 0755}); err != nil {
+	if err := tw.WriteHeader(&tar.Header{Name: name, Typeflag: tar.TypeDir, Mode: 0o755}); err != nil {
 		t.Fatalf("unexpected error writing tar directory header: %v", err)
 	}
 

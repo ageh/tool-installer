@@ -22,12 +22,12 @@ func TestAllBinariesExist(t *testing.T) {
 	}
 
 	t.Run("All binaries present", func(t *testing.T) {
-		err := os.WriteFile(filepath.Join(tempDir, "rg"), []byte("binary"), 0755)
+		err := os.WriteFile(filepath.Join(tempDir, "rg"), []byte("binary"), 0o755)
 		if err != nil {
 			t.Fatalf("unexpected error creating test binary rg: %v", err)
 		}
 
-		err = os.WriteFile(filepath.Join(tempDir, "fd"), []byte("binary"), 0755)
+		err = os.WriteFile(filepath.Join(tempDir, "fd"), []byte("binary"), 0o755)
 		if err != nil {
 			t.Fatalf("unexpected error creating test binary fd: %v", err)
 		}
@@ -79,7 +79,7 @@ func TestToolsFromCacheSkipsStaleEntries(t *testing.T) {
 		},
 	}
 
-	err := os.WriteFile(filepath.Join(tempDir, "rg"), []byte("binary"), 0755)
+	err := os.WriteFile(filepath.Join(tempDir, "rg"), []byte("binary"), 0o755)
 	if err != nil {
 		t.Fatalf("unexpected error creating installed binary: %v", err)
 	}

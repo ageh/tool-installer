@@ -96,7 +96,7 @@ func extractFilesZip(rawData []byte, binaries []Binary, outputPath string) error
 
 		filePath := filepath.Join(outputPath, fileName)
 
-		err = os.WriteFile(filePath, fileContent, 0755)
+		err = os.WriteFile(filePath, fileContent, 0o755)
 		if err != nil {
 			return err
 		}
@@ -178,7 +178,7 @@ func extractFromTar(uncompressReader io.Reader, binaries []Binary, outputPath st
 			return closeErr
 		}
 
-		err = os.Chmod(filePath, 0755)
+		err = os.Chmod(filePath, 0o755)
 		if err != nil {
 			return err
 		}
@@ -217,7 +217,7 @@ func extractFilesRaw(rawData []byte, binaries []Binary, outputPath string) error
 		return err
 	}
 
-	return os.Chmod(filePath, 0755)
+	return os.Chmod(filePath, 0o755)
 }
 
 func hasArchiveSuffix(assetName string) bool {

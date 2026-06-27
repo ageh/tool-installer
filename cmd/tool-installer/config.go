@@ -191,7 +191,7 @@ func (config *Configuration) save(path string, promptOverride bool) error {
 
 	dirName := filepath.Dir(path)
 
-	err = os.MkdirAll(dirName, 0755)
+	err = os.MkdirAll(dirName, 0o755)
 	if err != nil {
 		return fmt.Errorf("failed to create the directory for configuration writing: %w", err)
 	}
@@ -219,6 +219,8 @@ func (config *Configuration) save(path string, promptOverride bool) error {
 		return fmt.Errorf("error creating configuration file: %w", err)
 	}
 	defer file.Close()
+
+	os.Chmod(path, 0o600)
 
 	encoder := json.NewEncoder(file)
 	encoder.SetIndent("", "\t")

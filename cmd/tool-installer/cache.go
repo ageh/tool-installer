@@ -47,7 +47,7 @@ func (cache *Cache) writeCache() error {
 		return fmt.Errorf(errMessage, err)
 	}
 
-	err = os.WriteFile(filePath, bytes, 0644)
+	err = os.WriteFile(filePath, bytes, 0o644)
 	if err != nil {
 		return fmt.Errorf(errMessage, err)
 	}
