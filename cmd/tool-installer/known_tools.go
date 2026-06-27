@@ -677,6 +677,20 @@ var knownTools = map[string]KnownTool{
 			"darwin/arm64":  "Darwin_arm64\\.zip$",
 		},
 	},
+	"github-copilot": {
+		Binaries:    []Binary{{Name: "copilot"}},
+		Owner:       "github",
+		Repository:  "copilot-cli",
+		Description: "GitHub Copilot CLI brings the power of Copilot coding agent directly to your terminal.",
+		AssetNames: map[string]string{
+			"linux/amd64":   "linux-x64\\.tar\\.gz$",
+			"linux/arm64":   "linux-arm64\\.tar\\.gz$",
+			"windows/amd64": "win32-x64\\.zip$",
+			"windows/arm64": "win32-arm64\\.zip$",
+			"darwin/amd64":  "darwin-x64\\.tar\\.gz$",
+			"darwin/arm64":  "darwin-arm64\\.tar\\.gz$",
+		},
+	},
 	"opencode": {
 		Binaries:    []Binary{{Name: "opencode"}},
 		Owner:       "sst",
