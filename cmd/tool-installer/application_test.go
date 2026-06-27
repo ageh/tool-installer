@@ -3,8 +3,10 @@
 package main
 
 import (
+	"maps"
 	"os"
 	"path/filepath"
+	"reflect"
 	"testing"
 )
 
@@ -101,5 +103,34 @@ func TestToolsFromCacheSkipsStaleEntries(t *testing.T) {
 
 	if len(stale) != 1 || stale[0] != "fd" {
 		t.Fatalf("unexpected stale cache entries: %v", stale)
+	}
+}
+
+func TestSaveAddedTool(t *testing.T) {
+	configPath := filepath.Join(t.TempDir(), "config.json")
+	originalTool := validTestTool("rg")
+	app := App{
+		config: Configuration{
+			Version:               currentConfigurationVersion,
+			InstallationDirectory: "~/.local/bin",
+			Tools: map[string]Tool{
+				"ripgrep": originalTool,
+			},
+		},
+		configLocation: configPath,
+	}
+	originalConfig := app.config
+	originalConfig.Tools = maps.Clone(app.config.Tools)
+
+	err := app.saveAddedTool("duplicate", validTestTool("RG"))
+	if err == nil {
+		t.Fatal("expected adding a conflicting tool to fail")
+	}
+
+	if !reflect.DeepEqual(app.config, originalConfig) {
+		t.Errorf("configuration changed after rejecting conflicting tool: got %+v, expected %+v", app.config, originalConfig)
+	}
+	if _, err := os.Stat(configPath); !os.IsNotExist(err) {
+		t.Errorf("configuration file was written after rejecting conflicting tool: %v", err)
 	}
 }

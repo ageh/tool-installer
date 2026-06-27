@@ -68,6 +68,16 @@ func (binary Binary) getTargetName() string {
 	return binary.Name
 }
 
+func (b Binary) getTargetKey(goos string) string {
+	name := b.getTargetName()
+
+	if goos == "windows" {
+		name = addExeSuffix(name)
+	}
+
+	return strings.ToLower(name)
+}
+
 func (binary Binary) hasSourceName(name string) bool {
 	return name == binary.Name || slices.Contains(binary.SourceNames, name)
 }
@@ -174,9 +184,14 @@ func (c *Configuration) getSanitizedInstallationDirectory() (string, error) {
 }
 
 func (config *Configuration) save(path string, promptOverride bool) error {
+	err := config.validate(runtime.GOOS)
+	if err != nil {
+		return err
+	}
+
 	dirName := filepath.Dir(path)
 
-	err := os.MkdirAll(dirName, 0755)
+	err = os.MkdirAll(dirName, 0755)
 	if err != nil {
 		return fmt.Errorf("failed to create the directory for configuration writing: %w", err)
 	}
@@ -211,6 +226,57 @@ func (config *Configuration) save(path string, promptOverride bool) error {
 	err = encoder.Encode(config)
 	if err != nil {
 		return fmt.Errorf("error writing configuration to file: %w", err)
+	}
+
+	return nil
+}
+
+func (config *Configuration) validate(goos string) error {
+	if config.InstallationDirectory == "" {
+		return errors.New("invalid configuration: installation directory must be non-empty")
+	}
+
+	seen := make(map[string]string)
+	for toolName, tool := range config.Tools {
+		if tool.Owner == "" {
+			return errors.New("invalid configuration: owner must be non-empty")
+		}
+
+		if tool.Repository == "" {
+			return errors.New("invalid configuration: repository must be non-empty")
+		}
+
+		if tool.Asset.Pattern == "" {
+			return fmt.Errorf("invalid configuration: tool %q has no asset pattern", toolName)
+		}
+
+		if tool.Asset.Regex == nil {
+			return fmt.Errorf("invalid configuration: tool %q has no compiled asset regex", toolName)
+		}
+
+		if tool.Asset.Regex.String() != tool.Asset.Pattern {
+			return fmt.Errorf("invalid configuration: asset pattern and compiled regex differ for tool %q", toolName)
+		}
+
+		if len(tool.Binaries) == 0 {
+			return fmt.Errorf("invalid configuration: tool %q has no configured binaries", toolName)
+		}
+
+		for _, binary := range tool.Binaries {
+			key := binary.getTargetKey(goos)
+
+			if previous, found := seen[key]; found {
+				return fmt.Errorf("invalid configuration: binary %q from tool %q conflicts with tool %q", binary.Name, toolName, previous)
+			}
+
+			seen[key] = toolName
+
+			for _, sourceName := range binary.SourceNames {
+				if !isPlainFilename(sourceName) {
+					return fmt.Errorf("invalid configuration: tool %q has an invalid source name %q", toolName, sourceName)
+				}
+			}
+		}
 	}
 
 	return nil
@@ -266,7 +332,12 @@ func readConfigurationOrCreateDefault(path string) (Configuration, *UserMessage,
 				return Configuration{}, message, fmt.Errorf("failed to write default configuration to disk: %w", err)
 			}
 
-			return normalizeConfiguration(config, runtime.GOOS), message, nil
+			normalized := normalizeConfiguration(config, runtime.GOOS)
+			if err = normalized.validate(runtime.GOOS); err != nil {
+				return Configuration{}, message, err
+			}
+
+			return normalized, message, nil
 		}
 
 		return Configuration{}, message, err
@@ -298,12 +369,25 @@ func readConfigurationOrCreateDefault(path string) (Configuration, *UserMessage,
 			return Configuration{}, message, fmt.Errorf("could not save automatically migrated configuration: %w", err)
 		}
 
-		return normalizeConfiguration(config, runtime.GOOS), message, nil
+		normalized := normalizeConfiguration(config, runtime.GOOS)
+		if err = normalized.validate(runtime.GOOS); err != nil {
+			return Configuration{}, message, err
+		}
+
+		return normalized, message, nil
 	}
 
 	config, err := parseConfiguration(bytes)
+	if err != nil {
+		return Configuration{}, message, err
+	}
 
-	return normalizeConfiguration(config, runtime.GOOS), message, err
+	normalized := normalizeConfiguration(config, runtime.GOOS)
+	if err = normalized.validate(runtime.GOOS); err != nil {
+		return Configuration{}, message, err
+	}
+
+	return normalized, message, nil
 }
 
 type ToolV1 struct {

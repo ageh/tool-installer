@@ -4,6 +4,7 @@ package main
 
 import (
 	"fmt"
+	"maps"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -85,13 +86,12 @@ func (app *App) addKnownTool(name string) UserMessage {
 		return UserMessage{Type: Error, Tool: name, Content: fmt.Sprintf("error obtaining known tool: %v", err)}
 	}
 
-	app.config.Tools[name] = tmp
-	err = app.config.save(app.configLocation, false)
+	err = app.saveAddedTool(name, tmp)
 	if err != nil {
-		return UserMessage{Type: Error, Tool: name, Content: "failed to write configuration to disk"}
-	} else {
-		return UserMessage{Type: Success, Tool: name, Content: "successfully added to the configuration with values taken from well-known tools list"}
+		return UserMessage{Type: Error, Tool: name, Content: fmt.Sprintf("failed to add known tool: %v", err)}
 	}
+
+	return UserMessage{Type: Success, Tool: name, Content: "successfully added to the configuration with values taken from well-known tools list"}
 }
 
 func (app *App) addTool(githubSlug string, entryName string) UserMessage {
@@ -166,7 +166,7 @@ func (app *App) addTool(githubSlug string, entryName string) UserMessage {
 
 	binaries := promptForBinaries(fileNames)
 
-	app.config.Tools[name] = Tool{
+	tool := Tool{
 		Binaries:    binaries,
 		Owner:       owner,
 		Repository:  repository,
@@ -174,12 +174,28 @@ func (app *App) addTool(githubSlug string, entryName string) UserMessage {
 		Description: repoInfo.Description,
 	}
 
-	err = app.config.save(app.configLocation, false)
+	err = app.saveAddedTool(name, tool)
 	if err != nil {
-		return UserMessage{Type: Error, Tool: name, Content: "failed to write configuration to disk"}
-	} else {
-		return UserMessage{Type: Success, Tool: name, Content: "successfully added to the configuration"}
+		return UserMessage{Type: Error, Tool: name, Content: fmt.Sprintf("failed to add tool: %v", err)}
 	}
+
+	return UserMessage{Type: Success, Tool: name, Content: "successfully added to the configuration"}
+}
+
+func (app *App) saveAddedTool(name string, tool Tool) error {
+	candidate := app.config
+	candidate.Tools = maps.Clone(app.config.Tools)
+	candidate.Tools[name] = tool.forCurrentPlatform(runtime.GOOS)
+
+	if err := candidate.validate(runtime.GOOS); err != nil {
+		return err
+	}
+	if err := candidate.save(app.configLocation, false); err != nil {
+		return err
+	}
+
+	app.config = candidate
+	return nil
 }
 
 func (app *App) checkToolVersions(checkAll bool) ([]UserMessage, error) {
