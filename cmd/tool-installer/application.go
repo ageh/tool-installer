@@ -389,7 +389,12 @@ func (app *App) updateTools() ([]UserMessage, error) {
 		return messages, err
 	}
 
-	tools := make([]string, len(outdated))
+	n := len(outdated)
+	if n == 0 {
+		return messages, err
+	}
+
+	tools := make([]string, n)
 	for i, tmp := range outdated {
 		tools[i] = tmp.Name
 	}

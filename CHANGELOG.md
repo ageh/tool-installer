@@ -12,6 +12,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 - Added esp-rs CLI tools to the list of known tools
 - Added GitHub copilot CLI to the list of known tools
 
+### Fixed
+
+- The `update` command no longer accidentally installs all tools when there are no tools to update
+
 ## [5.1.0] - 2026-05-25
 
 ### Fixed
