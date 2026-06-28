@@ -13,6 +13,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 - Added GitHub copilot CLI to the list of known tools
 - Added validation checks for configuration
 
+### Changed
+
+- Self update check uses the release tag name instead of the release name to be consistent with tool update checks
+
 ### Fixed
 
 - The `update` command no longer accidentally installs all tools when there are no tools to update

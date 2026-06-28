@@ -447,10 +447,10 @@ func (app *App) showStatus(verbose bool) error {
 		release, err := app.downloader.downloadRelease(tooliRepoOwner, tooliRepoName)
 		if err != nil {
 			versionStatus = fmt.Sprintf("check failed (%v)", err)
-		} else if release.Name == version {
+		} else if strings.TrimPrefix(release.TagName, "v") == version {
 			versionStatus = "up to date"
 		} else {
-			versionStatus = fmt.Sprintf("new version %s available", release.Name)
+			versionStatus = fmt.Sprintf("new version %s available", release.TagName)
 		}
 	}
 
