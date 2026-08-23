@@ -180,6 +180,7 @@ func TestInstallToolsReinstallsMissingBinaries(t *testing.T) {
 	})
 
 	tempDir := t.TempDir()
+	t.Setenv("TOOLI_CACHE_DIRECTORY", t.TempDir())
 
 	app := App{
 		downloader: newTestDownloader(t, mux),
