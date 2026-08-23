@@ -15,6 +15,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 - Added checks for argument counts for each command
 - Added limit for asset size and number of concurrent downloads
 - Added kache to the list of known tools
+- Added some tests to the downloader using Go 1.27's new `NewTestServer`
 
 ### Changed
 

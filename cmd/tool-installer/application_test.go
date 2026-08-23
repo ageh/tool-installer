@@ -3,10 +3,13 @@
 package main
 
 import (
+	"encoding/json"
 	"maps"
+	"net/http"
 	"os"
 	"path/filepath"
 	"reflect"
+	"sync/atomic"
 	"testing"
 )
 
@@ -158,5 +161,46 @@ func TestSaveAddedTool(t *testing.T) {
 	}
 	if _, err := os.Stat(configPath); !os.IsNotExist(err) {
 		t.Errorf("configuration file was written after rejecting conflicting tool: %v", err)
+	}
+}
+
+func TestInstallToolsReinstallsMissingBinaries(t *testing.T) {
+	var assetHit atomic.Bool
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/repos/owner/tool/releases/latest", func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewEncoder(w).Encode(Release{
+			TagName: "v1.0.0",
+			Assets:  []Asset{{Name: "tool.bin", Url: gitHubApiUrl + "/assets/tool"}},
+		})
+	})
+	mux.HandleFunc("/assets/tool", func(w http.ResponseWriter, r *http.Request) {
+		assetHit.Store(true)
+		_, _ = w.Write([]byte("binary-data"))
+	})
+
+	tempDir := t.TempDir()
+
+	app := App{
+		downloader: newTestDownloader(t, mux),
+		config: Configuration{
+			InstallationDirectory: tempDir,
+			Tools: map[string]Tool{
+				"tool": testDownloadableTool("owner", "tool"),
+			},
+		},
+		cache: Cache{Tools: map[string]string{"tool": "v1.0.0"}},
+	}
+
+	if err := app.installTools(nil); err != nil {
+		t.Fatalf("installTools failed: %v", err)
+	}
+
+	if !assetHit.Load() {
+		t.Fatal("expected the asset to be re-downloaded even though the cache reported the tool as up to date")
+	}
+
+	if _, err := os.Stat(filepath.Join(tempDir, "tool")); err != nil {
+		t.Fatalf("expected the binary to be installed on disk: %v", err)
 	}
 }
