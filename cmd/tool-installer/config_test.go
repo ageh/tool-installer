@@ -4,6 +4,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -519,9 +520,18 @@ func TestDefaultConfiguration(t *testing.T) {
 	}
 
 	for _, name := range defaultTools {
+		known, found := knownTools[name]
+		if !found {
+			t.Errorf("expected known tool entry for default tool %q", name)
+			continue
+		}
+
 		tool, found := config.Tools[name]
 		if !found {
-			t.Errorf("expected to find an entry for %q in the default configuration", name)
+			if _, err := known.intoToolForPlatform(); !errors.Is(err, ErrUnsupportedPlatform) {
+				t.Errorf("default tool %q is missing from the default configuration for an unexpected reason: %v", name, err)
+			}
+			continue
 		}
 
 		if tool.Owner == "" {

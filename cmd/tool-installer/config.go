@@ -515,6 +515,10 @@ func getDefaultConfiguration() (Configuration, error) {
 
 		tmp, err := tool.intoToolForPlatform()
 		if err != nil {
+			if errors.Is(err, ErrUnsupportedPlatform) {
+				continue
+			}
+
 			return Configuration{}, fmt.Errorf("failed to obtain tool from known tools: %w", err)
 		}
 

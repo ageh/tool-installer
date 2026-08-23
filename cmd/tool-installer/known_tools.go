@@ -17,12 +17,14 @@ type KnownTool struct {
 	AssetNames  map[string]string
 }
 
+var ErrUnsupportedPlatform = errors.New("no known asset name for current platform")
+
 func (k KnownTool) intoToolForPlatform() (Tool, error) {
 	lookup := runtime.GOOS + "/" + runtime.GOARCH
 
 	asset, found := k.AssetNames[lookup]
 	if !found {
-		return Tool{}, errors.New("no known asset name for current platform")
+		return Tool{}, ErrUnsupportedPlatform
 	}
 
 	re, err := regexp.Compile(asset)
