@@ -28,6 +28,8 @@ const (
 	RawBinary
 )
 
+const maxFileSize = 1000 * 1024 * 1024 // 1 GiB
+
 var ignoredExtensions = []string{".md", ".txt", ".sh", ".bash", ".fish", ".ps1", ".bat", ".1", ".json"}
 var ignoredFiles = []string{"COPYING", "CONTRIBUTING", "CONTRIBUTORS", "NOTICE", "AUTHORS", "Makefile", "VERSION"}
 
@@ -85,13 +87,16 @@ func extractFilesZip(rawData []byte, binaries []Binary, outputPath string) error
 			return err
 		}
 
-		fileContent, err := io.ReadAll(fileReader)
+		fileContent, err := io.ReadAll(io.LimitReader(fileReader, maxFileSize+1))
 		closeErr := fileReader.Close()
 		if err != nil {
 			return err
 		}
 		if closeErr != nil {
 			return closeErr
+		}
+		if len(fileContent) > maxFileSize {
+			return fmt.Errorf("extracted file %q exceeds maximum allowed size of %d bytes", fileName, maxFileSize)
 		}
 
 		filePath := filepath.Join(outputPath, fileName)
@@ -169,13 +174,16 @@ func extractFromTar(uncompressReader io.Reader, binaries []Binary, outputPath st
 			return err
 		}
 
-		_, err = io.Copy(file, tarReader)
+		written, err := io.Copy(file, io.LimitReader(tarReader, maxFileSize+1))
 		closeErr := file.Close()
 		if err != nil {
 			return err
 		}
 		if closeErr != nil {
 			return closeErr
+		}
+		if written > maxFileSize {
+			return fmt.Errorf("extracted file %q exceeds maximum allowed size of %d bytes", fileName, maxFileSize)
 		}
 
 		err = os.Chmod(filePath, 0o755)
