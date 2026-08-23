@@ -511,8 +511,12 @@ func (app *App) showStatus(verbose bool) error {
 func (app *App) allBinariesExist(toolDirectory string, tool Tool) (bool, error) {
 	for _, binary := range tool.Binaries {
 		path := filepath.Join(toolDirectory, binary.getTargetName())
-		_, err := os.Stat(path)
+		info, err := os.Stat(path)
 		if err == nil {
+			if !info.Mode().IsRegular() {
+				return false, nil
+			}
+
 			continue
 		}
 

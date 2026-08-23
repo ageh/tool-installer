@@ -25,6 +25,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 - Default configuration now skips entries that are not supported on the current platform instead of producing an error
 - Create configuration file with the correct permissions directly
 - Fix null check in cache implementation
+- Check for binary existence no longer treats directories as binaries
 
 ## [5.1.0] - 2026-05-25
 

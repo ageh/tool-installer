@@ -57,6 +57,32 @@ func TestAllBinariesExist(t *testing.T) {
 			t.Fatal("expected missing binary to be detected")
 		}
 	})
+
+	t.Run("Directory at binary path is not treated as installed", func(t *testing.T) {
+		err := os.WriteFile(filepath.Join(tempDir, "fd"), []byte("binary"), 0o755)
+		if err != nil {
+			t.Fatalf("unexpected error creating test binary fd: %v", err)
+		}
+
+		err = os.Remove(filepath.Join(tempDir, "rg"))
+		if err != nil {
+			t.Fatalf("unexpected error removing test binary: %v", err)
+		}
+
+		err = os.Mkdir(filepath.Join(tempDir, "rg"), 0o755)
+		if err != nil {
+			t.Fatalf("unexpected error creating directory at binary path: %v", err)
+		}
+
+		found, err := app.allBinariesExist(tempDir, tool)
+		if err != nil {
+			t.Fatalf("unexpected error checking binaries: %v", err)
+		}
+
+		if found {
+			t.Fatal("expected a directory at the binary path to not count as installed")
+		}
+	})
 }
 
 func TestToolsFromCacheSkipsStaleEntries(t *testing.T) {
