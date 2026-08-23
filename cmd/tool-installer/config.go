@@ -79,7 +79,21 @@ func (b Binary) getTargetKey(goos string) string {
 }
 
 func (binary Binary) hasSourceName(name string) bool {
-	return name == binary.Name || slices.Contains(binary.SourceNames, name)
+	return binary.hasSourceNameForOS(name, runtime.GOOS)
+}
+
+func (binary Binary) hasSourceNameForOS(name string, goos string) bool {
+	if goos != "windows" {
+		return name == binary.Name || slices.Contains(binary.SourceNames, name)
+	}
+
+	if strings.EqualFold(name, binary.Name) {
+		return true
+	}
+
+	return slices.ContainsFunc(binary.SourceNames, func(sourceName string) bool {
+		return strings.EqualFold(name, sourceName)
+	})
 }
 
 func migrateBinary(binary Binary) Binary {

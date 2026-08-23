@@ -19,7 +19,7 @@ func addExeSuffix(fileName string) string {
 		return fileName
 	}
 
-	if !strings.HasSuffix(fileName, ".exe") {
+	if !strings.HasSuffix(strings.ToLower(fileName), ".exe") {
 		return fileName + ".exe"
 	}
 
@@ -37,7 +37,11 @@ func addExeSuffixes(names []string) []string {
 }
 
 func stripExeSuffix(fileName string) string {
-	return strings.TrimSuffix(fileName, ".exe")
+	if strings.HasSuffix(strings.ToLower(fileName), ".exe") {
+		return fileName[:len(fileName)-len(".exe")]
+	}
+
+	return fileName
 }
 
 func stripExeSuffixes(names []string) []string {

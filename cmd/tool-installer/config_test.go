@@ -411,6 +411,33 @@ func TestToolForCurrentPlatform(t *testing.T) {
 	}
 }
 
+func TestBinaryHasSourceNameForOS(t *testing.T) {
+	binary := Binary{Name: "tool.exe", SourceNames: []string{"other.exe"}}
+
+	tests := []struct {
+		name     string
+		goos     string
+		input    string
+		expected bool
+	}{
+		{"Windows matches exact case", "windows", "tool.exe", true},
+		{"Windows matches uppercase name", "windows", "Tool.EXE", true},
+		{"Windows matches uppercase source name", "windows", "OTHER.EXE", true},
+		{"Windows rejects unrelated name", "windows", "unrelated.exe", false},
+		{"Non-Windows matches exact case", "linux", "tool.exe", true},
+		{"Non-Windows rejects differing case", "linux", "Tool.EXE", false},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			result := binary.hasSourceNameForOS(test.input, test.goos)
+			if result != test.expected {
+				t.Errorf("hasSourceNameForOS(%q, %q) = %v, expected %v", test.input, test.goos, result, test.expected)
+			}
+		})
+	}
+}
+
 func TestGetSanitizedInstallationDirectory(t *testing.T) {
 	homeDir, err := os.UserHomeDir()
 	if err != nil {

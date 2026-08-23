@@ -17,6 +17,8 @@ func TestAddExeSuffix(t *testing.T) {
 	}{
 		{"No suffix", "ripgrep", "ripgrep.exe"},
 		{"With suffix", "ripgrep.exe", "ripgrep.exe"},
+		{"With uppercase suffix", "Tool.EXE", "Tool.EXE"},
+		{"With mixed-case suffix", "Tool.Exe", "Tool.Exe"},
 		{"Empty string", "", ""},
 	}
 
@@ -49,6 +51,8 @@ func TestStripExeSuffix(t *testing.T) {
 	}{
 		{"No suffix", "ripgrep", "ripgrep"},
 		{"With suffix", "ripgrep.exe", "ripgrep"},
+		{"With uppercase suffix", "Tool.EXE", "Tool"},
+		{"With mixed-case suffix", "Tool.Exe", "Tool"},
 		{"Empty string", "", ""},
 	}
 
