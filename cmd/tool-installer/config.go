@@ -214,13 +214,15 @@ func (config *Configuration) save(path string, promptOverride bool) error {
 		return fmt.Errorf("error when checking if target file already exists: %w", err)
 	}
 
-	file, err := os.Create(path)
+	file, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o600)
 	if err != nil {
 		return fmt.Errorf("error creating configuration file: %w", err)
 	}
 	defer file.Close()
 
-	os.Chmod(path, 0o600)
+	if err := file.Chmod(0o600); err != nil {
+		return fmt.Errorf("error setting configuration file permissions: %w", err)
+	}
 
 	encoder := json.NewEncoder(file)
 	encoder.SetIndent("", "\t")

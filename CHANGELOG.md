@@ -22,6 +22,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 - The `update` command no longer accidentally installs all tools when there are no tools to update
 - Made checking allowed filenames for binaries more robust
 - Default configuration now skips entries that are not supported on the current platform instead of producing an error
+- Create configuration file with the correct permissions directly
 
 ## [5.1.0] - 2026-05-25
 
