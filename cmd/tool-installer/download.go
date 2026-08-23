@@ -17,6 +17,7 @@ import (
 
 var checksumRegex = regexp.MustCompile(`(?i)\.(sha(\d+)?(sum)?|md5(sum)?|checksums\.txt)$`)
 
+const gitHubApiUrl = "https://api.github.com"
 const maxAssetSize = 500 * 1024 * 1024 // 500 MiB
 
 type Downloader struct {
@@ -93,7 +94,7 @@ func (client *Downloader) newRequest(url string, requestFormat RequestFormat) (*
 }
 
 func (client *Downloader) downloadRepoInfo(owner string, repository string) (RepositoryInfo, error) {
-	url := fmt.Sprintf("https://api.github.com/repos/%s/%s", owner, repository)
+	url := fmt.Sprintf("%s/repos/%s/%s", gitHubApiUrl, owner, repository)
 
 	var result RepositoryInfo
 
@@ -126,7 +127,7 @@ func (client *Downloader) downloadRepoInfo(owner string, repository string) (Rep
 }
 
 func (client *Downloader) downloadRelease(owner string, repository string) (Release, error) {
-	url := fmt.Sprintf("https://api.github.com/repos/%s/%s/releases/latest", owner, repository)
+	url := fmt.Sprintf("%s/repos/%s/%s/releases/latest", gitHubApiUrl, owner, repository)
 
 	var result Release
 
