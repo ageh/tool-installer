@@ -227,7 +227,7 @@ var knownTools = map[string]KnownTool{
 		Repository:  "biome",
 		Description: "Web Dev formatter and linter",
 		AssetNames: map[string]string{
-			"linux/amd64":   "linux-x64-musl",
+			"linux/amd64":   "linux-x64$",
 			"linux/arm64":   "linux-arm64$",
 			"windows/amd64": "win32-x64\\.exe$",
 			"windows/arm64": "win32-arm64\\.exe$",
@@ -654,8 +654,8 @@ var knownTools = map[string]KnownTool{
 		Repository:  "mkcert",
 		Description: "A simple zero-config tool to make locally trusted development certificates with any names you'd like.",
 		AssetNames: map[string]string{
-			"linux/amd64":   "linux-amd64",
-			"linux/arm64":   "linux-arm64",
+			"linux/amd64":   "linux-amd64$",
+			"linux/arm64":   "linux-arm64$",
 			"windows/amd64": "windows-amd64\\.exe$",
 			"windows/arm64": "windows-arm64\\.exe$",
 			"darwin/amd64":  "darwin-amd64$",
@@ -666,18 +666,18 @@ var knownTools = map[string]KnownTool{
 	// AI
 	"codex": {
 		Binaries: []Binary{
-			{Name: "codex", SourceNames: []string{"codex-x86_64-pc-windows-msvc", "codex-x86_64-unknown-linux-gnu"}},
+			{Name: "codex", SourceNames: []string{"codex-x86_64-pc-windows-msvc", "codex-x86_64-unknown-linux-musl"}},
 		},
 		Owner:       "openai",
 		Repository:  "codex",
 		Description: "Lightweight coding agent that runs in your terminal",
 		AssetNames: map[string]string{
-			"linux/amd64":   "codex-x86_64-unknown-linux-gnu.tar\\.gz$",
-			"linux/arm64":   standardAssetLinuxArm,
+			"linux/amd64":   "codex-x86_64-unknown-linux-musl\\.tar\\.gz$",
+			"linux/arm64":   "codex-aarch64-unknown-linux-musl\\.tar\\.gz$",
 			"windows/amd64": "codex-x86_64-pc-windows-msvc\\.exe\\.zip$",
-			"windows/arm64": standardAssetWindowsArm,
-			"darwin/amd64":  standardAssetApplex64,
-			"darwin/arm64":  standardAssetAppleArm,
+			"windows/arm64": "codex-aarch64-pc-windows-msvc\\.exe\\.zip$",
+			"darwin/amd64":  "codex-x86_64-apple-darwin\\.tar\\.gz$",
+			"darwin/arm64":  "codex-aarch64-apple-darwin\\.tar\\.gz$",
 		},
 	},
 	"crush": {
