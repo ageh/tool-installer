@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 ## [Unreleased]
 
+## [5.3.0] - 2026-08-23
+
 ### Fixed
 
 - Fixed test overwriting the real cache file
