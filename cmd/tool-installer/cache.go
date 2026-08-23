@@ -79,5 +79,9 @@ func getCache() (Cache, error) {
 		return result, fmt.Errorf("error parsing cache file: %w", err)
 	}
 
+	if result.Tools == nil {
+		result.Tools = make(map[string]string)
+	}
+
 	return result, nil
 }
