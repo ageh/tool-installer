@@ -389,6 +389,20 @@ var knownTools = map[string]KnownTool{
 			"darwin/arm64":  standardAssetAppleArm,
 		},
 	},
+	"kache": {
+		Binaries:    []Binary{{Name: "kache"}},
+		Owner:       "kunobi-ninja",
+		Repository:  "kache",
+		Description: "Zero-copy, content-addressed Rust build cache for Rust, C/C++ and more. No copies, no wasted disk — just hardlinks locally and S3 for sharing.",
+		AssetNames: map[string]string{
+			"linux/amd64":   standardAssetLinuxMuslx64,
+			"linux/arm64":   standardAssetLinuxMuslArm,
+			"windows/amd64": standardAssetWindowsx64,
+			"windows/arm64": standardAssetWindowsArm,
+			"darwin/amd64":  standardAssetApplex64,
+			"darwin/arm64":  standardAssetAppleArm,
+		},
+	},
 	"ninja": {
 		Binaries:    []Binary{{Name: "ninja"}},
 		Owner:       "ninja-build",
