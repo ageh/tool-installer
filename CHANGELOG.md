@@ -34,6 +34,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 - Fix null check in cache implementation
 - Check for binary existence no longer treats directories as binaries
 - Reject non-positive timeout values
+- Track extracted binaries by name instead of just counting
 
 ## [5.1.0] - 2026-05-25
 

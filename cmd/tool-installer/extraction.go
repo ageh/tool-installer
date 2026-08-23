@@ -70,7 +70,7 @@ func extractFilesZip(rawData []byte, binaries []Binary, outputPath string) error
 	}
 
 	toExtract := len(binaries)
-	extracted := 0
+	extracted := make(map[string]bool, toExtract)
 
 	for _, file := range zipReader.File {
 		if file.FileInfo().IsDir() {
@@ -106,14 +106,14 @@ func extractFilesZip(rawData []byte, binaries []Binary, outputPath string) error
 			return err
 		}
 
-		extracted++
-		if extracted == toExtract {
+		extracted[fileName] = true
+		if len(extracted) == toExtract {
 			break
 		}
 	}
 
-	if extracted != toExtract {
-		return fmt.Errorf("only extracted %d of %d expected binaries", extracted, toExtract)
+	if len(extracted) != toExtract {
+		return fmt.Errorf("only extracted %d of %d expected binaries", len(extracted), toExtract)
 	}
 
 	return nil
@@ -147,7 +147,7 @@ func extractFromTar(uncompressReader io.Reader, binaries []Binary, outputPath st
 	tarReader := tar.NewReader(uncompressReader)
 
 	toExtract := len(binaries)
-	extracted := 0
+	extracted := make(map[string]bool, toExtract)
 
 	for {
 		header, err := tarReader.Next()
@@ -191,14 +191,14 @@ func extractFromTar(uncompressReader io.Reader, binaries []Binary, outputPath st
 			return err
 		}
 
-		extracted++
-		if extracted == toExtract {
+		extracted[fileName] = true
+		if len(extracted) == toExtract {
 			break
 		}
 	}
 
-	if extracted != toExtract {
-		return fmt.Errorf("only extracted %d of %d expected binaries", extracted, toExtract)
+	if len(extracted) != toExtract {
+		return fmt.Errorf("only extracted %d of %d expected binaries", len(extracted), toExtract)
 	}
 
 	return nil
