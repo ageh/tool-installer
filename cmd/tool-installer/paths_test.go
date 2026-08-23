@@ -17,6 +17,8 @@ func TestAddExeSuffix(t *testing.T) {
 	}{
 		{"No suffix", "ripgrep", "ripgrep.exe"},
 		{"With suffix", "ripgrep.exe", "ripgrep.exe"},
+		{"With uppercase suffix", "Tool.EXE", "Tool.EXE"},
+		{"With mixed-case suffix", "Tool.Exe", "Tool.Exe"},
 		{"Empty string", "", ""},
 	}
 
@@ -49,6 +51,8 @@ func TestStripExeSuffix(t *testing.T) {
 	}{
 		{"No suffix", "ripgrep", "ripgrep"},
 		{"With suffix", "ripgrep.exe", "ripgrep"},
+		{"With uppercase suffix", "Tool.EXE", "Tool"},
+		{"With mixed-case suffix", "Tool.Exe", "Tool"},
 		{"Empty string", "", ""},
 	}
 
@@ -193,5 +197,34 @@ func TestMakeOutputDirectory(t *testing.T) {
 	err = makeOutputDirectory(testOutputDir)
 	if err != nil {
 		t.Errorf("unexpected error when attempting to recreate test output directory: %v", err)
+	}
+}
+
+func TestIsPlainFilename(t *testing.T) {
+	var tests = []struct {
+		filename string
+		expected bool
+	}{
+		{"test", true},
+		{"test.exe", true},
+		{".test", false},
+		{"../test", false},
+		{"foo/test", false},
+		{"foo/../test.exe", false},
+		{".", false},
+		{"..", false},
+		{"C:\\Program Files\\test.exe", false},
+		{"/test", false},
+		{"foo:bar", false},
+		{"CON", false},
+		{"COM1.exe", false},
+		{"NUL.tar.gz", false},
+	}
+
+	for _, test := range tests {
+		result := isPlainFilename(test.filename)
+		if result != test.expected {
+			t.Errorf("isPlainFilename failed: got %t, expected %t", result, test.expected)
+		}
 	}
 }

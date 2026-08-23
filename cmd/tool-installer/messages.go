@@ -44,6 +44,7 @@ type MessageType int
 const (
 	Success MessageType = iota
 	Info
+	Warning
 	Error
 )
 
@@ -59,6 +60,8 @@ func (m UserMessage) Print() {
 		colorPrintln(SuccessGreen, fmt.Sprintf("%s: %s", m.Tool, m.Content))
 	case Info:
 		fmt.Printf("%s: info: %s\n", m.Tool, m.Content)
+	case Warning:
+		colorPrintln(WarningYellow, fmt.Sprintf("%s: warning: %s", m.Tool, m.Content))
 	case Error:
 		colorPrintln(ErrorRed, fmt.Sprintf("%s: error: %s", m.Tool, m.Content))
 	}

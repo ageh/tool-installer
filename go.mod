@@ -1,6 +1,6 @@
 module github.com/ageh/tool-installer
 
-go 1.26.3
+go 1.27
 
 require github.com/ulikunitz/xz/v2 v2.0.0-dev.4
 

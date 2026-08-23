@@ -17,12 +17,14 @@ type KnownTool struct {
 	AssetNames  map[string]string
 }
 
+var ErrUnsupportedPlatform = errors.New("no known asset name for current platform")
+
 func (k KnownTool) intoToolForPlatform() (Tool, error) {
 	lookup := runtime.GOOS + "/" + runtime.GOARCH
 
 	asset, found := k.AssetNames[lookup]
 	if !found {
-		return Tool{}, errors.New("no known asset name for current platform")
+		return Tool{}, ErrUnsupportedPlatform
 	}
 
 	re, err := regexp.Compile(asset)
@@ -225,7 +227,7 @@ var knownTools = map[string]KnownTool{
 		Repository:  "biome",
 		Description: "Web Dev formatter and linter",
 		AssetNames: map[string]string{
-			"linux/amd64":   "linux-x64-musl",
+			"linux/amd64":   "linux-x64$",
 			"linux/arm64":   "linux-arm64$",
 			"windows/amd64": "win32-x64\\.exe$",
 			"windows/arm64": "win32-arm64\\.exe$",
@@ -299,6 +301,7 @@ var knownTools = map[string]KnownTool{
 			"linux/amd64":   "linux-x64\\.zip$",
 			"linux/arm64":   "linux-aarch64\\.zip$",
 			"windows/amd64": "windows-x64\\.zip$",
+			"windows/arm64": "windows-aarch64\\.zip$",
 			"darwin/amd64":  "darwin-x64\\.zip$",
 			"darwin/arm64":  "darwin-aarch64\\.zip$",
 		},
@@ -377,6 +380,20 @@ var knownTools = map[string]KnownTool{
 		Owner:       "casey",
 		Repository:  "just",
 		Description: "Just a command runner",
+		AssetNames: map[string]string{
+			"linux/amd64":   standardAssetLinuxMuslx64,
+			"linux/arm64":   standardAssetLinuxMuslArm,
+			"windows/amd64": standardAssetWindowsx64,
+			"windows/arm64": standardAssetWindowsArm,
+			"darwin/amd64":  standardAssetApplex64,
+			"darwin/arm64":  standardAssetAppleArm,
+		},
+	},
+	"kache": {
+		Binaries:    []Binary{{Name: "kache"}},
+		Owner:       "kunobi-ninja",
+		Repository:  "kache",
+		Description: "Zero-copy, content-addressed Rust build cache for Rust, C/C++ and more. No copies, no wasted disk — just hardlinks locally and S3 for sharing.",
 		AssetNames: map[string]string{
 			"linux/amd64":   standardAssetLinuxMuslx64,
 			"linux/arm64":   standardAssetLinuxMuslArm,
@@ -637,8 +654,8 @@ var knownTools = map[string]KnownTool{
 		Repository:  "mkcert",
 		Description: "A simple zero-config tool to make locally trusted development certificates with any names you'd like.",
 		AssetNames: map[string]string{
-			"linux/amd64":   "linux-amd64",
-			"linux/arm64":   "linux-arm64",
+			"linux/amd64":   "linux-amd64$",
+			"linux/arm64":   "linux-arm64$",
 			"windows/amd64": "windows-amd64\\.exe$",
 			"windows/arm64": "windows-arm64\\.exe$",
 			"darwin/amd64":  "darwin-amd64$",
@@ -649,18 +666,18 @@ var knownTools = map[string]KnownTool{
 	// AI
 	"codex": {
 		Binaries: []Binary{
-			{Name: "codex", SourceNames: []string{"codex-x86_64-pc-windows-msvc", "codex-x86_64-unknown-linux-gnu"}},
+			{Name: "codex", SourceNames: []string{"codex-x86_64-pc-windows-msvc", "codex-x86_64-unknown-linux-musl"}},
 		},
 		Owner:       "openai",
 		Repository:  "codex",
 		Description: "Lightweight coding agent that runs in your terminal",
 		AssetNames: map[string]string{
-			"linux/amd64":   "codex-x86_64-unknown-linux-gnu.tar\\.gz$",
-			"linux/arm64":   standardAssetLinuxArm,
+			"linux/amd64":   "codex-x86_64-unknown-linux-musl\\.tar\\.gz$",
+			"linux/arm64":   "codex-aarch64-unknown-linux-musl\\.tar\\.gz$",
 			"windows/amd64": "codex-x86_64-pc-windows-msvc\\.exe\\.zip$",
-			"windows/arm64": standardAssetWindowsArm,
-			"darwin/amd64":  standardAssetApplex64,
-			"darwin/arm64":  standardAssetAppleArm,
+			"windows/arm64": "codex-aarch64-pc-windows-msvc\\.exe\\.zip$",
+			"darwin/amd64":  "codex-x86_64-apple-darwin\\.tar\\.gz$",
+			"darwin/arm64":  "codex-aarch64-apple-darwin\\.tar\\.gz$",
 		},
 	},
 	"crush": {
@@ -677,6 +694,20 @@ var knownTools = map[string]KnownTool{
 			"darwin/arm64":  "Darwin_arm64\\.zip$",
 		},
 	},
+	"github-copilot": {
+		Binaries:    []Binary{{Name: "copilot"}},
+		Owner:       "github",
+		Repository:  "copilot-cli",
+		Description: "GitHub Copilot CLI brings the power of Copilot coding agent directly to your terminal.",
+		AssetNames: map[string]string{
+			"linux/amd64":   "linux-x64\\.tar\\.gz$",
+			"linux/arm64":   "linux-arm64\\.tar\\.gz$",
+			"windows/amd64": "win32-x64\\.zip$",
+			"windows/arm64": "win32-arm64\\.zip$",
+			"darwin/amd64":  "darwin-x64\\.tar\\.gz$",
+			"darwin/arm64":  "darwin-arm64\\.tar\\.gz$",
+		},
+	},
 	"opencode": {
 		Binaries:    []Binary{{Name: "opencode"}},
 		Owner:       "sst",
@@ -688,6 +719,34 @@ var knownTools = map[string]KnownTool{
 			"windows/amd64": "windows-x64\\.zip$",
 			"darwin/amd64":  "darwin-x64\\.zip$",
 			"darwin/arm64":  "darwin-arm64\\.zip$",
+		},
+	},
+
+	// Embedded
+	"espflash": {
+		Binaries:    []Binary{{Name: "espflash"}},
+		Owner:       "esp-rs",
+		Repository:  "espflash",
+		Description: "Serial flasher utility for Espressif SoCs and modules based on esptool.py",
+		AssetNames: map[string]string{
+			"linux/amd64":   "^espflash-x86_64-unknown-linux-gnu\\.zip$",
+			"linux/arm64":   "^espflash-aarch64-unknown-linux-gnu\\.zip$",
+			"windows/amd64": "^espflash-x86_64-pc-windows-msvc\\.zip$",
+			"darwin/amd64":  "^espflash-x86_64-apple-darwin\\.zip$",
+			"darwin/arm64":  "^espflash-aarch64-apple-darwin\\.zip$",
+		},
+	},
+	"esp-generate": {
+		Binaries:    []Binary{{Name: "esp-generate"}},
+		Owner:       "esp-rs",
+		Repository:  "esp-generate",
+		Description: "Template generation tool to create no_std applications targeting Espressif's chips.",
+		AssetNames: map[string]string{
+			"linux/amd64":   "x86_64-unknown-linux-gnu\\.zip$",
+			"linux/arm64":   "aarch64-unknown-linux-gnu\\.zip$",
+			"windows/amd64": standardAssetWindowsx64,
+			"darwin/amd64":  "x86_64-apple-darwin\\.zip$",
+			"darwin/arm64":  "aarch64-apple-darwin\\.zip$",
 		},
 	},
 

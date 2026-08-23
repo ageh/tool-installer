@@ -47,7 +47,7 @@ func (cache *Cache) writeCache() error {
 		return fmt.Errorf(errMessage, err)
 	}
 
-	err = os.WriteFile(filePath, bytes, 0644)
+	err = os.WriteFile(filePath, bytes, 0o644)
 	if err != nil {
 		return fmt.Errorf(errMessage, err)
 	}
@@ -77,6 +77,10 @@ func getCache() (Cache, error) {
 	err = json.Unmarshal(bytes, &result)
 	if err != nil {
 		return result, fmt.Errorf("error parsing cache file: %w", err)
+	}
+
+	if result.Tools == nil {
+		result.Tools = make(map[string]string)
 	}
 
 	return result, nil

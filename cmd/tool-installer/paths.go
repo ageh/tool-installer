@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 )
 
@@ -18,7 +19,7 @@ func addExeSuffix(fileName string) string {
 		return fileName
 	}
 
-	if !strings.HasSuffix(fileName, ".exe") {
+	if !strings.HasSuffix(strings.ToLower(fileName), ".exe") {
 		return fileName + ".exe"
 	}
 
@@ -36,7 +37,11 @@ func addExeSuffixes(names []string) []string {
 }
 
 func stripExeSuffix(fileName string) string {
-	return strings.TrimSuffix(fileName, ".exe")
+	if strings.HasSuffix(strings.ToLower(fileName), ".exe") {
+		return fileName[:len(fileName)-len(".exe")]
+	}
+
+	return fileName
 }
 
 func stripExeSuffixes(names []string) []string {
@@ -92,10 +97,38 @@ func getConfigFilePath() (string, error) {
 }
 
 func makeOutputDirectory(path string) error {
-	err := os.MkdirAll(path, 0755)
+	err := os.MkdirAll(path, 0o755)
 	if err != nil {
 		return fmt.Errorf("error creating output directory ('%s'): %w", path, err)
 	}
 
 	return nil
+}
+
+var forbiddenChars = regexp.MustCompile(`[\<\>\:\"\/\\\|\?\*\x00-\x1F]`)
+var reservedWindowsNames = regexp.MustCompile(`^(?i)(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])(\..*)?$`)
+
+func isPlainFilename(filename string) bool {
+	if len(strings.TrimSpace(filename)) == 0 || strings.ContainsRune(filename, 0) {
+		return false
+	}
+
+	if strings.HasPrefix(filename, ".") {
+		return false
+	}
+
+	if forbiddenChars.MatchString(filename) {
+		return false
+	}
+
+	if reservedWindowsNames.MatchString(filename) {
+		return false
+	}
+
+	cleaned := filepath.Clean(filename)
+	if filepath.Base(cleaned) != filename {
+		return false
+	}
+
+	return true
 }

@@ -2,7 +2,11 @@
 
 package main
 
-import "testing"
+import (
+	"os"
+	"path/filepath"
+	"testing"
+)
 
 func TestCacheWriteRead(t *testing.T) {
 	tempDir := t.TempDir()
@@ -48,6 +52,24 @@ func TestCacheWriteRead(t *testing.T) {
 
 		if cache.Tools["tooli"] != "1.0.0" {
 			t.Errorf("expected to find version '1.0.0' in cache but got %q", cache.Tools["tooli"])
+		}
+	})
+
+	t.Run("Explicit null tools map does not panic", func(t *testing.T) {
+		cachePath := filepath.Join(tempDir, cacheFileName)
+		if err := os.WriteFile(cachePath, []byte(`{"tools": null}`), 0o644); err != nil {
+			t.Fatalf("unexpected error writing test cache file: %v", err)
+		}
+
+		cache, err := getCache()
+		if err != nil {
+			t.Fatalf("unexpected error trying to read cache with null tools: %v", err)
+		}
+
+		cache.add("tooli", "1.0.0")
+
+		if !cache.contains("tooli") {
+			t.Error("expected to find 'tooli' in the cache after adding it")
 		}
 	})
 }

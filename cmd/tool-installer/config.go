@@ -44,19 +44,18 @@ func (b *Binary) UnmarshalJSON(bytes []byte) error {
 		return fmt.Errorf("failed to parse JSON into Binary type: %w", err)
 	}
 
-	b.Name = result.Name
-	if b.Name == "" {
-		return errors.New("binary name must not be empty")
+	if !isPlainFilename(result.Name) {
+		return fmt.Errorf("invalid name ('%s'): must be a plain filename", result.Name)
 	}
 
+	b.Name = result.Name
 	b.SourceNames = result.SourceNames
 
 	if result.RenameTo == "" {
 		return nil
 	}
 
-	baseName := filepath.Base(result.RenameTo)
-	if baseName == "." || baseName == ".." || strings.ContainsAny(result.RenameTo, `/\`) {
+	if !isPlainFilename(result.RenameTo) {
 		return fmt.Errorf("invalid rename_to ('%s'): must be a plain filename", result.RenameTo)
 	}
 
@@ -69,8 +68,32 @@ func (binary Binary) getTargetName() string {
 	return binary.Name
 }
 
+func (b Binary) getTargetKey(goos string) string {
+	name := b.getTargetName()
+
+	if goos == "windows" {
+		name = addExeSuffix(name)
+	}
+
+	return strings.ToLower(name)
+}
+
 func (binary Binary) hasSourceName(name string) bool {
-	return name == binary.Name || slices.Contains(binary.SourceNames, name)
+	return binary.hasSourceNameForOS(name, runtime.GOOS)
+}
+
+func (binary Binary) hasSourceNameForOS(name string, goos string) bool {
+	if goos != "windows" {
+		return name == binary.Name || slices.Contains(binary.SourceNames, name)
+	}
+
+	if strings.EqualFold(name, binary.Name) {
+		return true
+	}
+
+	return slices.ContainsFunc(binary.SourceNames, func(sourceName string) bool {
+		return strings.EqualFold(name, sourceName)
+	})
 }
 
 func migrateBinary(binary Binary) Binary {
@@ -155,6 +178,7 @@ func (t Tool) forCurrentPlatform(goos string) Tool {
 type Configuration struct {
 	Version               int             `json:"version"`
 	InstallationDirectory string          `json:"install_dir"`
+	GitHubToken           string          `json:"github_token,omitempty"`
 	Tools                 map[string]Tool `json:"tools"`
 }
 
@@ -174,9 +198,14 @@ func (c *Configuration) getSanitizedInstallationDirectory() (string, error) {
 }
 
 func (config *Configuration) save(path string, promptOverride bool) error {
+	err := config.validate(runtime.GOOS)
+	if err != nil {
+		return err
+	}
+
 	dirName := filepath.Dir(path)
 
-	err := os.MkdirAll(dirName, 0755)
+	err = os.MkdirAll(dirName, 0o755)
 	if err != nil {
 		return fmt.Errorf("failed to create the directory for configuration writing: %w", err)
 	}
@@ -199,11 +228,15 @@ func (config *Configuration) save(path string, promptOverride bool) error {
 		return fmt.Errorf("error when checking if target file already exists: %w", err)
 	}
 
-	file, err := os.Create(path)
+	file, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o600)
 	if err != nil {
 		return fmt.Errorf("error creating configuration file: %w", err)
 	}
 	defer file.Close()
+
+	if err := file.Chmod(0o600); err != nil {
+		return fmt.Errorf("error setting configuration file permissions: %w", err)
+	}
 
 	encoder := json.NewEncoder(file)
 	encoder.SetIndent("", "\t")
@@ -211,6 +244,57 @@ func (config *Configuration) save(path string, promptOverride bool) error {
 	err = encoder.Encode(config)
 	if err != nil {
 		return fmt.Errorf("error writing configuration to file: %w", err)
+	}
+
+	return nil
+}
+
+func (config *Configuration) validate(goos string) error {
+	if config.InstallationDirectory == "" {
+		return errors.New("invalid configuration: installation directory must be non-empty")
+	}
+
+	seen := make(map[string]string)
+	for toolName, tool := range config.Tools {
+		if tool.Owner == "" {
+			return errors.New("invalid configuration: owner must be non-empty")
+		}
+
+		if tool.Repository == "" {
+			return errors.New("invalid configuration: repository must be non-empty")
+		}
+
+		if tool.Asset.Pattern == "" {
+			return fmt.Errorf("invalid configuration: tool %q has no asset pattern", toolName)
+		}
+
+		if tool.Asset.Regex == nil {
+			return fmt.Errorf("invalid configuration: tool %q has no compiled asset regex", toolName)
+		}
+
+		if tool.Asset.Regex.String() != tool.Asset.Pattern {
+			return fmt.Errorf("invalid configuration: asset pattern and compiled regex differ for tool %q", toolName)
+		}
+
+		if len(tool.Binaries) == 0 {
+			return fmt.Errorf("invalid configuration: tool %q has no configured binaries", toolName)
+		}
+
+		for _, binary := range tool.Binaries {
+			key := binary.getTargetKey(goos)
+
+			if previous, found := seen[key]; found {
+				return fmt.Errorf("invalid configuration: binary %q from tool %q conflicts with tool %q", binary.Name, toolName, previous)
+			}
+
+			seen[key] = toolName
+
+			for _, sourceName := range binary.SourceNames {
+				if !isPlainFilename(sourceName) {
+					return fmt.Errorf("invalid configuration: tool %q has an invalid source name %q", toolName, sourceName)
+				}
+			}
+		}
 	}
 
 	return nil
@@ -266,7 +350,12 @@ func readConfigurationOrCreateDefault(path string) (Configuration, *UserMessage,
 				return Configuration{}, message, fmt.Errorf("failed to write default configuration to disk: %w", err)
 			}
 
-			return normalizeConfiguration(config, runtime.GOOS), message, nil
+			normalized := normalizeConfiguration(config, runtime.GOOS)
+			if err = normalized.validate(runtime.GOOS); err != nil {
+				return Configuration{}, message, err
+			}
+
+			return normalized, message, nil
 		}
 
 		return Configuration{}, message, err
@@ -298,12 +387,25 @@ func readConfigurationOrCreateDefault(path string) (Configuration, *UserMessage,
 			return Configuration{}, message, fmt.Errorf("could not save automatically migrated configuration: %w", err)
 		}
 
-		return normalizeConfiguration(config, runtime.GOOS), message, nil
+		normalized := normalizeConfiguration(config, runtime.GOOS)
+		if err = normalized.validate(runtime.GOOS); err != nil {
+			return Configuration{}, message, err
+		}
+
+		return normalized, message, nil
 	}
 
 	config, err := parseConfiguration(bytes)
+	if err != nil {
+		return Configuration{}, message, err
+	}
 
-	return normalizeConfiguration(config, runtime.GOOS), message, err
+	normalized := normalizeConfiguration(config, runtime.GOOS)
+	if err = normalized.validate(runtime.GOOS); err != nil {
+		return Configuration{}, message, err
+	}
+
+	return normalized, message, nil
 }
 
 type ToolV1 struct {
@@ -429,6 +531,10 @@ func getDefaultConfiguration() (Configuration, error) {
 
 		tmp, err := tool.intoToolForPlatform()
 		if err != nil {
+			if errors.Is(err, ErrUnsupportedPlatform) {
+				continue
+			}
+
 			return Configuration{}, fmt.Errorf("failed to obtain tool from known tools: %w", err)
 		}
 

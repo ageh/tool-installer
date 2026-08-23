@@ -6,6 +6,39 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 ## [Unreleased]
 
+## [5.2.0] - 2026-08-23
+
+### Added
+
+- Optional `github_token` configuration field to set the GitHub access token. If left empty, it falls back to the environment variables `TOOLI_GITHUB_TOKEN` and then `GITHUB_TOKEN` (which was the only way to set the access token previously)
+- Added esp-rs CLI tools to the list of known tools
+- Added GitHub copilot CLI to the list of known tools
+- Added validation checks for configuration
+- Added checks for argument counts for each command
+- Added limit for asset size and number of concurrent downloads
+- Added kache to the list of known tools
+- Added some tests to the downloader using Go 1.27's new `NewTestServer`
+- Added limit for extracted file size
+
+### Changed
+
+- Self update check uses the release tag name instead of the release name to be consistent with tool update checks
+- Install checks if all binaries exist instead of blindly trusting the cache only
+- Binary suffix check for ".exe" on Windows is now case-insensitive
+- Update to Go 1.27
+
+### Fixed
+
+- The `update` command no longer accidentally installs all tools when there are no tools to update
+- Made checking allowed filenames for binaries more robust
+- Default configuration now skips entries that are not supported on the current platform instead of producing an error
+- Create configuration file with the correct permissions directly
+- Fix null check in cache implementation
+- Check for binary existence no longer treats directories as binaries
+- Reject non-positive timeout values
+- Track extracted binaries by name instead of just counting
+- Fix potential data race reading cached version
+
 ## [5.1.0] - 2026-05-25
 
 ### Fixed
@@ -59,6 +92,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 - Asset regex validity checks are now performed on all platforms instead of just Windows
 - Removed invalid paragraphs from README which still described asset name regexes as suffixes
 - Improved wording in README wording and fixed typos
+- Typos and wrong asset names in known tools
 
 ### Removed
 

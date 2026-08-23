@@ -4,6 +4,7 @@ package main
 
 import (
 	"fmt"
+	"maps"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -14,6 +15,7 @@ import (
 
 const tooliRepoOwner = "ageh"
 const tooliRepoName = "tool-installer"
+const maxConcurrentInstalls = 4
 
 type ToolInfo struct {
 	Name        string
@@ -57,7 +59,7 @@ func newApp(configPath string, timeout int) (App, []UserMessage, error) {
 
 	result.cache = cache
 
-	downloader, message := newDownloader(timeout)
+	downloader, message := newDownloader(timeout, config.GitHubToken)
 	if message != nil {
 		messages = append(messages, *message)
 	}
@@ -85,13 +87,12 @@ func (app *App) addKnownTool(name string) UserMessage {
 		return UserMessage{Type: Error, Tool: name, Content: fmt.Sprintf("error obtaining known tool: %v", err)}
 	}
 
-	app.config.Tools[name] = tmp
-	err = app.config.save(app.configLocation, false)
+	err = app.saveAddedTool(name, tmp)
 	if err != nil {
-		return UserMessage{Type: Error, Tool: name, Content: "failed to write configuration to disk"}
-	} else {
-		return UserMessage{Type: Success, Tool: name, Content: "successfully added to the configuration with values taken from well-known tools list"}
+		return UserMessage{Type: Error, Tool: name, Content: fmt.Sprintf("failed to add known tool: %v", err)}
 	}
+
+	return UserMessage{Type: Success, Tool: name, Content: "successfully added to the configuration with values taken from well-known tools list"}
 }
 
 func (app *App) addTool(githubSlug string, entryName string) UserMessage {
@@ -166,7 +167,7 @@ func (app *App) addTool(githubSlug string, entryName string) UserMessage {
 
 	binaries := promptForBinaries(fileNames)
 
-	app.config.Tools[name] = Tool{
+	tool := Tool{
 		Binaries:    binaries,
 		Owner:       owner,
 		Repository:  repository,
@@ -174,12 +175,28 @@ func (app *App) addTool(githubSlug string, entryName string) UserMessage {
 		Description: repoInfo.Description,
 	}
 
-	err = app.config.save(app.configLocation, false)
+	err = app.saveAddedTool(name, tool)
 	if err != nil {
-		return UserMessage{Type: Error, Tool: name, Content: "failed to write configuration to disk"}
-	} else {
-		return UserMessage{Type: Success, Tool: name, Content: "successfully added to the configuration"}
+		return UserMessage{Type: Error, Tool: name, Content: fmt.Sprintf("failed to add tool: %v", err)}
 	}
+
+	return UserMessage{Type: Success, Tool: name, Content: "successfully added to the configuration"}
+}
+
+func (app *App) saveAddedTool(name string, tool Tool) error {
+	candidate := app.config
+	candidate.Tools = maps.Clone(app.config.Tools)
+	candidate.Tools[name] = tool.forCurrentPlatform(runtime.GOOS)
+
+	if err := candidate.validate(runtime.GOOS); err != nil {
+		return err
+	}
+	if err := candidate.save(app.configLocation, false); err != nil {
+		return err
+	}
+
+	app.config = candidate
+	return nil
 }
 
 func (app *App) checkToolVersions(checkAll bool) ([]UserMessage, error) {
@@ -235,11 +252,30 @@ func (app *App) installTools(tools []string) error {
 	var wg sync.WaitGroup
 	messageChannel := make(chan UserMessage)
 	var mu sync.Mutex
+	semaphore := make(chan struct{}, maxConcurrentInstalls)
+
+	cacheSnapshot := maps.Clone(app.cache.Tools)
 
 	for name, tool := range toInstall {
-		currentVersion := app.cache.Tools[name]
+		currentVersion := cacheSnapshot[name]
 		wg.Go(func() {
-			result, err := app.downloader.downloadTool(tool, currentVersion)
+			semaphore <- struct{}{}
+			defer func() { <-semaphore }()
+
+			version := currentVersion
+			if version != "" {
+				exists, err := app.allBinariesExist(toolDirectory, tool)
+				if err != nil {
+					messageChannel <- UserMessage{Type: Error, Tool: name, Content: fmt.Sprintf("failed to check installed binaries: %v", err)}
+					return
+				}
+
+				if !exists {
+					version = ""
+				}
+			}
+
+			result, err := app.downloader.downloadTool(tool, version)
 			if err != nil {
 				messageChannel <- UserMessage{Type: Error, Tool: name, Content: fmt.Sprintf("failed to download tool: %v", err)}
 				return
@@ -389,7 +425,12 @@ func (app *App) updateTools() ([]UserMessage, error) {
 		return messages, err
 	}
 
-	tools := make([]string, len(outdated))
+	n := len(outdated)
+	if n == 0 {
+		return messages, err
+	}
+
+	tools := make([]string, n)
 	for i, tmp := range outdated {
 		tools[i] = tmp.Name
 	}
@@ -426,10 +467,10 @@ func (app *App) showStatus(verbose bool) error {
 		release, err := app.downloader.downloadRelease(tooliRepoOwner, tooliRepoName)
 		if err != nil {
 			versionStatus = fmt.Sprintf("check failed (%v)", err)
-		} else if release.Name == version {
+		} else if strings.TrimPrefix(release.TagName, "v") == version {
 			versionStatus = "up to date"
 		} else {
-			versionStatus = fmt.Sprintf("new version %s available", release.Name)
+			versionStatus = fmt.Sprintf("new version %s available", release.TagName)
 		}
 	}
 
@@ -477,8 +518,12 @@ func (app *App) showStatus(verbose bool) error {
 func (app *App) allBinariesExist(toolDirectory string, tool Tool) (bool, error) {
 	for _, binary := range tool.Binaries {
 		path := filepath.Join(toolDirectory, binary.getTargetName())
-		_, err := os.Stat(path)
+		info, err := os.Stat(path)
 		if err == nil {
+			if !info.Mode().IsRegular() {
+				return false, nil
+			}
+
 			continue
 		}
 

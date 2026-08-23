@@ -4,8 +4,10 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"os"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"slices"
 	"testing"
@@ -50,6 +52,7 @@ const testFutureConfig = `{
 const testConfig = `{
 	"version": 3,
 	"install_dir": "~/.local/bin",
+	"github_token": "configured-token",
 	"tools": {
 		"ripgrep": {
 			"owner": "BurntSushi",
@@ -59,6 +62,36 @@ const testConfig = `{
 			"binaries": [
 				{
 					"name":"rg"
+				}
+			]
+		}
+	}
+}`
+
+const testInvalidConfig = `{
+	"version": 3,
+	"install_dir": "~/.local/bin",
+	"github_token": "configured-token",
+	"tools": {
+		"ripgrep": {
+			"owner": "BurntSushi",
+			"repository": "ripgrep",
+			"asset": "linux\\.tar\\.gz$",
+			"description": "Fast grep",
+			"binaries": [
+				{
+					"name":"rg"
+				}
+			]
+		},
+		"fd": {
+			"owner": "sharkdp",
+			"repository": "fd",
+			"asset": "linux\\.tar\\.gz$",
+			"description": "Fast find",
+			"binaries": [
+				{
+					"name":"RG"
 				}
 			]
 		}
@@ -77,6 +110,28 @@ func writeTestFile(t *testing.T, path string, contents string) {
 	_, err = f.WriteString(contents)
 	if err != nil {
 		t.Fatalf("unexpected error writing to file: %v", err)
+	}
+}
+
+func validTestTool(binaryName string) Tool {
+	pattern := `linux\.tar\.gz$`
+	return Tool{
+		Owner:      "owner",
+		Repository: "repository",
+		Asset: AssetRegex{
+			Pattern: pattern,
+			Regex:   regexp.MustCompile(pattern),
+		},
+		Binaries: []Binary{{Name: binaryName}},
+	}
+}
+
+func validTestConfig() Configuration {
+	return Configuration{
+		InstallationDirectory: "~/.local/bin",
+		Tools: map[string]Tool{
+			"tool": validTestTool("tool"),
+		},
 	}
 }
 
@@ -356,6 +411,33 @@ func TestToolForCurrentPlatform(t *testing.T) {
 	}
 }
 
+func TestBinaryHasSourceNameForOS(t *testing.T) {
+	binary := Binary{Name: "tool.exe", SourceNames: []string{"other.exe"}}
+
+	tests := []struct {
+		name     string
+		goos     string
+		input    string
+		expected bool
+	}{
+		{"Windows matches exact case", "windows", "tool.exe", true},
+		{"Windows matches uppercase name", "windows", "Tool.EXE", true},
+		{"Windows matches uppercase source name", "windows", "OTHER.EXE", true},
+		{"Windows rejects unrelated name", "windows", "unrelated.exe", false},
+		{"Non-Windows matches exact case", "linux", "tool.exe", true},
+		{"Non-Windows rejects differing case", "linux", "Tool.EXE", false},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			result := binary.hasSourceNameForOS(test.input, test.goos)
+			if result != test.expected {
+				t.Errorf("hasSourceNameForOS(%q, %q) = %v, expected %v", test.input, test.goos, result, test.expected)
+			}
+		})
+	}
+}
+
 func TestGetSanitizedInstallationDirectory(t *testing.T) {
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
@@ -460,11 +542,23 @@ func TestDefaultConfiguration(t *testing.T) {
 	if config.InstallationDirectory != "~/.local/bin" {
 		t.Errorf("wrong installation directory: got %q, expected '~/.local/bin'", config.InstallationDirectory)
 	}
+	if config.GitHubToken != "" {
+		t.Errorf("default GitHub token should be empty but got %q", config.GitHubToken)
+	}
 
 	for _, name := range defaultTools {
+		known, found := knownTools[name]
+		if !found {
+			t.Errorf("expected known tool entry for default tool %q", name)
+			continue
+		}
+
 		tool, found := config.Tools[name]
 		if !found {
-			t.Errorf("expected to find an entry for %q in the default configuration", name)
+			if _, err := known.intoToolForPlatform(); !errors.Is(err, ErrUnsupportedPlatform) {
+				t.Errorf("default tool %q is missing from the default configuration for an unexpected reason: %v", name, err)
+			}
+			continue
 		}
 
 		if tool.Owner == "" {
@@ -563,5 +657,155 @@ func TestReadConfigurationOrCreateDefault(t *testing.T) {
 		if len(config.Tools) != 1 {
 			t.Errorf("expected exactly one tool in example configuration but got %d", len(config.Tools))
 		}
+		if config.GitHubToken != "configured-token" {
+			t.Errorf("got GitHub token %q, expected %q", config.GitHubToken, "configured-token")
+		}
 	})
+
+	t.Run("Config file with duplicates", func(t *testing.T) {
+		writeTestFile(t, configPath, testInvalidConfig)
+
+		_, _, err := readConfigurationOrCreateDefault(configPath)
+		if err == nil {
+			t.Fatalf("expected to get an error when reading invalid config")
+		}
+	})
+}
+
+func TestValidateTargets(t *testing.T) {
+	tests := []struct {
+		name       string
+		goos       string
+		firstName  string
+		secondName string
+	}{
+		{
+			name:       "Names differing only by case",
+			goos:       "linux",
+			firstName:  "Foo",
+			secondName: "foo",
+		},
+		{
+			name:       "Implicit Windows executable suffix",
+			goos:       "windows",
+			firstName:  "foo",
+			secondName: "foo.exe",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			config := validTestConfig()
+			config.Tools = map[string]Tool{
+				"first":  validTestTool(test.firstName),
+				"second": validTestTool(test.secondName),
+			}
+
+			if err := config.validate(test.goos); err == nil {
+				t.Errorf("expected %q and %q to conflict on %s", test.firstName, test.secondName, test.goos)
+			}
+		})
+	}
+}
+
+func TestValidateFields(t *testing.T) {
+	tests := []struct {
+		name   string
+		modify func(*Configuration)
+	}{
+		{
+			name: "Empty installation directory",
+			modify: func(config *Configuration) {
+				config.InstallationDirectory = ""
+			},
+		},
+		{
+			name: "Empty owner",
+			modify: func(config *Configuration) {
+				tool := config.Tools["tool"]
+				tool.Owner = ""
+				config.Tools["tool"] = tool
+			},
+		},
+		{
+			name: "Empty repository",
+			modify: func(config *Configuration) {
+				tool := config.Tools["tool"]
+				tool.Repository = ""
+				config.Tools["tool"] = tool
+			},
+		},
+		{
+			name: "Empty asset pattern",
+			modify: func(config *Configuration) {
+				tool := config.Tools["tool"]
+				tool.Asset.Pattern = ""
+				config.Tools["tool"] = tool
+			},
+		},
+		{
+			name: "Missing asset regex",
+			modify: func(config *Configuration) {
+				tool := config.Tools["tool"]
+				tool.Asset.Regex = nil
+				config.Tools["tool"] = tool
+			},
+		},
+		{
+			name: "Mismatched asset regex",
+			modify: func(config *Configuration) {
+				tool := config.Tools["tool"]
+				tool.Asset.Regex = regexp.MustCompile(`windows\.zip$`)
+				config.Tools["tool"] = tool
+			},
+		},
+		{
+			name: "No binaries",
+			modify: func(config *Configuration) {
+				tool := config.Tools["tool"]
+				tool.Binaries = nil
+				config.Tools["tool"] = tool
+			},
+		},
+		{
+			name: "Invalid source name",
+			modify: func(config *Configuration) {
+				tool := config.Tools["tool"]
+				tool.Binaries[0].SourceNames = []string{"../tool"}
+				config.Tools["tool"] = tool
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			config := validTestConfig()
+			test.modify(&config)
+
+			if err := config.validate("linux"); err == nil {
+				t.Error("expected validation to fail")
+			}
+		})
+	}
+}
+
+func TestSaveValidation(t *testing.T) {
+	configPath := filepath.Join(t.TempDir(), "config.json")
+	original := "existing configuration"
+	writeTestFile(t, configPath, original)
+
+	config := validTestConfig()
+	config.Tools["second"] = validTestTool("TOOL")
+
+	if err := config.save(configPath, false); err == nil {
+		t.Fatal("expected saving an invalid configuration to fail")
+	}
+
+	contents, err := os.ReadFile(configPath)
+	if err != nil {
+		t.Fatalf("failed to read existing configuration: %v", err)
+	}
+	if string(contents) != original {
+		t.Errorf("existing configuration was altered: got %q, expected %q", contents, original)
+	}
 }

@@ -17,6 +17,9 @@ import (
 
 var checksumRegex = regexp.MustCompile(`(?i)\.(sha(\d+)?(sum)?|md5(sum)?|checksums\.txt)$`)
 
+const gitHubApiUrl = "https://api.github.com"
+const maxAssetSize = 500 * 1024 * 1024 // 500 MiB
+
 type Downloader struct {
 	client      http.Client
 	githubToken string
@@ -42,19 +45,25 @@ func createUserAgent() string {
 
 func httpError(statusCode int) error {
 	if statusCode == http.StatusForbidden || statusCode == http.StatusTooManyRequests {
-		return fmt.Errorf("HTTP status %d: GitHub API rate limit is likely hit, check if you have set the `GITHUB_TOKEN` environment variable", statusCode)
+		return fmt.Errorf("HTTP status %d: GitHub API rate limit is likely hit, check if you have configured a GitHub token", statusCode)
 	}
 
 	return fmt.Errorf("unexpected HTTP status: %d", statusCode)
 }
 
-func newDownloader(timeoutSeconds int) (Downloader, *UserMessage) {
-	githubToken := os.Getenv("GITHUB_TOKEN")
+func newDownloader(timeoutSeconds int, configuredGitHubToken string) (Downloader, *UserMessage) {
+	githubToken := configuredGitHubToken
+	if githubToken == "" {
+		githubToken = os.Getenv("TOOLI_GITHUB_TOKEN")
+	}
+	if githubToken == "" {
+		githubToken = os.Getenv("GITHUB_TOKEN")
+	}
 
 	res := Downloader{client: http.Client{Timeout: time.Duration(timeoutSeconds) * time.Second}, githubToken: githubToken}
 
 	if githubToken == "" {
-		return res, &UserMessage{Type: Info, Tool: "tooli", Content: "GITHUB_TOKEN is not set in the environment variables, consider setting it to avoid rate limiting"}
+		return res, &UserMessage{Type: Info, Tool: "tooli", Content: "No GitHub token is configured; consider setting github_token in the config, or an environment variable TOOLI_GITHUB_TOKEN or GITHUB_TOKEN to avoid rate limiting"}
 	}
 
 	return res, nil
@@ -85,7 +94,7 @@ func (client *Downloader) newRequest(url string, requestFormat RequestFormat) (*
 }
 
 func (client *Downloader) downloadRepoInfo(owner string, repository string) (RepositoryInfo, error) {
-	url := fmt.Sprintf("https://api.github.com/repos/%s/%s", owner, repository)
+	url := fmt.Sprintf("%s/repos/%s/%s", gitHubApiUrl, owner, repository)
 
 	var result RepositoryInfo
 
@@ -118,7 +127,7 @@ func (client *Downloader) downloadRepoInfo(owner string, repository string) (Rep
 }
 
 func (client *Downloader) downloadRelease(owner string, repository string) (Release, error) {
-	url := fmt.Sprintf("https://api.github.com/repos/%s/%s/releases/latest", owner, repository)
+	url := fmt.Sprintf("%s/repos/%s/%s/releases/latest", gitHubApiUrl, owner, repository)
 
 	var result Release
 
@@ -168,9 +177,13 @@ func (client *Downloader) downloadAsset(url string) ([]byte, error) {
 		return result, httpError(resp.StatusCode)
 	}
 
-	result, err = io.ReadAll(resp.Body)
+	result, err = io.ReadAll(io.LimitReader(resp.Body, maxAssetSize+1))
 	if err != nil {
 		return result, err
+	}
+
+	if len(result) > maxAssetSize {
+		return nil, fmt.Errorf("asset exceeds maximum allowed size of %d bytes", maxAssetSize)
 	}
 
 	return result, nil

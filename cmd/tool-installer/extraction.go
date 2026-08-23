@@ -28,6 +28,8 @@ const (
 	RawBinary
 )
 
+const maxFileSize = 1000 * 1024 * 1024 // 1 GiB
+
 var ignoredExtensions = []string{".md", ".txt", ".sh", ".bash", ".fish", ".ps1", ".bat", ".1", ".json"}
 var ignoredFiles = []string{"COPYING", "CONTRIBUTING", "CONTRIBUTORS", "NOTICE", "AUTHORS", "Makefile", "VERSION"}
 
@@ -68,7 +70,7 @@ func extractFilesZip(rawData []byte, binaries []Binary, outputPath string) error
 	}
 
 	toExtract := len(binaries)
-	extracted := 0
+	extracted := make(map[string]bool, toExtract)
 
 	for _, file := range zipReader.File {
 		if file.FileInfo().IsDir() {
@@ -85,7 +87,7 @@ func extractFilesZip(rawData []byte, binaries []Binary, outputPath string) error
 			return err
 		}
 
-		fileContent, err := io.ReadAll(fileReader)
+		fileContent, err := io.ReadAll(io.LimitReader(fileReader, maxFileSize+1))
 		closeErr := fileReader.Close()
 		if err != nil {
 			return err
@@ -93,22 +95,25 @@ func extractFilesZip(rawData []byte, binaries []Binary, outputPath string) error
 		if closeErr != nil {
 			return closeErr
 		}
+		if len(fileContent) > maxFileSize {
+			return fmt.Errorf("extracted file %q exceeds maximum allowed size of %d bytes", fileName, maxFileSize)
+		}
 
 		filePath := filepath.Join(outputPath, fileName)
 
-		err = os.WriteFile(filePath, fileContent, 0755)
+		err = os.WriteFile(filePath, fileContent, 0o755)
 		if err != nil {
 			return err
 		}
 
-		extracted++
-		if extracted == toExtract {
+		extracted[fileName] = true
+		if len(extracted) == toExtract {
 			break
 		}
 	}
 
-	if extracted != toExtract {
-		return fmt.Errorf("only extracted %d of %d expected binaries", extracted, toExtract)
+	if len(extracted) != toExtract {
+		return fmt.Errorf("only extracted %d of %d expected binaries", len(extracted), toExtract)
 	}
 
 	return nil
@@ -142,7 +147,7 @@ func extractFromTar(uncompressReader io.Reader, binaries []Binary, outputPath st
 	tarReader := tar.NewReader(uncompressReader)
 
 	toExtract := len(binaries)
-	extracted := 0
+	extracted := make(map[string]bool, toExtract)
 
 	for {
 		header, err := tarReader.Next()
@@ -169,7 +174,7 @@ func extractFromTar(uncompressReader io.Reader, binaries []Binary, outputPath st
 			return err
 		}
 
-		_, err = io.Copy(file, tarReader)
+		written, err := io.Copy(file, io.LimitReader(tarReader, maxFileSize+1))
 		closeErr := file.Close()
 		if err != nil {
 			return err
@@ -177,20 +182,23 @@ func extractFromTar(uncompressReader io.Reader, binaries []Binary, outputPath st
 		if closeErr != nil {
 			return closeErr
 		}
+		if written > maxFileSize {
+			return fmt.Errorf("extracted file %q exceeds maximum allowed size of %d bytes", fileName, maxFileSize)
+		}
 
-		err = os.Chmod(filePath, 0755)
+		err = os.Chmod(filePath, 0o755)
 		if err != nil {
 			return err
 		}
 
-		extracted++
-		if extracted == toExtract {
+		extracted[fileName] = true
+		if len(extracted) == toExtract {
 			break
 		}
 	}
 
-	if extracted != toExtract {
-		return fmt.Errorf("only extracted %d of %d expected binaries", extracted, toExtract)
+	if len(extracted) != toExtract {
+		return fmt.Errorf("only extracted %d of %d expected binaries", len(extracted), toExtract)
 	}
 
 	return nil
@@ -217,7 +225,7 @@ func extractFilesRaw(rawData []byte, binaries []Binary, outputPath string) error
 		return err
 	}
 
-	return os.Chmod(filePath, 0755)
+	return os.Chmod(filePath, 0o755)
 }
 
 func hasArchiveSuffix(assetName string) bool {
