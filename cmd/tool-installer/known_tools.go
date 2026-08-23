@@ -299,6 +299,7 @@ var knownTools = map[string]KnownTool{
 			"linux/amd64":   "linux-x64\\.zip$",
 			"linux/arm64":   "linux-aarch64\\.zip$",
 			"windows/amd64": "windows-x64\\.zip$",
+			"windows/arm64": "windows-aarch64\\.zip$",
 			"darwin/amd64":  "darwin-x64\\.zip$",
 			"darwin/arm64":  "darwin-aarch64\\.zip$",
 		},
