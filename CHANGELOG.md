@@ -27,6 +27,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 - Create configuration file with the correct permissions directly
 - Fix null check in cache implementation
 - Check for binary existence no longer treats directories as binaries
+- Reject non-positive timeout values
 
 ## [5.1.0] - 2026-05-25
 

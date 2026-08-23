@@ -188,6 +188,10 @@ func parseArguments() (Arguments, error) {
 		return result, errors.New("missing command")
 	}
 
+	if result.requestTimeout <= 0 {
+		return result, errors.New("request timeout must be positive")
+	}
+
 	result.command = args[0]
 	result.commandArguments = args[1:]
 
