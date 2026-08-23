@@ -16,6 +16,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 ### Changed
 
 - Self update check uses the release tag name instead of the release name to be consistent with tool update checks
+- Install checks if all binaries exist instead of blindly trusting the cache only
 
 ### Fixed
 

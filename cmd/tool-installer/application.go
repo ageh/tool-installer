@@ -255,7 +255,20 @@ func (app *App) installTools(tools []string) error {
 	for name, tool := range toInstall {
 		currentVersion := app.cache.Tools[name]
 		wg.Go(func() {
-			result, err := app.downloader.downloadTool(tool, currentVersion)
+			version := currentVersion
+			if version != "" {
+				exists, err := app.allBinariesExist(toolDirectory, tool)
+				if err != nil {
+					messageChannel <- UserMessage{Type: Error, Tool: name, Content: fmt.Sprintf("failed to check installed binaries: %v", err)}
+					return
+				}
+
+				if !exists {
+					version = ""
+				}
+			}
+
+			result, err := app.downloader.downloadTool(tool, version)
 			if err != nil {
 				messageChannel <- UserMessage{Type: Error, Tool: name, Content: fmt.Sprintf("failed to download tool: %v", err)}
 				return
