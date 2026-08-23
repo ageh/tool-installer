@@ -254,8 +254,10 @@ func (app *App) installTools(tools []string) error {
 	var mu sync.Mutex
 	semaphore := make(chan struct{}, maxConcurrentInstalls)
 
+	cacheSnapshot := maps.Clone(app.cache.Tools)
+
 	for name, tool := range toInstall {
-		currentVersion := app.cache.Tools[name]
+		currentVersion := cacheSnapshot[name]
 		wg.Go(func() {
 			semaphore <- struct{}{}
 			defer func() { <-semaphore }()
