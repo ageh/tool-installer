@@ -15,6 +15,7 @@ import (
 
 const tooliRepoOwner = "ageh"
 const tooliRepoName = "tool-installer"
+const maxConcurrentInstalls = 4
 
 type ToolInfo struct {
 	Name        string
@@ -251,10 +252,14 @@ func (app *App) installTools(tools []string) error {
 	var wg sync.WaitGroup
 	messageChannel := make(chan UserMessage)
 	var mu sync.Mutex
+	semaphore := make(chan struct{}, maxConcurrentInstalls)
 
 	for name, tool := range toInstall {
 		currentVersion := app.cache.Tools[name]
 		wg.Go(func() {
+			semaphore <- struct{}{}
+			defer func() { <-semaphore }()
+
 			version := currentVersion
 			if version != "" {
 				exists, err := app.allBinariesExist(toolDirectory, tool)

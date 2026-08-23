@@ -17,6 +17,8 @@ import (
 
 var checksumRegex = regexp.MustCompile(`(?i)\.(sha(\d+)?(sum)?|md5(sum)?|checksums\.txt)$`)
 
+const maxAssetSize = 500 * 1024 * 1024 // 500 MiB
+
 type Downloader struct {
 	client      http.Client
 	githubToken string
@@ -174,9 +176,13 @@ func (client *Downloader) downloadAsset(url string) ([]byte, error) {
 		return result, httpError(resp.StatusCode)
 	}
 
-	result, err = io.ReadAll(resp.Body)
+	result, err = io.ReadAll(io.LimitReader(resp.Body, maxAssetSize+1))
 	if err != nil {
 		return result, err
+	}
+
+	if len(result) > maxAssetSize {
+		return nil, fmt.Errorf("asset exceeds maximum allowed size of %d bytes", maxAssetSize)
 	}
 
 	return result, nil
