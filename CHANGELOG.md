@@ -12,6 +12,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 - Added esp-rs CLI tools to the list of known tools
 - Added GitHub copilot CLI to the list of known tools
 - Added validation checks for configuration
+- Added checks for argument counts for each command
 
 ### Changed
 

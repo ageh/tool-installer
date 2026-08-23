@@ -152,8 +152,30 @@ type Arguments struct {
 	showVersion      bool
 }
 
+func (args *Arguments) argumentCount() int {
+	return len(args.commandArguments)
+}
+
 func (args *Arguments) hasCommandArguments() bool {
-	return len(args.commandArguments) > 0
+	return args.argumentCount() > 0
+}
+
+func (args *Arguments) isArgumentCountIn(minimum int, maximum int) bool {
+	n := args.argumentCount()
+
+	if minimum > 0 {
+		if maximum >= minimum {
+			return minimum <= n && n <= maximum
+		}
+
+		return minimum <= n
+	}
+
+	if maximum >= 0 {
+		return n <= maximum
+	}
+
+	return true
 }
 
 func versionInfo() string {
@@ -224,6 +246,10 @@ func run() error {
 	hasArguments := args.hasCommandArguments()
 
 	if args.command == "h" || args.command == "help" {
+		if !args.isArgumentCountIn(0, 1) {
+			UserMessage{Type: Warning, Tool: "tooli", Content: "'help' will only show the help for the first command provided as an argument"}.Print()
+		}
+
 		if hasArguments {
 			fmt.Println(getCommandHelp(args.commandArguments[0]))
 		} else {
@@ -250,17 +276,21 @@ func run() error {
 	var commandError error
 	switch args.command {
 	case "a", "add":
-		if !hasArguments {
-			commandError = fmt.Errorf("you need to provide a tool name as the argument for 'add'")
-		} else {
-			entryName := ""
-			if len(args.commandArguments) > 1 {
-				entryName = args.commandArguments[1]
-			}
-			message := app.addTool(args.commandArguments[0], entryName)
-			message.Print()
+		if !args.isArgumentCountIn(1, 2) {
+			return errors.New("'add' requires at least one and at most two arguments")
 		}
+
+		entryName := ""
+		if args.argumentCount() > 1 {
+			entryName = args.commandArguments[1]
+		}
+		message := app.addTool(args.commandArguments[0], entryName)
+		message.Print()
 	case "c", "check":
+		if !args.isArgumentCountIn(0, 1) {
+			return errors.New("'check' takes at most one argument")
+		}
+
 		checkAll := hasArguments && args.commandArguments[0] == "all"
 		if hasArguments && !checkAll {
 			return fmt.Errorf("unknown argument '%s' for 'check'", args.commandArguments[0])
@@ -269,36 +299,48 @@ func run() error {
 		printMessages(messages)
 		commandError = err
 	case "d", "delete":
-		if !hasArguments {
-			commandError = fmt.Errorf("you need to provide at least one tool name as argument to 'delete'")
-		} else {
-			messages, err := app.removeTools(args.commandArguments, false)
-			printMessages(messages)
-			commandError = err
+		if !args.isArgumentCountIn(1, 0) {
+			return errors.New("'delete' requires at least one argument")
 		}
+
+		messages, err := app.removeTools(args.commandArguments, false)
+		printMessages(messages)
+		commandError = err
 	case "i", "install":
 		commandError = app.installTools(args.commandArguments)
 	case "l", "list":
+		if !args.isArgumentCountIn(0, 1) {
+			return errors.New("'list' takes at most one argument")
+		}
+
 		listLong := hasArguments && args.commandArguments[0] == "long"
 		if hasArguments && !listLong {
 			return fmt.Errorf("unknown argument '%s' for 'list'", args.commandArguments[0])
 		}
 		commandError = app.listTools(listLong)
 	case "r", "remove":
-		if !hasArguments {
-			commandError = fmt.Errorf("you need to provide at least one tool name as argument to 'remove'")
-		} else {
-			messages, err := app.removeTools(args.commandArguments, true)
-			printMessages(messages)
-			commandError = err
+		if !args.isArgumentCountIn(1, 0) {
+			return errors.New("'remove' requires at least one argument")
 		}
+
+		messages, err := app.removeTools(args.commandArguments, true)
+		printMessages(messages)
+		commandError = err
 	case "s", "status":
+		if !args.isArgumentCountIn(0, 1) {
+			return errors.New("'status' takes at most one argument")
+		}
+
 		statusVerbose := hasArguments && args.commandArguments[0] == "verbose"
 		if hasArguments && !statusVerbose {
 			return fmt.Errorf("unknown argument '%s' for 'status'", args.commandArguments[0])
 		}
 		commandError = app.showStatus(statusVerbose)
 	case "u", "update":
+		if !args.isArgumentCountIn(0, 0) {
+			return errors.New("'update' takes no arguments")
+		}
+
 		messages, err := app.updateTools()
 		printMessages(messages)
 		commandError = err
