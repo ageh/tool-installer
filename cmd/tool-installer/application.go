@@ -186,7 +186,7 @@ func (app *App) addTool(githubSlug string, entryName string) UserMessage {
 func (app *App) saveAddedTool(name string, tool Tool) error {
 	candidate := app.config
 	candidate.Tools = maps.Clone(app.config.Tools)
-	candidate.Tools[name] = tool.forCurrentPlatform(runtime.GOOS)
+	candidate.Tools[name] = tool.forCurrentPlatform(runtime.GOOS, runtime.GOARCH)
 
 	if err := candidate.validate(runtime.GOOS); err != nil {
 		return err

@@ -66,6 +66,7 @@ The `github_token` field is optional and defaults to an empty string. To change 
 - `binaries`: A list of structs where each struct has these entries:
 	- `name`: Name of the executable _after extraction_
 	- `source_names`: An optional list of names the executable can possibly have before extraction so it can be properly renamed. If the executable already has the proper name in the asset, simply omit this field
+	- `platforms`: An optional list restricting which platforms this binary is expected on, as `"os"` (e.g. `"linux"`) or `"os/arch"` (e.g. `"windows/amd64"`) entries. Omit this field if the binary is present on every platform the tool supports
 - `description`: A (short) description of what the tool does
 
 ### Default configuration

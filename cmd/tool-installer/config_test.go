@@ -145,6 +145,7 @@ func TestBinaryMarshalJSON(t *testing.T) {
 		{name: "Empty source_names", input: Binary{Name: "fd", SourceNames: []string{}}, expected: `{"name":"fd"}`},
 		{name: "Non-empty source_names", input: Binary{Name: "fd", SourceNames: []string{"find"}}, expected: `{"name":"fd","source_names":["find"]}`},
 		{name: "Windows exe suffix stripped", input: Binary{Name: "rg.exe"}, expected: `{"name":"rg"}`},
+		{name: "Non-empty platforms", input: Binary{Name: "bwrap", Platforms: []string{"linux"}}, expected: `{"name":"bwrap","platforms":["linux"]}`},
 	}
 
 	for _, test := range tests {
@@ -177,6 +178,8 @@ func TestBinaryUnmarshalJSON(t *testing.T) {
 		{"No rename_to", `{"name": "rg"}`, Binary{Name: "rg"}},
 		{"Empty rename_to", `{"name": "rg", "rename_to": ""}`, Binary{Name: "rg"}},
 		{"Non-empty rename_to", `{"name": "rg", "rename_to": "ripgrep"}`, Binary{Name: "rg", RenameTo: "ripgrep"}},
+		{"OS-only platforms entry", `{"name": "bwrap", "platforms": ["linux"]}`, Binary{Name: "bwrap", Platforms: []string{"linux"}}},
+		{"OS/arch platforms entry", `{"name": "sandbox-setup", "platforms": ["windows/amd64"]}`, Binary{Name: "sandbox-setup", Platforms: []string{"windows/amd64"}}},
 	}
 
 	for _, test := range tests {
@@ -193,8 +196,19 @@ func TestBinaryUnmarshalJSON(t *testing.T) {
 			if b.RenameTo != test.expected.RenameTo {
 				t.Errorf("got rename_to %q, expected %q", b.RenameTo, test.expected.RenameTo)
 			}
+
+			if !slices.Equal(b.Platforms, test.expected.Platforms) {
+				t.Errorf("got platforms %v, expected %v", b.Platforms, test.expected.Platforms)
+			}
 		})
 	}
+
+	t.Run("Invalid platforms entry", func(t *testing.T) {
+		var b Binary
+		if err := json.Unmarshal([]byte(`{"name": "rg", "platforms": ["not-a-platform"]}`), &b); err == nil {
+			t.Error("expected an error for an invalid platforms entry, got nil")
+		}
+	})
 
 	t.Run("Invalid name: empty string", func(t *testing.T) {
 		var b Binary
@@ -229,6 +243,7 @@ func TestBinaryMarshalUnmarshalJSON(t *testing.T) {
 	tests := []Binary{
 		{Name: "rg"},
 		{Name: "tooli", SourceNames: []string{"tool-installer"}},
+		{Name: "bwrap", Platforms: []string{"linux"}},
 	}
 
 	for _, original := range tests {
@@ -248,6 +263,10 @@ func TestBinaryMarshalUnmarshalJSON(t *testing.T) {
 
 		if !slices.Equal(restored.SourceNames, original.SourceNames) {
 			t.Errorf("SourceNames mismatch: got %v, expected %v", restored.SourceNames, original.SourceNames)
+		}
+
+		if !slices.Equal(restored.Platforms, original.Platforms) {
+			t.Errorf("Platforms mismatch: got %v, expected %v", restored.Platforms, original.Platforms)
 		}
 	}
 }
@@ -382,21 +401,29 @@ func TestToolForCurrentPlatform(t *testing.T) {
 		Binaries: []Binary{
 			{Name: "rg"},
 			{Name: "fd"},
+			{Name: "bwrap", Platforms: []string{"linux"}},
+			{Name: "sandbox-setup", Platforms: []string{"windows/amd64"}},
 		},
 	}
 
 	tests := []struct {
 		name             string
 		goos             string
+		goarch           string
 		expectedBinaries []Binary
 	}{
-		{"Windows has exe suffix", "windows", []Binary{{Name: "rg.exe"}, {Name: "fd.exe"}}},
-		{"Non-Windows has no effect", "linux", []Binary{{Name: "rg"}, {Name: "fd"}}},
+		{"Windows has exe suffix and drops non-matching platforms", "windows", "amd64", []Binary{{Name: "rg.exe"}, {Name: "fd.exe"}, {Name: "sandbox-setup.exe", Platforms: []string{"windows/amd64"}}}},
+		{"Windows arm64 drops the amd64-only binary", "windows", "arm64", []Binary{{Name: "rg.exe"}, {Name: "fd.exe"}}},
+		{"Non-Windows has no suffix and drops non-matching platforms", "linux", "amd64", []Binary{{Name: "rg"}, {Name: "fd"}, {Name: "bwrap", Platforms: []string{"linux"}}}},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			result := testTool.forCurrentPlatform(test.goos)
+			result := testTool.forCurrentPlatform(test.goos, test.goarch)
+
+			if len(result.Binaries) != len(test.expectedBinaries) {
+				t.Fatalf("wrong number of binaries: got %d, expected %d: %v", len(result.Binaries), len(test.expectedBinaries), result.Binaries)
+			}
 
 			for i := range result.Binaries {
 				if result.Binaries[i].Name != test.expectedBinaries[i].Name {
@@ -405,6 +432,10 @@ func TestToolForCurrentPlatform(t *testing.T) {
 
 				if result.Binaries[i].RenameTo != test.expectedBinaries[i].RenameTo {
 					t.Errorf("wrong RenameTo: got %q, expected %q", result.Binaries[i].RenameTo, test.expectedBinaries[i].RenameTo)
+				}
+
+				if !slices.Equal(result.Binaries[i].Platforms, test.expectedBinaries[i].Platforms) {
+					t.Errorf("wrong Platforms: got %v, expected %v", result.Binaries[i].Platforms, test.expectedBinaries[i].Platforms)
 				}
 			}
 		})
@@ -433,6 +464,34 @@ func TestBinaryHasSourceNameForOS(t *testing.T) {
 			result := binary.hasSourceNameForOS(test.input, test.goos)
 			if result != test.expected {
 				t.Errorf("hasSourceNameForOS(%q, %q) = %v, expected %v", test.input, test.goos, result, test.expected)
+			}
+		})
+	}
+}
+
+func TestBinaryAppliesToPlatform(t *testing.T) {
+	tests := []struct {
+		name      string
+		platforms []string
+		goos      string
+		goarch    string
+		expected  bool
+	}{
+		{"No restriction applies everywhere", nil, "linux", "amd64", true},
+		{"OS-only entry matches any arch", []string{"linux"}, "linux", "arm64", true},
+		{"OS-only entry rejects other OS", []string{"linux"}, "windows", "amd64", false},
+		{"OS/arch entry matches exact arch", []string{"windows/amd64"}, "windows", "amd64", true},
+		{"OS/arch entry rejects other arch", []string{"windows/amd64"}, "windows", "arm64", false},
+		{"Mixed entries match either", []string{"linux", "windows/amd64"}, "windows", "amd64", true},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			binary := Binary{Name: "tool", Platforms: test.platforms}
+
+			result := binary.appliesToPlatform(test.goos, test.goarch)
+			if result != test.expected {
+				t.Errorf("appliesToPlatform(%q, %q) = %v, expected %v", test.goos, test.goarch, result, test.expected)
 			}
 		})
 	}

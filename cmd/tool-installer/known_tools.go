@@ -33,7 +33,7 @@ func (k KnownTool) intoToolForPlatform() (Tool, error) {
 	}
 
 	var result = Tool{
-		Binaries:    k.Binaries,
+		Binaries:    filterBinariesForPlatform(k.Binaries, runtime.GOOS, runtime.GOARCH),
 		Owner:       k.Owner,
 		Repository:  k.Repository,
 		Description: k.Description,
@@ -41,6 +41,18 @@ func (k KnownTool) intoToolForPlatform() (Tool, error) {
 	}
 
 	return result, nil
+}
+
+func filterBinariesForPlatform(binaries []Binary, goos string, goarch string) []Binary {
+	result := make([]Binary, 0, len(binaries))
+
+	for _, binary := range binaries {
+		if binary.appliesToPlatform(goos, goarch) {
+			result = append(result, binary)
+		}
+	}
+
+	return result
 }
 
 const standardAssetLinuxArm = "aarch64-unknown-linux-gnu\\.tar\\.gz$"
@@ -666,18 +678,22 @@ var knownTools = map[string]KnownTool{
 	// AI
 	"codex": {
 		Binaries: []Binary{
-			{Name: "codex", SourceNames: []string{"codex-x86_64-pc-windows-msvc", "codex-x86_64-unknown-linux-musl"}},
+			{Name: "codex"},
+			{Name: "codex-code-mode-host"},
+			{Name: "codex-command-runner", Platforms: []string{"windows"}},
+			{Name: "codex-windows-sandbox-setup", Platforms: []string{"windows"}},
+			{Name: "bwrap", Platforms: []string{"linux"}},
 		},
 		Owner:       "openai",
 		Repository:  "codex",
 		Description: "Lightweight coding agent that runs in your terminal",
 		AssetNames: map[string]string{
-			"linux/amd64":   "codex-x86_64-unknown-linux-musl\\.tar\\.gz$",
-			"linux/arm64":   "codex-aarch64-unknown-linux-musl\\.tar\\.gz$",
-			"windows/amd64": "codex-x86_64-pc-windows-msvc\\.exe\\.zip$",
-			"windows/arm64": "codex-aarch64-pc-windows-msvc\\.exe\\.zip$",
-			"darwin/amd64":  "codex-x86_64-apple-darwin\\.tar\\.gz$",
-			"darwin/arm64":  "codex-aarch64-apple-darwin\\.tar\\.gz$",
+			"linux/amd64":   "codex-package-x86_64-unknown-linux-musl\\.tar\\.gz$",
+			"linux/arm64":   "codex-package-aarch64-unknown-linux-musl\\.tar\\.gz$",
+			"windows/amd64": "codex-package-x86_64-pc-windows-msvc\\.tar\\.gz$",
+			"windows/arm64": "codex-package-aarch64-pc-windows-msvc\\.tar\\.gz$",
+			"darwin/amd64":  "codex-package-x86_64-apple-darwin\\.tar\\.gz$",
+			"darwin/arm64":  "codex-package-aarch64-apple-darwin\\.tar\\.gz$",
 		},
 	},
 	"crush": {

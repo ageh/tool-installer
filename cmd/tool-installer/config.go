@@ -21,15 +21,25 @@ type Binary struct {
 	Name        string   `json:"name"`
 	RenameTo    string   `json:"rename_to,omitempty"` // Deprecated, only kept for migration
 	SourceNames []string `json:"source_names,omitempty"`
+	Platforms   []string `json:"platforms,omitempty"` // Restricts which platforms this binary is expected on, as "os" or "os/arch" entries (e.g. "linux", "windows/amd64"). Empty means all platforms.
+}
+
+var validPlatformOSes = []string{"linux", "windows", "darwin"}
+var validPlatformOSArches = []string{"linux/amd64", "linux/arm64", "windows/amd64", "windows/arm64", "darwin/amd64", "darwin/arm64"}
+
+func isValidPlatformEntry(platform string) bool {
+	return slices.Contains(validPlatformOSes, platform) || slices.Contains(validPlatformOSArches, platform)
 }
 
 func (binary Binary) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
 		Name        string   `json:"name"`
 		SourceNames []string `json:"source_names,omitempty"`
+		Platforms   []string `json:"platforms,omitempty"`
 	}{
 		Name:        stripExeSuffix(binary.Name),
 		SourceNames: stripExeSuffixes(binary.SourceNames),
+		Platforms:   binary.Platforms,
 	})
 }
 
@@ -38,6 +48,7 @@ func (b *Binary) UnmarshalJSON(bytes []byte) error {
 		Name        string   `json:"name"`
 		RenameTo    string   `json:"rename_to,omitempty"`
 		SourceNames []string `json:"source_names,omitempty"`
+		Platforms   []string `json:"platforms,omitempty"`
 	}
 
 	if err := json.Unmarshal(bytes, &result); err != nil {
@@ -48,8 +59,15 @@ func (b *Binary) UnmarshalJSON(bytes []byte) error {
 		return fmt.Errorf("invalid name ('%s'): must be a plain filename", result.Name)
 	}
 
+	for _, platform := range result.Platforms {
+		if !isValidPlatformEntry(platform) {
+			return fmt.Errorf("invalid platform entry ('%s') for binary '%s': must be an os or os/arch value", platform, result.Name)
+		}
+	}
+
 	b.Name = result.Name
 	b.SourceNames = result.SourceNames
+	b.Platforms = result.Platforms
 
 	if result.RenameTo == "" {
 		return nil
@@ -76,6 +94,16 @@ func (b Binary) getTargetKey(goos string) string {
 	}
 
 	return strings.ToLower(name)
+}
+
+func (binary Binary) appliesToPlatform(goos string, goarch string) bool {
+	if len(binary.Platforms) == 0 {
+		return true
+	}
+
+	return slices.ContainsFunc(binary.Platforms, func(platform string) bool {
+		return platform == goos || platform == goos+"/"+goarch
+	})
 }
 
 func (binary Binary) hasSourceName(name string) bool {
@@ -157,19 +185,24 @@ type Tool struct {
 	Description string     `json:"description"`
 }
 
-func (t Tool) forCurrentPlatform(goos string) Tool {
-	if goos != "windows" {
-		return t
-	}
-
+func (t Tool) forCurrentPlatform(goos string, goarch string) Tool {
 	result := t
-	result.Binaries = make([]Binary, len(t.Binaries))
+	result.Binaries = make([]Binary, 0, len(t.Binaries))
 
-	for i, binary := range t.Binaries {
-		result.Binaries[i] = Binary{
-			Name:        addExeSuffix(binary.Name),
-			SourceNames: addExeSuffixes(binary.SourceNames),
+	for _, binary := range t.Binaries {
+		if !binary.appliesToPlatform(goos, goarch) {
+			continue
 		}
+
+		if goos == "windows" {
+			binary = Binary{
+				Name:        addExeSuffix(binary.Name),
+				SourceNames: addExeSuffixes(binary.SourceNames),
+				Platforms:   binary.Platforms,
+			}
+		}
+
+		result.Binaries = append(result.Binaries, binary)
 	}
 
 	return result
@@ -311,12 +344,12 @@ func parseConfiguration(input []byte) (Configuration, error) {
 	return config, nil
 }
 
-func normalizeConfiguration(config Configuration, goos string) Configuration {
+func normalizeConfiguration(config Configuration, goos string, goarch string) Configuration {
 	result := config
 	result.Tools = make(map[string]Tool, len(config.Tools))
 
 	for name, tool := range config.Tools {
-		result.Tools[name] = tool.forCurrentPlatform(goos)
+		result.Tools[name] = tool.forCurrentPlatform(goos, goarch)
 	}
 
 	return result
@@ -350,7 +383,7 @@ func readConfigurationOrCreateDefault(path string) (Configuration, *UserMessage,
 				return Configuration{}, message, fmt.Errorf("failed to write default configuration to disk: %w", err)
 			}
 
-			normalized := normalizeConfiguration(config, runtime.GOOS)
+			normalized := normalizeConfiguration(config, runtime.GOOS, runtime.GOARCH)
 			if err = normalized.validate(runtime.GOOS); err != nil {
 				return Configuration{}, message, err
 			}
@@ -387,7 +420,7 @@ func readConfigurationOrCreateDefault(path string) (Configuration, *UserMessage,
 			return Configuration{}, message, fmt.Errorf("could not save automatically migrated configuration: %w", err)
 		}
 
-		normalized := normalizeConfiguration(config, runtime.GOOS)
+		normalized := normalizeConfiguration(config, runtime.GOOS, runtime.GOARCH)
 		if err = normalized.validate(runtime.GOOS); err != nil {
 			return Configuration{}, message, err
 		}
@@ -400,7 +433,7 @@ func readConfigurationOrCreateDefault(path string) (Configuration, *UserMessage,
 		return Configuration{}, message, err
 	}
 
-	normalized := normalizeConfiguration(config, runtime.GOOS)
+	normalized := normalizeConfiguration(config, runtime.GOOS, runtime.GOARCH)
 	if err = normalized.validate(runtime.GOOS); err != nil {
 		return Configuration{}, message, err
 	}
