@@ -20,6 +20,36 @@ func TestKnownToolsPlatformNames(t *testing.T) {
 	}
 }
 
+func TestKnownToolsBinaryPlatforms(t *testing.T) {
+	for name, tool := range knownTools {
+		for _, binary := range tool.Binaries {
+			for _, platform := range binary.Platforms {
+				if !isValidPlatformEntry(platform) {
+					t.Errorf("invalid platform entry %q for binary %q in known tool %q", platform, binary.Name, name)
+				}
+			}
+		}
+	}
+}
+
+func TestFilterBinariesForPlatform(t *testing.T) {
+	binaries := []Binary{
+		{Name: "universal"},
+		{Name: "linux-only", Platforms: []string{"linux"}},
+		{Name: "windows-amd64-only", Platforms: []string{"windows/amd64"}},
+	}
+
+	result := filterBinariesForPlatform(binaries, "windows", "amd64")
+
+	if len(result) != 2 {
+		t.Fatalf("expected 2 binaries, got %d: %v", len(result), result)
+	}
+
+	if result[0].Name != "universal" || result[1].Name != "windows-amd64-only" {
+		t.Errorf("unexpected filtered binaries: %v", result)
+	}
+}
+
 func TestKnownToolsBinaryNames(t *testing.T) {
 	seen := make(map[string]int)
 
