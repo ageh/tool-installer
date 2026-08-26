@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 ## [Unreleased]
 
+## [5.4.0] - 2026-08-26
+
 ### Added
 
 - Optional `platforms` configuration field for binaries to restrict them to only selected platforms (either os or os/arch values)
